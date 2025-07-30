@@ -1,36 +1,81 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { FirebaseError } from 'firebase/app';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [isRedirecting, setIsRedirecting] = useState(false);
     const router = useRouter();
-    const { signIn, error } = useAuthContext();
+    const { signIn, error, user } = useAuthContext();
+
+    // Monitor authentication state
+    useEffect(() => {
+        if (user && !isRedirecting) {
+            setIsRedirecting(true);
+            console.log('User authenticated, redirecting to dashboard...');
+            router.replace('/dashboard');
+        }
+    }, [user, router, isRedirecting]);
+
+    const getErrorMessage = (error: FirebaseError) => {
+        switch (error.code) {
+            case 'auth/invalid-email':
+                return 'Invalid email address format';
+            case 'auth/user-disabled':
+                return 'This account has been disabled';
+            case 'auth/user-not-found':
+                return 'No account found with this email';
+            case 'auth/wrong-password':
+                return 'Incorrect password';
+            case 'auth/too-many-requests':
+                return 'Too many failed attempts. Please try again later';
+            default:
+                return `Sign in error: ${error.code}`;
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading || isRedirecting) return;
+
+        setFormError('');
         setIsLoading(true);
 
         try {
+            console.log('Attempting to sign in...');
             await signIn(email, password);
-            router.push('/dashboard');
+            console.log('Sign in successful');
         } catch (err) {
             console.error('Login error:', err);
-        } finally {
+            if (err instanceof FirebaseError) {
+                setFormError(getErrorMessage(err));
+            } else {
+                setFormError('An unexpected error occurred. Please try again.');
+            }
             setIsLoading(false);
         }
     };
 
+    if (isRedirecting) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+            </div>
+        );
+    }
+
     return (
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-            {error && (
+            {(formError || error) && (
                 <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-                    {error}
+                    {formError || error}
                 </div>
             )}
 
@@ -72,10 +117,10 @@ export default function LoginForm() {
             <div>
                 <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || isRedirecting}
                     className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
-                    {isLoading ? 'Signing in...' : 'Sign in'}
+                    {isLoading ? 'Signing in...' : isRedirecting ? 'Redirecting...' : 'Sign in'}
                 </button>
             </div>
 

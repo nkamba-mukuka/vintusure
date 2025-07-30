@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 
 // Define paths that don't require authentication
 const publicPaths = ['/login', '/signup', '/forgot-password'];
@@ -19,31 +18,13 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Check for authentication
-    const session = cookies().get('session')?.value;
-    if (!session) {
-        return NextResponse.redirect(new URL('/login', request.url));
+    // Allow access to dashboard routes for now (authentication will be handled by client-side AuthContext)
+    if (path.startsWith('/dashboard')) {
+        return NextResponse.next();
     }
 
-    // Get user role from session (you'll need to implement this based on your token structure)
-    const userRole = getUserRoleFromSession(session);
-
-    // Check role-based access
-    if (path.startsWith('/admin') && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    return NextResponse.next();
-}
-
-function getUserRoleFromSession(session: string): string {
-    try {
-        // Decode the session token and extract role
-        // This is a placeholder - implement based on your token structure
-        return 'agent';
-    } catch (error) {
-        return 'agent';
-    }
+    // For other protected routes, redirect to login
+    return NextResponse.redirect(new URL('/login', request.url));
 }
 
 export const config = {
