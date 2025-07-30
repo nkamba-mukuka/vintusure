@@ -12,12 +12,15 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
-// Generic type for the data structure
-type CollectionData<T> = {
+// Base type for documents with ID
+type WithId = { id: string };
+
+// Generic type for the data structure that ensures T includes an id field
+type CollectionData<T extends WithId> = {
     [key: string]: T;
 };
 
-export function useRealtimeCollection<T extends DocumentData>(
+export function useRealtimeCollection<T extends DocumentData & WithId>(
     collectionName: string,
     constraints: QueryConstraint[] = [],
     enabled: boolean = true
@@ -40,7 +43,10 @@ export function useRealtimeCollection<T extends DocumentData>(
             (snapshot) => {
                 const newData: CollectionData<T> = {};
                 snapshot.forEach((doc) => {
-                    newData[doc.id] = { id: doc.id, ...doc.data() } as T;
+                    newData[doc.id] = {
+                        ...doc.data(),
+                        id: doc.id,
+                    } as T;
                 });
                 setData(newData);
                 setLoading(false);
@@ -59,7 +65,7 @@ export function useRealtimeCollection<T extends DocumentData>(
     return { data, loading, error };
 }
 
-export function useRealtimeDocument<T extends DocumentData>(
+export function useRealtimeDocument<T extends DocumentData & WithId>(
     collectionName: string,
     documentId: string,
     enabled: boolean = true
@@ -81,7 +87,10 @@ export function useRealtimeDocument<T extends DocumentData>(
             docRef,
             (snapshot) => {
                 if (snapshot.exists()) {
-                    setData({ id: snapshot.id, ...snapshot.data() } as T);
+                    setData({
+                        ...snapshot.data(),
+                        id: snapshot.id,
+                    } as T);
                 } else {
                     setData(null);
                 }
@@ -102,7 +111,7 @@ export function useRealtimeDocument<T extends DocumentData>(
 }
 
 // Helper hook for filtered queries
-export function useFilteredCollection<T extends DocumentData>(
+export function useFilteredCollection<T extends DocumentData & WithId>(
     collectionName: string,
     queryBuilder: (baseQuery: Query<T>) => Query<T>,
     enabled: boolean = true
@@ -125,9 +134,9 @@ export function useFilteredCollection<T extends DocumentData>(
             q,
             (snapshot) => {
                 const newData = snapshot.docs.map(doc => ({
-                    id: doc.id,
                     ...doc.data(),
-                })) as T[];
+                    id: doc.id,
+                }) as T);
                 setData(newData);
                 setLoading(false);
                 setError(null);
