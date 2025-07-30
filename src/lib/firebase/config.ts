@@ -7,15 +7,14 @@ import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
@@ -29,12 +28,12 @@ const functions = getFunctions(app);
 
 // Initialize Analytics only in browser environment and production
 let analytics = null;
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+if (typeof window !== 'undefined' && import.meta.env.PROD) {
     isSupported().then(yes => yes && (analytics = getAnalytics(app)));
 }
 
 // Connect to emulators in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
     console.log('Using Firebase Emulators');
     connectAuthEmulator(auth, 'http://localhost:9098');
     connectFirestoreEmulator(db, 'localhost', 8081);
@@ -42,5 +41,5 @@ if (process.env.NODE_ENV === 'development') {
     connectFunctionsEmulator(functions, 'localhost', 5001);
 }
 
-export { app, auth, db, storage, functions, analytics }; 
+export { app, auth, db, storage, functions, analytics };
 

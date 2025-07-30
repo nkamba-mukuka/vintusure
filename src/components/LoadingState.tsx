@@ -1,37 +1,17 @@
-'use client';
-
 import { Loader2Icon } from 'lucide-react';
 
 interface LoadingStateProps {
-    size?: 'sm' | 'md' | 'lg';
-    fullScreen?: boolean;
     message?: string;
+    className?: string;
 }
 
-const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
-};
-
-export default function LoadingState({
-    size = 'md',
-    fullScreen = false,
-    message = 'Loading...',
-}: LoadingStateProps) {
-    const containerClasses = fullScreen
-        ? 'fixed inset-0 bg-white/80 backdrop-blur-sm'
-        : 'w-full';
-    const heightClasses = fullScreen ? 'h-screen' : 'h-64';
-
+export default function LoadingState({ message = 'Loading...', className = '' }: LoadingStateProps) {
     return (
-        <div className={containerClasses}>
-            <div className={`${heightClasses} flex flex-col items-center justify-center`}>
-                <Loader2Icon className={`${sizeClasses[size]} animate-spin text-gray-900`} />
-                {message && (
-                    <p className="mt-4 text-sm text-gray-500">{message}</p>
-                )}
-            </div>
+        <div className={`flex flex-col items-center justify-center min-h-[200px] ${className}`}>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            {message && (
+                <p className="mt-4 text-sm text-gray-600">{message}</p>
+            )}
         </div>
-    );
+    )
 } 

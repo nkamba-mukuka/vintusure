@@ -1,8 +1,6 @@
-'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useNavigate, Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 
@@ -11,7 +9,7 @@ export default function ForgotPasswordForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const router = useRouter();
+    const router = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,7 +44,7 @@ export default function ForgotPasswordForm() {
                     </div>
                 </div>
                 <button
-                    onClick={() => router.push('/login')}
+                    onClick={() => router('/login')}
                     className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                 >
                     Return to login
@@ -92,7 +90,7 @@ export default function ForgotPasswordForm() {
 
             <div className="text-sm text-center">
                 <Link
-                    href="/login"
+                    to="/login"
                     className="font-medium text-indigo-600 hover:text-indigo-500"
                 >
                     Back to login

@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -7,7 +6,7 @@ import { PolicyFormData, policyFormSchema } from '@/lib/validations/policy';
 import { useQuery } from '@tanstack/react-query';
 import { customerService } from '@/lib/services/customerService';
 import { policyService } from '@/lib/services/policyService';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,12 +44,12 @@ import {
 } from '@/components/ui/card';
 
 interface PolicyFormProps {
-    initialData?: Partial<PolicyFormData>;
+    initialData?: Partial<PolicyFormData & { id: string }>;
     customerId?: string;
 }
 
 export default function PolicyForm({ initialData, customerId }: PolicyFormProps) {
-    const router = useRouter();
+    const router = useNavigate();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [premiumBreakdown, setPremiumBreakdown] = useState<PremiumBreakdown | null>(null);
@@ -66,6 +65,8 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
         defaultValues: {
             customerId: customerId || initialData?.customerId || '',
             type: initialData?.type || 'comprehensive',
+            status: initialData?.status || 'pending',
+            policyNumber: initialData?.policyNumber || undefined,
             vehicle: {
                 registrationNumber: initialData?.vehicle?.registrationNumber || '',
                 make: initialData?.vehicle?.make || '',
@@ -100,14 +101,18 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                     description: 'The policy has been updated successfully.',
                 });
             } else {
-                await policyService.create(data, userId);
+                await policyService.create({
+                    ...data,
+                    status: 'pending',
+                    policyNumber: `POL-${Date.now()}`,
+                }, userId);
                 toast({
                     title: 'Policy created',
                     description: 'The policy has been created successfully.',
                 });
             }
 
-            router.push('/policies');
+            router('/policies');
         } catch (error) {
             console.error('Error saving policy:', error);
             toast({
@@ -367,7 +372,7 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                         mode="single"
                                                         selected={field.value}
                                                         onSelect={field.onChange}
-                                                        disabled={(date) =>
+                                                        disabled={(date: Date) =>
                                                             date < new Date() || date > new Date('2100-01-01')
                                                         }
                                                         initialFocus
@@ -408,7 +413,7 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                         mode="single"
                                                         selected={field.value}
                                                         onSelect={field.onChange}
-                                                        disabled={(date) =>
+                                                        disabled={(date: Date) =>
                                                             date <= new Date() || date > new Date('2100-01-01')
                                                         }
                                                         initialFocus
@@ -513,7 +518,7 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => router.back()}
+                            onClick={() => router('/policies')}
                             disabled={isSubmitting}
                         >
                             Cancel

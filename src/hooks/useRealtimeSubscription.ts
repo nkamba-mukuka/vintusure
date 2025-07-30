@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useState } from 'react';
 import {
@@ -11,6 +10,7 @@ import {
     doc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { useToast } from '@/components/ui/use-toast';
 
 // Base type for documents with ID
 type WithId = { id: string };
@@ -25,9 +25,10 @@ export function useRealtimeCollection<T extends DocumentData & WithId>(
     constraints: QueryConstraint[] = [],
     enabled: boolean = true
 ) {
-    const [data, setData] = useState<CollectionData<T>>({});
+    const [data, setData] = useState<T[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!enabled) {
@@ -35,32 +36,34 @@ export function useRealtimeCollection<T extends DocumentData & WithId>(
             return;
         }
 
-        setLoading(true);
-        const q = query(collection(db, collectionName), ...constraints);
+        const collectionRef = collection(db, collectionName);
+        const q = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
 
         const unsubscribe = onSnapshot(
             q,
             (snapshot) => {
-                const newData: CollectionData<T> = {};
-                snapshot.forEach((doc) => {
-                    newData[doc.id] = {
-                        ...doc.data(),
-                        id: doc.id,
-                    } as T;
-                });
-                setData(newData);
+                const items = snapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as T[];
+                setData(items);
                 setLoading(false);
                 setError(null);
             },
             (error) => {
-                console.error(`Error in ${collectionName} subscription:`, error);
-                setError(error as Error);
+                console.error(`Error fetching collection ${collectionName}:`, error);
+                setError(error);
                 setLoading(false);
+                toast({
+                    title: 'Error',
+                    description: `Failed to fetch data: ${error.message}`,
+                    variant: 'destructive',
+                });
             }
         );
 
         return () => unsubscribe();
-    }, [collectionName, enabled, JSON.stringify(constraints)]);
+    }, [collectionName, constraints, enabled, toast]);
 
     return { data, loading, error };
 }
@@ -73,24 +76,21 @@ export function useRealtimeDocument<T extends DocumentData & WithId>(
     const [data, setData] = useState<T | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
-        if (!enabled || !documentId) {
+        if (!enabled) {
             setLoading(false);
             return;
         }
 
-        setLoading(true);
         const docRef = doc(db, collectionName, documentId);
 
         const unsubscribe = onSnapshot(
             docRef,
-            (snapshot) => {
-                if (snapshot.exists()) {
-                    setData({
-                        ...snapshot.data(),
-                        id: snapshot.id,
-                    } as T);
+            (doc) => {
+                if (doc.exists()) {
+                    setData({ id: doc.id, ...doc.data() } as T);
                 } else {
                     setData(null);
                 }
@@ -98,14 +98,19 @@ export function useRealtimeDocument<T extends DocumentData & WithId>(
                 setError(null);
             },
             (error) => {
-                console.error(`Error in ${collectionName}/${documentId} subscription:`, error);
-                setError(error as Error);
+                console.error(`Error fetching document ${documentId}:`, error);
+                setError(error);
                 setLoading(false);
+                toast({
+                    title: 'Error',
+                    description: `Failed to fetch document: ${error.message}`,
+                    variant: 'destructive',
+                });
             }
         );
 
         return () => unsubscribe();
-    }, [collectionName, documentId, enabled]);
+    }, [collectionName, documentId, enabled, toast]);
 
     return { data, loading, error };
 }
@@ -126,7 +131,6 @@ export function useFilteredCollection<T extends DocumentData & WithId>(
             return;
         }
 
-        setLoading(true);
         const baseQuery = collection(db, collectionName) as Query<T>;
         const q = queryBuilder(baseQuery);
 

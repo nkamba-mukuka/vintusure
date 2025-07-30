@@ -1,25 +1,74 @@
+import { db } from '@/lib/firebase/config';
 import {
     collection,
-    doc,
-    getDoc,
-    getDocs,
-    addDoc,
-    updateDoc,
-    deleteDoc,
     query,
     where,
     orderBy,
     limit,
     startAfter,
+    getDocs,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
     serverTimestamp,
-    QueryConstraint,
+    getCountFromServer,
+    addDoc,
+    Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-import { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
+import type { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
 
 const COLLECTION_NAME = 'customers';
+const PAGE_SIZE = 10;
+
+function convertTimestampsToDate(data: any): any {
+    if (data instanceof Timestamp) {
+        return data.toDate();
+    }
+    if (Array.isArray(data)) {
+        return data.map(convertTimestampsToDate);
+    }
+    if (data && typeof data === 'object') {
+        return Object.keys(data).reduce((result, key) => {
+            result[key] = convertTimestampsToDate(data[key]);
+            return result;
+        }, {} as any);
+    }
+    return data;
+}
 
 export const customerService = {
+    async list(filters: CustomerFilters = {}) {
+        const { searchTerm, sortBy = 'firstName', sortOrder = 'asc' } = filters;
+        const customersRef = collection(db, COLLECTION_NAME);
+
+        let q = query(customersRef, orderBy(sortBy, sortOrder), limit(PAGE_SIZE));
+
+        if (searchTerm) {
+            q = query(q, where('searchableText', '>=', searchTerm.toLowerCase()));
+        }
+
+        const [snapshot, countSnapshot] = await Promise.all([
+            getDocs(q),
+            getCountFromServer(customersRef)
+        ]);
+
+        const customers = snapshot.docs.map(doc => {
+            const data = convertTimestampsToDate(doc.data());
+            return {
+                id: doc.id,
+                ...data,
+            } as Customer;
+        });
+
+        return {
+            customers,
+            total: countSnapshot.data().count,
+            lastDoc: snapshot.docs[snapshot.docs.length - 1]
+        };
+    },
+
     async create(data: CustomerFormData, userId: string): Promise<Customer> {
         const customerData = {
             ...data,
@@ -30,9 +79,11 @@ export const customerService = {
         };
 
         const docRef = await addDoc(collection(db, COLLECTION_NAME), customerData);
+        const docSnap = await getDoc(docRef);
+
         return {
-            ...customerData,
             id: docRef.id,
+            ...convertTimestampsToDate(docSnap.data()),
         } as Customer;
     },
 
@@ -59,50 +110,8 @@ export const customerService = {
 
         return {
             id: docSnap.id,
-            ...docSnap.data(),
+            ...convertTimestampsToDate(docSnap.data()),
         } as Customer;
-    },
-
-    async list(filters?: CustomerFilters, pageSize: number = 10, lastDoc?: any): Promise<{ customers: Customer[]; lastDoc: any }> {
-        const constraints: QueryConstraint[] = [];
-
-        if (filters?.status) {
-            constraints.push(where('status', '==', filters.status));
-        }
-
-        if (filters?.searchTerm) {
-            const searchLower = filters.searchTerm.toLowerCase();
-            constraints.push(
-                where('searchableFields', 'array-contains', searchLower)
-            );
-        }
-
-        if (filters?.sortBy) {
-            constraints.push(
-                orderBy(filters.sortBy, filters.sortOrder || 'asc')
-            );
-        } else {
-            constraints.push(orderBy('createdAt', 'desc'));
-        }
-
-        constraints.push(limit(pageSize));
-
-        if (lastDoc) {
-            constraints.push(startAfter(lastDoc));
-        }
-
-        const q = query(collection(db, COLLECTION_NAME), ...constraints);
-        const querySnapshot = await getDocs(q);
-
-        const customers = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as Customer[];
-
-        return {
-            customers,
-            lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1],
-        };
     },
 
     async setStatus(id: string, status: Customer['status']): Promise<void> {

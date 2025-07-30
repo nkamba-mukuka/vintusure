@@ -1,81 +1,79 @@
-'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthContext } from '@/contexts/AuthContext';
-import Link from 'next/link';
-import { FirebaseError } from 'firebase/app';
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuthContext } from '@/contexts/AuthContext'
+import { FirebaseError } from 'firebase/app'
 
 export default function LoginForm() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [formError, setFormError] = useState('');
-    const [isRedirecting, setIsRedirecting] = useState(false);
-    const router = useRouter();
-    const { signIn, error, user } = useAuthContext();
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+    const [formError, setFormError] = useState('')
+    const [isRedirecting, setIsRedirecting] = useState(false)
+    const navigate = useNavigate()
+    const { signIn, error: authError, user } = useAuthContext()
 
     // Monitor authentication state
     useEffect(() => {
         if (user && !isRedirecting) {
-            setIsRedirecting(true);
-            console.log('User authenticated, redirecting to dashboard...');
-            router.replace('/dashboard');
+            setIsRedirecting(true)
+            console.log('User authenticated, redirecting to dashboard...')
+            navigate('/dashboard', { replace: true })
         }
-    }, [user, router, isRedirecting]);
+    }, [user, navigate, isRedirecting])
 
     const getErrorMessage = (error: FirebaseError) => {
         switch (error.code) {
             case 'auth/invalid-email':
-                return 'Invalid email address format';
+                return 'Invalid email address format'
             case 'auth/user-disabled':
-                return 'This account has been disabled';
+                return 'This account has been disabled'
             case 'auth/user-not-found':
-                return 'No account found with this email';
+                return 'No account found with this email'
             case 'auth/wrong-password':
-                return 'Incorrect password';
+                return 'Incorrect password'
             case 'auth/too-many-requests':
-                return 'Too many failed attempts. Please try again later';
+                return 'Too many failed attempts. Please try again later'
             default:
-                return `Sign in error: ${error.code}`;
+                return `Sign in error: ${error.code}`
         }
-    };
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (isLoading || isRedirecting) return;
+        e.preventDefault()
+        if (isLoading || isRedirecting) return
 
-        setFormError('');
-        setIsLoading(true);
+        setFormError('')
+        setIsLoading(true)
 
         try {
-            console.log('Attempting to sign in...');
-            await signIn(email, password);
-            console.log('Sign in successful');
+            console.log('Attempting to sign in...')
+            await signIn(email, password)
+            console.log('Sign in successful')
         } catch (err) {
-            console.error('Login error:', err);
+            console.error('Login error:', err)
             if (err instanceof FirebaseError) {
-                setFormError(getErrorMessage(err));
+                setFormError(getErrorMessage(err))
             } else {
-                setFormError('An unexpected error occurred. Please try again.');
+                setFormError('An unexpected error occurred. Please try again.')
             }
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }
 
     if (isRedirecting) {
         return (
             <div className="min-h-[400px] flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
             </div>
-        );
+        )
     }
 
     return (
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-            {(formError || error) && (
+            {(formError || (authError && authError.message)) && (
                 <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-                    {formError || error}
+                    {formError || authError?.message}
                 </div>
             )}
 
@@ -127,7 +125,7 @@ export default function LoginForm() {
             <div className="flex items-center justify-between">
                 <div className="text-sm">
                     <Link
-                        href="/signup"
+                        to="/signup"
                         className="font-medium text-indigo-600 hover:text-indigo-500"
                     >
                         Create new account
@@ -135,7 +133,7 @@ export default function LoginForm() {
                 </div>
                 <div className="text-sm">
                     <Link
-                        href="/forgot-password"
+                        to="/forgot-password"
                         className="font-medium text-indigo-600 hover:text-indigo-500"
                     >
                         Forgot your password?
@@ -143,5 +141,5 @@ export default function LoginForm() {
                 </div>
             </div>
         </form>
-    );
+    )
 } 

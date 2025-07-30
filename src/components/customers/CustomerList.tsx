@@ -1,4 +1,3 @@
-'use client';
 
 import { Customer } from '@/types/customer';
 import {
@@ -12,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EditIcon, TrashIcon } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 
 interface CustomerListProps {
@@ -73,7 +72,7 @@ export default function CustomerList({
                                 {format(new Date(customer.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
-                                <Link href={`/customers/${customer.id}/edit`}>
+                                <Link to={`/customers/${customer.id}/edit`}>
                                     <Button variant="outline" size="sm">
                                         <EditIcon className="h-4 w-4" />
                                     </Button>

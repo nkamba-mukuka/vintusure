@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useEffect } from 'react';
 import { ClaimStatus, DamageType } from '@/types/policy';

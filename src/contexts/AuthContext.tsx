@@ -1,123 +1,122 @@
-'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/config';
-import { AuthContextType, UserProfile, UserRole } from '@/types/auth';
+import { createContext, useContext, useEffect, useState } from 'react'
+import {
+    User,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut as firebaseSignOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+} from 'firebase/auth'
+import { auth } from '@/lib/firebase/config'
+import { useToast } from '@/components/ui/use-toast'
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+    user: User | null
+    loading: boolean
+    error: Error | null
+    signIn: (email: string, password: string) => Promise<void>
+    signUp: (email: string, password: string) => Promise<void>
+    signOut: () => Promise<void>
+    resetPassword: (email: string) => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<Error | null>(null)
+    const { toast } = useToast()
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            setUser(user);
-            if (user) {
-                // Fetch user profile from Firestore
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', user.uid));
-                    if (userDoc.exists()) {
-                        setUserProfile(userDoc.data() as UserProfile);
-                    }
-                } catch (err) {
-                    console.error('Error fetching user profile:', err);
-                }
-            } else {
-                setUserProfile(null);
+        const unsubscribe = onAuthStateChanged(
+            auth,
+            (user) => {
+                setUser(user)
+                setLoading(false)
+            },
+            (error) => {
+                console.error('Auth state change error:', error)
+                setError(error)
+                setLoading(false)
             }
-            setLoading(false);
-        });
+        )
 
-        return () => unsubscribe();
-    }, []);
+        return () => unsubscribe()
+    }, [])
+
+    const handleAuthError = (error: Error) => {
+        console.error('Authentication error:', error)
+        setError(error)
+        toast({
+            title: 'Authentication Error',
+            description: error.message,
+            variant: 'destructive',
+        })
+    }
 
     const signIn = async (email: string, password: string) => {
         try {
-            setError(null);
-            const result = await signInWithEmailAndPassword(auth, email, password);
-            // Update last login
-            await setDoc(doc(db, 'users', result.user.uid), {
-                lastLogin: serverTimestamp()
-            }, { merge: true });
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred during sign in');
-            throw err;
+            setError(null)
+            await signInWithEmailAndPassword(auth, email, password)
+        } catch (error) {
+            handleAuthError(error as Error)
+            throw error
         }
-    };
+    }
 
-    const signUp = async (email: string, password: string, role: UserRole = 'agent') => {
+    const signUp = async (email: string, password: string) => {
         try {
-            setError(null);
-            const result = await createUserWithEmailAndPassword(auth, email, password);
-
-            // Create user profile in Firestore
-            await setDoc(doc(db, 'users', result.user.uid), {
-                uid: result.user.uid,
-                email: result.user.email,
-                role,
-                displayName: result.user.displayName,
-                createdAt: serverTimestamp(),
-                lastLogin: serverTimestamp()
-            });
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred during sign up');
-            throw err;
+            setError(null)
+            await createUserWithEmailAndPassword(auth, email, password)
+        } catch (error) {
+            handleAuthError(error as Error)
+            throw error
         }
-    };
+    }
 
-    const logout = async () => {
+    const signOut = async () => {
         try {
-            setError(null);
-            await signOut(auth);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred during logout');
-            throw err;
+            setError(null)
+            await firebaseSignOut(auth)
+        } catch (error) {
+            handleAuthError(error as Error)
+            throw error
         }
-    };
+    }
 
     const resetPassword = async (email: string) => {
         try {
-            setError(null);
-            await sendPasswordResetEmail(auth, email);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred during password reset');
-            throw err;
+            setError(null)
+            await sendPasswordResetEmail(auth, email)
+            toast({
+                title: 'Password Reset Email Sent',
+                description: 'Check your email for password reset instructions.',
+            })
+        } catch (error) {
+            handleAuthError(error as Error)
+            throw error
         }
-    };
+    }
 
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                userProfile,
-                loading,
-                error,
-                signIn,
-                signUp,
-                logout,
-                resetPassword
-            }}
-        >
-            {loading ? (
-                <div className="min-h-screen flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-                </div>
-            ) : (
-                children
-            )}
-        </AuthContext.Provider>
-    );
+    const value = {
+        user,
+        loading,
+        error,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+    }
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuthContext() {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuthContext must be used within an AuthProvider');
+    const context = useContext(AuthContext)
+    if (!context) {
+        throw new Error('useAuthContext must be used within an AuthProvider')
     }
-    return context;
+    return context
 } 
