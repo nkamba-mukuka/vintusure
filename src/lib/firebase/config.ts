@@ -1,4 +1,4 @@
-'use client';
+
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
@@ -43,3 +43,4 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export { app, auth, db, storage, functions, analytics }; 
+
