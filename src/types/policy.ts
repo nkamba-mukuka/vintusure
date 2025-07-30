@@ -1,41 +1,41 @@
-export type PolicyType = 'comprehensive' | 'third_party';
-export type PolicyStatus = 'active' | 'expired' | 'cancelled' | 'pending';
+import { Timestamp } from 'firebase/firestore'
+
+export type PolicyType = 'comprehensive' | 'third_party'
+export type PolicyStatus = 'active' | 'expired' | 'cancelled' | 'pending'
+export type PaymentStatus = 'pending' | 'paid' | 'partial'
+export type VehicleUsage = 'private' | 'commercial'
 
 export interface Vehicle {
-    registrationNumber: string;
-    make: string;
-    model: string;
-    year: number;
-    engineNumber: string;
-    chassisNumber: string;
-    value: number;
-    usage: 'private' | 'commercial';
+    registrationNumber: string
+    make: string
+    model: string
+    year: number
+    engineNumber: string
+    chassisNumber: string
+    value: number
+    usage: VehicleUsage
+}
+
+export interface Premium {
+    amount: number
+    currency: string
+    paymentStatus: PaymentStatus
+    paymentMethod: string
 }
 
 export interface Policy {
-    id: string;
-    policyNumber: string;
-    customerId: string;
-    type: PolicyType;
-    status: PolicyStatus;
-    vehicle: Vehicle;
-    startDate: Date;
-    endDate: Date;
-    premium: {
-        amount: number;
-        currency: string;
-        paymentStatus: 'paid' | 'pending' | 'partial';
-        paymentMethod?: string;
-    };
-    documents: {
-        id: string;
-        type: string;
-        url: string;
-        uploadedAt: Date;
-    }[];
-    createdAt: Date;
-    updatedAt: Date;
-    createdBy: string;
+    id: string
+    type: PolicyType
+    status: PolicyStatus
+    customerId: string
+    policyNumber: string
+    vehicle: Vehicle
+    startDate: Timestamp
+    endDate: Timestamp
+    premium: Premium
+    createdAt: Timestamp
+    updatedAt: Timestamp
+    createdBy: string
 }
 
 export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'documents'> {
@@ -43,14 +43,12 @@ export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updat
 }
 
 export interface PolicyFilters {
-    searchTerm?: string;
-    status?: PolicyStatus;
-    type?: PolicyType;
-    customerId?: string;
-    startDate?: Date;
-    endDate?: Date;
-    sortBy?: keyof Policy;
-    sortOrder?: 'asc' | 'desc';
+    searchTerm?: string
+    status?: PolicyStatus
+    type?: PolicyType
+    customerId?: string
+    startDate?: Date
+    endDate?: Date
 }
 
 export interface PolicyListResponse {

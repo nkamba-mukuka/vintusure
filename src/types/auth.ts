@@ -1,27 +1,20 @@
-import { User } from 'firebase/auth';
+import { User } from 'firebase/auth'
+import { Timestamp } from 'firebase/firestore'
 
-export type UserRole = 'admin' | 'agent';
+export type UserRole = 'admin' | 'agent' | 'customer'
 
 export interface UserProfile {
-    uid: string;
-    email: string | null;
-    role: UserRole;
-    displayName: string | null;
-    createdAt: Date;
-    lastLogin: Date;
+    uid: string
+    email: string | null
+    displayName: string | null
+    role: UserRole
+    createdAt: Timestamp
+    lastLogin: Timestamp
+    phoneNumber?: string | null
+    photoURL?: string | null
 }
 
-export interface AuthUser extends User {
-    role?: UserRole;
-}
-
-export interface AuthContextType {
-    user: AuthUser | null;
-    userProfile: UserProfile | null;
-    loading: boolean;
-    error: string | null;
-    signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, role?: UserRole) => Promise<void>;
-    logout: () => Promise<void>;
-    resetPassword: (email: string) => Promise<void>;
+export interface AuthError {
+    code: string
+    message: string
 } 

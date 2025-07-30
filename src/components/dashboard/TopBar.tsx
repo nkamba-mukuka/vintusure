@@ -1,4 +1,3 @@
-'use client';
 
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Bell, User } from 'lucide-react';

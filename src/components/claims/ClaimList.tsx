@@ -1,4 +1,3 @@
-'use client';
 
 import { Claim, ClaimStatus } from '@/types/policy';
 import {
@@ -12,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EditIcon, FileIcon, EyeIcon } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 
 interface ClaimListProps {
@@ -70,7 +69,7 @@ export default function ClaimList({
                         <TableRow key={claim.id}>
                             <TableCell>
                                 <Link
-                                    href={`/claims/${claim.id}`}
+                                    to={`/claims/${claim.id}`}
                                     className="text-indigo-600 hover:text-indigo-900"
                                 >
                                     {claim.id.slice(0, 8).toUpperCase()}
@@ -78,7 +77,7 @@ export default function ClaimList({
                             </TableCell>
                             <TableCell>
                                 <Link
-                                    href={`/policies/${claim.policyId}`}
+                                    to={`/policies/${claim.policyId}`}
                                     className="text-indigo-600 hover:text-indigo-900"
                                 >
                                     View Policy
@@ -91,7 +90,7 @@ export default function ClaimList({
                                 {damageTypeLabels[claim.damageType]}
                             </TableCell>
                             <TableCell>
-                                <Badge variant={statusColors[claim.status]}>
+                                <Badge variant={getStatusVariant(claim.status)}>
                                     {claim.status}
                                 </Badge>
                             </TableCell>
@@ -110,19 +109,19 @@ export default function ClaimList({
                                 )}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
-                                <Link href={`/claims/${claim.id}`}>
+                                <Link to={`/claims/${claim.id}`}>
                                     <Button variant="outline" size="sm">
                                         <EyeIcon className="h-4 w-4" />
                                     </Button>
                                 </Link>
                                 {claim.status === 'Submitted' && (
-                                    <Link href={`/claims/${claim.id}/edit`}>
+                                    <Link to={`/claims/${claim.id}/edit`}>
                                         <Button variant="outline" size="sm">
                                             <EditIcon className="h-4 w-4" />
                                         </Button>
                                     </Link>
                                 )}
-                                <Link href={`/claims/${claim.id}/documents`}>
+                                <Link to={`/claims/${claim.id}/documents`}>
                                     <Button variant="outline" size="sm">
                                         <FileIcon className="h-4 w-4" />
                                     </Button>
@@ -159,4 +158,17 @@ export default function ClaimList({
             )}
         </div>
     );
+}
+
+function getStatusVariant(status: string): "default" | "destructive" | "outline" | "secondary" {
+    switch (status.toLowerCase()) {
+        case 'approved':
+            return 'default'
+        case 'rejected':
+            return 'destructive'
+        case 'pending':
+            return 'secondary'
+        default:
+            return 'outline'
+    }
 } 

@@ -1,309 +1,129 @@
-# VintuSure Frontend Implementation Plan
+# VintuSure Insurance Management System - TODO List
 
-## Project Overview
-VintuSure is a modern Motor Third Party Insurance management system built with Firebase and Vertex AI integration. The system handles the complete lifecycle of insurance policies in Zambia.
+## Completed ✅
+1. Project Setup
+   - [x] Initialize Vite + React project
+   - [x] Configure TypeScript
+   - [x] Set up Tailwind CSS + shadcn/ui
+   - [x] Configure Firebase
+   - [x] Set up React Router
+   - [x] Configure TanStack Query
+   - [x] Set up development environment
 
-## Tech Stack
-- Next.js with TypeScript
-- Tailwind CSS + shadcn/ui
-- Firebase (Auth, Firestore, Storage, Functions)
-- TanStack Query for Firebase data management
-- React Hook Form + Zod
-- Storybook
+2. Authentication
+   - [x] Implement email/password auth
+   - [x] Add password reset
+   - [x] Set up protected routes with React Router
+   - [x] Add auth context
+   - [x] Add toast notifications
 
-## Development Strategy
-1. Build UI components and integrate with Firebase
-2. Implement Firebase Authentication and role-based access
-3. Set up Firestore collections and queries
-4. Implement Cloud Storage for documents
-5. Later: Integrate Vertex AI for intelligent features
+3. Policy Management
+   - [x] Create policy form with React Hook Form + Zod
+   - [x] Implement policy list with TanStack Query
+   - [x] Add policy details view
+   - [x] Add policy document upload
+   - [x] Implement premium calculator
 
-## Current Progress
+4. Customer Management
+   - [x] Create customer form
+   - [x] Implement customer list
+   - [x] Add customer details view
+   - [x] Add customer search
 
-### Milestone 1 Checklist Status:
-✅ Project initialization
-✅ Basic directory structure
-✅ Initial Firebase configuration
-✅ Basic authentication setup
-⏳ Authentication implementation in progress
-❌ Firestore collections setup pending
+5. Claims Management
+   - [x] Create claim form
+   - [x] Implement claim list
+   - [x] Add claim details view
+   - [x] Add claim document upload
 
-### Documentation Status:
-✅ Project overview
-✅ Technical documentation
-✅ Frontend planning
-❌ API documentation pending
+6. Document Management
+   - [x] Set up Firebase Storage
+   - [x] Implement document upload
+   - [x] Add document type categorization
+   - [x] Add document list view
 
-### Code Quality:
-✅ ESLint setup
-✅ TypeScript configuration
-❌ Test setup pending
-❌ Security review pending
+## In Progress 🚧
+1. Testing
+   - [ ] Set up Vitest environment
+   - [ ] Add React Testing Library component tests
+   - [ ] Add service tests
+   - [ ] Add integration tests
 
-## Workload Division
+2. Performance
+   - [ ] Implement proper Firestore indexing
+   - [ ] Add data pagination with TanStack Query
+   - [ ] Optimize image uploads
+   - [ ] Add caching strategies
 
-### `kukabranch` Tasks (Firebase Integration & Core Logic)
+3. Security
+   - [ ] Set up Firestore security rules
+   - [ ] Add input sanitization
+   - [ ] Implement file upload restrictions
+   - [ ] Add rate limiting
 
-#### Milestone 1: Firebase Setup & Authentication ✅
-- [x] Initialize Next.js project with TypeScript
-- [x] Set up project structure
-- [x] Configure ESLint and TypeScript
-- [x] Firebase project configuration
-  - [x] Create Firebase project in console
-  - [x] Initialize Firebase in app
-  - [x] Configure Analytics
-  - [x] Set up basic services (Auth, Firestore, Storage, Functions)
-  - [x] Configure Firebase Hosting
-  - [x] Set up deployment scripts
-- [x] Initial authentication setup
-  - [x] Basic auth context
-  - [x] Auth hooks
-  - [x] Protected routes middleware
-- [x] Authentication UI components
-  - [x] Login form
-  - [x] Signup form
-  - [x] Password reset form
-- [x] Complete authentication implementation
-  - [x] Login flow
-  - [x] Signup flow
-  - [x] Password reset flow
-  - [x] Role-based access (Admin/Agent)
-  - [x] Protected routes
-- [x] Set up Firestore collections:
-  ```
-  - users (with roles)
-  - customers (structure ready)
-  - policies (structure ready)
-  - claims (structure ready)
-  - documents (structure ready)
-  ```
+## Upcoming 📅
+1. Features
+   - [ ] Add real-time updates with Firebase
+   - [ ] Implement offline support
+   - [ ] Add bulk operations
+   - [ ] Add export functionality
 
-#### Milestone 2: Core Data Management
-- [x] TanStack Query setup with Firebase
-- [x] Implement Firestore CRUD operations:
-  - [x] Customer management service
-  - [x] Policy operations
-  - [x] Claims processing
-  - [x] Document storage
-- [x] Cloud Functions integration:
-  - [x] Premium calculation
-  - [x] Claim notifications
-  - [x] Policy expiry alerts
+2. UI/UX
+   - [ ] Add dark mode with Tailwind
+   - [ ] Improve mobile responsiveness
+   - [ ] Add more animations
+   - [ ] Improve error messages
 
-#### Claims Management Implementation ✅
-- [x] Claims data types and interfaces
-- [x] Claims service with Firestore
-- [x] Claims list page
-  - [x] Claims table with filters
-  - [x] Status updates
-  - [x] Quick actions
-- [x] Claim submission form
-  - [x] Policy selection
-  - [x] Incident details
-  - [x] Location picker
-  - [x] Document upload
-- [x] Claim review interface
-  - [x] Claim details view
-  - [x] Document preview
-  - [x] Approval/Rejection flow
-  - [x] Amount adjustment
-- [x] Claims notifications
-  - [x] Status updates
-  - [x] New claim alerts
-  - [x] Document requests
+3. DevOps
+   - [ ] Set up CI/CD pipeline with Vite build
+   - [ ] Add automated testing
+   - [ ] Configure production monitoring
+   - [ ] Add error tracking
 
-#### Premium Calculation Implementation ✅
-- [x] Cloud Function interface setup
-- [x] Premium calculation form
-  - [x] Vehicle details input
-  - [x] Usage type selection
-  - [x] Coverage options
-- [x] Premium breakdown display
-  - [x] Base premium
-  - [x] Taxes and fees
-  - [x] Total calculation
-- [x] Integration with policy form
-  - [x] Auto-calculation on input
-  - [x] Manual recalculation
-  - [x] Save calculation history
+4. Documentation
+   - [ ] Add API documentation
+   - [ ] Create user guide
+   - [ ] Add component documentation
+   - [ ] Create deployment guide
 
-#### Customer Management Implementation ✅
-- [x] Customer data types and interfaces
-- [x] Customer service with Firestore
-- [x] Customer list page
-- [x] Customer filters
-- [x] Basic dashboard layout
-  - [x] Sidebar navigation
-  - [x] Top bar with user menu
-  - [x] Protected routes
+## Notes
+- Successfully migrated to Vite + React
+- Using React Router for client-side routing
+- Firebase integration working with emulators
+- Form validation using Zod implemented
+- Toast notifications added for better UX
 
-#### Policy Management Implementation ✅
-- [x] Policy data types and interfaces
-- [x] Policy service with Firestore
-- [x] Policy list page
-- [x] Policy filters
-  - [x] Status filter
-  - [x] Type filter
-  - [x] Date range filter
-- [x] Policy form (add/edit)
-- [x] Policy details page
-- [x] Document upload
-  - [x] Firebase Storage integration
-  - [x] Document upload component
-  - [x] Document list and management
+## Known Issues
+1. Performance
+   - Large policy lists need pagination with TanStack Query
+   - Image uploads need optimization
+   - Some components need memoization
 
-#### Milestone 3: Advanced Features
-- [x] Real-time updates configuration
-  - [x] Collection subscriptions
-  - [x] Document subscriptions
-  - [x] Filtered queries
-- [x] Error handling
-  - [x] Error boundary component
-  - [x] Service error handling
-  - [x] Form validation errors
-- [x] Loading state management
-  - [x] Loading component
-  - [x] Skeleton loaders
-  - [x] Progress indicators
+2. UX
+   - Form error messages need improvement
+   - Loading states could be more consistent
+   - Mobile navigation needs refinement
 
-### `mapalobranch` Tasks (UI Components & Pages)
+3. Technical Debt
+   - Some components need better type definitions
+   - Error handling could be more consistent
+   - Test coverage needs improvement with Vitest
 
-#### Milestone 1: Core UI Components
-- [ ] Base components (shadcn/ui integration)
-  - [ ] Buttons
-  - [ ] Input fields
-  - [ ] Cards
-  - [ ] Tables
-- [ ] Navigation components
-  - [ ] Sidebar
-  - [ ] Topbar
-  - [ ] Mobile responsive menu
-- [ ] Theme implementation
-  - [ ] Nude color palette
-  - [ ] Typography
-  - [ ] Spacing system
+## Next Steps
+1. Immediate
+   - Add missing Vitest tests
+   - Improve error handling
+   - Optimize data fetching with TanStack Query
+   - Add proper documentation
 
-#### Milestone 2: Feature Pages
-- [x] Basic login page structure
-- [ ] Complete authentication pages
-  - [ ] Login functionality
-  - [ ] Signup
-  - [ ] Password reset
-- [ ] Dashboard
-  - [ ] Stats overview
-  - [ ] Quick actions
-- [ ] Customer management
-  - [ ] Customer list
-  - [ ] Add/Edit forms
-- [ ] Policy management
-  - [ ] Policy list
-  - [ ] Issue new policy
-  - [ ] Policy details
-- [ ] Claims interface
-  - [ ] Claims list
-  - [ ] Submit claim
-  - [ ] Claim details
-- [ ] Document management
-  - [ ] Upload interface
-  - [ ] Document list
-  - [ ] Preview/download
+2. Short Term
+   - Implement real-time updates with Firebase
+   - Add offline support
+   - Improve mobile experience
+   - Add dark mode with Tailwind
 
-#### Milestone 3: UI Polish & Documentation
-- [ ] Responsive design implementation
-- [ ] Loading states & animations
-- [ ] Toast notifications
-- [ ] Storybook documentation
-- [ ] Component testing
-
-### Shared Responsibilities (Final Phase)
-- [ ] Integration testing
-- [ ] Performance optimization
-- [ ] Cross-browser testing
-- [ ] Documentation
-- [ ] Deployment preparation
-
-## Firebase Collection Structure
-```
-src/
-├── lib/
-│   ├── firebase/      [✅ Initial setup]
-│   │   ├── auth.ts    [✅ Created]
-│   │   ├── firestore.ts
-│   │   ├── storage.ts
-│   │   └── functions.ts
-│   └── utils/
-│       ├── permissions.ts
-│       └── formatters.ts
-├── types/
-│   └── index.ts       (Firestore document interfaces)
-└── components/
-    └── firebase/      (Firebase-specific components)
-```
-
-## Important Considerations
-
-### 1. Firebase Security
-- [x] Proper security rules for Firestore
-- [x] Storage access control
-- [ ] Role-based access implementation
-- [x] API key protection
-
-### 2. Data Structure
-- [ ] Efficient Firestore queries
-- [ ] Proper indexing
-- [ ] Data validation
-- [ ] Real-time updates optimization
-
-### 3. Performance
-- [ ] Implement proper caching
-- [ ] Optimize Firebase reads/writes
-- [ ] Lazy loading for large collections
-- [ ] Efficient file uploads
-
-### 4. Error Handling
-- [x] Basic error handling setup
-- [ ] Firebase operation errors
-- [ ] Network issues
-- [ ] Authentication errors
-- [ ] File upload failures
-
-## Future Vertex AI Integration
-- [ ] Document embedding for RAG
-- [ ] Question answering system
-- [ ] Premium calculation assistance
-- [ ] Risk assessment
-
-## Deployment Checklist
-- [ ] Firebase hosting configuration
-- [ ] Environment variables setup
-- [ ] Build optimization
-- [ ] Security rules deployment
-- [ ] Cloud Functions deployment
-- [ ] Monitoring setup
-
-## Next Priority Tasks
-1. Add Unit Tests
-2. Implement E2E Tests
-3. Set up CI/CD Pipeline
-
-## Current Sprint Focus
-- Test coverage
-- CI/CD setup
-- Performance optimization
-
-## Milestone Completion Checklist
-Before marking a milestone as complete:
-- [ ] All tests passing
-- [ ] Documentation updated
-- [ ] Code reviewed
-- [ ] Security checked
-- [ ] Performance verified
-- [ ] No console logs
-- [ ] Error handling implemented
-
-## Deployment Status
-- [x] Firebase project created
-- [x] Hosting target configured (vintusure-cb8f0)
-- [x] Build scripts set up
-- [x] Deployment scripts added
-- [ ] CI/CD pipeline setup
+3. Long Term
+   - Set up CI/CD with Vite build
+   - Add analytics
+   - Implement monitoring
+   - Add automated testing with Vitest and Playwright

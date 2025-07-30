@@ -1,7 +1,6 @@
 {
     "hosting": {
-        "target": "vintusure-cb8f0",
-        "public": ".next",
+        "public": "dist",
         "ignore": [
             "firebase.json",
             "**/.*",
@@ -12,9 +11,6 @@
                 "source": "**",
                 "destination": "/index.html"
             }
-        ],
-        "predeploy": [
-            "npm run build"
         ]
     },
     "firestore": {
@@ -32,20 +28,13 @@
             "port": 8081
         },
         "hosting": {
-            "port": 5051
+            "port": 5001
         },
         "storage": {
             "port": 9198
         },
         "ui": {
-            "enabled": true,
-            "port": 4041
-        },
-        "hub": {
-            "port": 4401
-        },
-        "logging": {
-            "port": 4501
+            "enabled": true
         }
     }
 }
