@@ -1,0 +1,14 @@
+{
+    "projects": {
+        "default": "vintusure"
+    },
+    "targets": {
+        "vintusure": {
+            "hosting": {
+                "vintusure-cb8f0": [
+                    "vintusure-cb8f0"
+                ]
+            }
+        }
+    }
+}

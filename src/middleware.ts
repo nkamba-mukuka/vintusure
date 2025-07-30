@@ -1,31 +1,51 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+
+// Define paths that don't require authentication
+const publicPaths = ['/login', '/signup', '/forgot-password'];
+
+// Define paths that require specific roles
+const roleRestrictedPaths = {
+    admin: ['/admin', '/settings'],
+    agent: ['/dashboard', '/customers', '/policies', '/claims']
+};
 
 export function middleware(request: NextRequest) {
-    // Get the pathname of the request
     const path = request.nextUrl.pathname;
 
-    // Define public paths that don't require authentication
-    const isPublicPath = path === '/login' || path === '/signup';
+    // Allow public paths
+    if (publicPaths.includes(path)) {
+        return NextResponse.next();
+    }
 
-    // Get the token from the cookies
-    const token = request.cookies.get('token')?.value || '';
+    // Check for authentication
+    const session = cookies().get('session')?.value;
+    if (!session) {
+        return NextResponse.redirect(new URL('/login', request.url));
+    }
 
-    // Redirect logic
-    if (isPublicPath && token) {
-        // If user is authenticated and tries to access public path,
-        // redirect to dashboard
+    // Get user role from session (you'll need to implement this based on your token structure)
+    const userRole = getUserRoleFromSession(session);
+
+    // Check role-based access
+    if (path.startsWith('/admin') && userRole !== 'admin') {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    if (!isPublicPath && !token) {
-        // If user is not authenticated and tries to access protected path,
-        // redirect to login
-        return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.next();
+}
+
+function getUserRoleFromSession(session: string): string {
+    try {
+        // Decode the session token and extract role
+        // This is a placeholder - implement based on your token structure
+        return 'agent';
+    } catch (error) {
+        return 'agent';
     }
 }
 
-// Configure the paths that middleware will run on
 export const config = {
     matcher: [
         /*
