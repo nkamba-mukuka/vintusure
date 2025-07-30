@@ -36,9 +36,9 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development') {
     console.log('Using Firebase Emulators');
-    connectAuthEmulator(auth, 'http://localhost:9099');
-    connectFirestoreEmulator(db, 'localhost', 8080);
-    connectStorageEmulator(storage, 'localhost', 9199);
+    connectAuthEmulator(auth, 'http://localhost:9098');
+    connectFirestoreEmulator(db, 'localhost', 8081);
+    connectStorageEmulator(storage, 'localhost', 9198);
     connectFunctionsEmulator(functions, 'localhost', 5001);
 }
 
