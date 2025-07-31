@@ -3,51 +3,38 @@ import { Link } from 'react-router-dom'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Shield, Car, Users, FileText, TrendingUp } from 'lucide-react'
-import vintureImage from '@/assets/vinture.jpeg'
 import vintusureLogo from '@/assets/vintusure-logo.ico'
 
 export default function LandingPage() {
     const { user } = useAuthContext()
 
     return (
-        <div className="min-h-screen relative overflow-hidden">
-            {/* Background Image with Overlay */}
-            <div 
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{
-                    backgroundImage: `url(${vintureImage})`,
-                    filter: 'contrast(0.7) brightness(0.8)'
-                }}
-            />
-            
-            {/* Dark Overlay for Better Text Readability */}
-            <div className="absolute inset-0 bg-black/40" />
-            
+        <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#f3e2d6' }}>
             {/* Content */}
             <div className="relative z-10 min-h-screen flex flex-col">
                 {/* Navigation */}
                 <nav className="flex items-center justify-between p-6 lg:px-8">
                     <div className="flex items-center space-x-2">
                         <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
-                        <span className="text-2xl font-bold text-white">VintuSure</span>
+                        <span className="text-2xl font-bold text-gray-800">VintuSure</span>
                     </div>
                     
                     <div className="flex items-center space-x-4">
                         {user ? (
                             <Link to="/dashboard">
-                                <Button variant="default" className="bg-white text-gray-900 hover:bg-gray-100">
+                                <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700">
                                     Dashboard
                                 </Button>
                             </Link>
                         ) : (
                             <>
                                 <Link to="/login">
-                                    <Button variant="ghost" className="text-white hover:bg-white/10">
+                                    <Button variant="ghost" className="bg-gray-800 text-white hover:bg-gray-700">
                                         Sign In
                                     </Button>
                                 </Link>
                                 <Link to="/signup">
-                                    <Button variant="default" className="bg-white text-gray-900 hover:bg-gray-100">
+                                    <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700">
                                         Sign Up
                                     </Button>
                                 </Link>
@@ -60,22 +47,22 @@ export default function LandingPage() {
                 <div className="flex-1 flex items-center justify-center px-6 lg:px-8">
                     <div className="max-w-4xl mx-auto text-center">
                         <h1 className="text-4xl md:text-6xl font-bold mb-6" style={{ color: '#bb877a' }}>
-                            Drive with Confidence
+                            AI-Powered Insurance Intelligence
                         </h1>
-                        <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl mx-auto">
-                            Comprehensive insurance solutions for vintage and classic cars. 
-                            Protect your passion with VintuSure's specialized coverage.
+                        <p className="text-xl md:text-2xl mb-8 text-gray-700 max-w-2xl mx-auto">
+                            VintuSure is an AI-powered online platform that provides advanced RAG (Retrieval-Augmented Generation) 
+                            services to insurance companies, enhancing their knowledge management and customer support capabilities.
                         </p>
                         
                         {!user && (
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <Link to="/signup">
-                                    <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 px-8 py-3">
+                                    <Button size="lg" className="bg-gray-800 text-white hover:bg-gray-700 px-8 py-3">
                                         Get Started
                                     </Button>
                                 </Link>
-                                <Link to="/login">
-                                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-8 py-3">
+                                <Link to="#">
+                                    <Button size="lg" variant="outline" className="border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white px-8 py-3">
                                         Learn More
                                     </Button>
                                 </Link>
@@ -88,46 +75,46 @@ export default function LandingPage() {
                 <div className="py-16 px-6 lg:px-8">
                     <div className="max-w-6xl mx-auto">
                         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ color: '#bb877a' }}>
-                            Why Choose VintuSure?
+                            Why Choose VintuSure for Your Insurance Business?
                         </h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                             <div className="text-center">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 h-full">
-                                    <Shield className="h-12 w-12 mx-auto mb-4 text-white" />
-                                    <h3 className="text-xl font-semibold mb-2 text-white">Comprehensive Coverage</h3>
-                                    <p className="text-white/80">
-                                        Complete protection for your vintage vehicle with specialized policies.
+                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg">
+                                    <Shield className="h-12 w-12 mx-auto mb-4 text-gray-800" />
+                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">Advanced RAG Technology</h3>
+                                    <p className="text-gray-700">
+                                        State-of-the-art Retrieval-Augmented Generation for intelligent document processing and knowledge retrieval.
                                     </p>
                                 </div>
                             </div>
                             
                             <div className="text-center">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 h-full">
-                                    <Car className="h-12 w-12 mx-auto mb-4 text-white" />
-                                    <h3 className="text-xl font-semibold mb-2 text-white">Vintage Expertise</h3>
-                                    <p className="text-white/80">
-                                        Specialized knowledge in classic and vintage automobile insurance.
+                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg">
+                                    <Car className="h-12 w-12 mx-auto mb-4 text-gray-800" />
+                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">Multi-Insurance Support</h3>
+                                    <p className="text-gray-700">
+                                        Comprehensive platform supporting various insurance types and company needs.
                                     </p>
                                 </div>
                             </div>
                             
                             <div className="text-center">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 h-full">
-                                    <Users className="h-12 w-12 mx-auto mb-4 text-white" />
-                                    <h3 className="text-xl font-semibold mb-2 text-white">Expert Support</h3>
-                                    <p className="text-white/80">
-                                        24/7 customer support from vintage car insurance specialists.
+                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg">
+                                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-800" />
+                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">AI-Powered Assistance</h3>
+                                    <p className="text-gray-700">
+                                        Intelligent AI assistance for enhanced customer service and operational efficiency.
                                     </p>
                                 </div>
                             </div>
                             
                             <div className="text-center">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 h-full">
-                                    <TrendingUp className="h-12 w-12 mx-auto mb-4 text-white" />
-                                    <h3 className="text-xl font-semibold mb-2 text-white">Competitive Rates</h3>
-                                    <p className="text-white/80">
-                                        Affordable premiums tailored to vintage vehicle owners.
+                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg">
+                                    <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-800" />
+                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">Scalable Solutions</h3>
+                                    <p className="text-gray-700">
+                                        Flexible and scalable platform that grows with your insurance business needs.
                                     </p>
                                 </div>
                             </div>
@@ -136,13 +123,13 @@ export default function LandingPage() {
                 </div>
 
                 {/* Footer */}
-                <footer className="py-8 px-6 lg:px-8 border-t border-white/20">
+                <footer className="py-8 px-6 lg:px-8 border-t border-gray-300">
                     <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between">
                         <div className="flex items-center space-x-2 mb-4 md:mb-0">
                             <img src={vintusureLogo} alt="VintuSure Logo" className="h-6 w-6" />
-                            <span className="text-lg font-semibold text-white">VintuSure</span>
+                            <span className="text-lg font-semibold text-gray-800">VintuSure</span>
                         </div>
-                        <div className="text-white/60 text-sm">
+                        <div className="text-gray-600 text-sm">
                             © 2024 VintuSure. All rights reserved.
                         </div>
                     </div>
