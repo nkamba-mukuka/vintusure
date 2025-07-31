@@ -1,18 +1,31 @@
+import { GalleryVerticalEnd } from "lucide-react"
 import SignUpForm from '@/components/auth/SignUpForm'
+import vintusureLogo from '../../assets/vintusure-logo.jpeg'
 
 export default function SignUpPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-                <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                        Create your account
-                    </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
-                        VintuSure Insurance Management System
-                    </p>
+        <div className="grid min-h-svh lg:grid-cols-2">
+            <div className="flex flex-col gap-4 p-6 md:p-10">
+                <div className="flex justify-center gap-2 md:justify-start">
+                    <a href="#" className="flex items-center gap-2 font-medium" style={{ color: '#d5a294' }}>
+                        <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md" style={{ backgroundColor: '#d5a294' }}>
+                            <GalleryVerticalEnd className="size-4" />
+                        </div>
+                        VintuSure
+                    </a>
                 </div>
-                <SignUpForm />
+                <div className="flex flex-1 items-center justify-center">
+                    <div className="w-full max-w-xs">
+                        <SignUpForm />
+                    </div>
+                </div>
+            </div>
+            <div className="bg-muted relative hidden lg:block">
+                <img
+                    src={vintusureLogo}
+                    alt="VintuSure Logo"
+                    className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                />
             </div>
         </div>
     )
