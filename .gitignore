@@ -1,32 +1,54 @@
-# Logs
-logs
-*.log
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Production
+dist
+dist-ssr
+*.local
+
+# Misc
+.DS_Store
+*.pem
+.env
+.env.*
+!.env.example
+!.env.stage.example
+!.env.prod.example
+
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+firebase-debug.log*
+firestore-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Local
 *.local
+.local
 
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Environment variables
-.gitignore
-.env
-.env*
-!.env.example
-!.env.stage.example
-!.env.prod.example
+# Turbo
+.turbo
+
+# Firebase
+.firebase/
+*.cache
+
+# TypeScript
+*.tsbuildinfo
