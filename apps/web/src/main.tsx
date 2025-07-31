@@ -6,6 +6,14 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import App from './App'
 import './index.css'
 
+// Configure future flags for React Router v7
+const router = {
+    future: {
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+    }
+}
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -19,7 +27,7 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <BrowserRouter>
+        <BrowserRouter {...router}>
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
                     <App />
