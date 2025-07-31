@@ -1,91 +1,84 @@
 # VintuSure Insurance Management System
 
-A modern Motor Third Party Insurance management system built with Vite, React, and Firebase.
+An internal insurance platform with AI-powered document understanding to help agents and staff instantly find policy answers using RAG (Retrieval-Augmented Generation).
 
-## Getting Started
+## What's inside?
 
-First, install dependencies:
+This monorepo uses [PNPM](https://pnpm.io) as a package manager and [Turborepo](https://turbo.build/repo) as a build system.
 
-```bash
-npm install
-```
+### Apps and Packages
 
-Then, run the development server:
+- `apps/web`: React + Vite frontend application
+- `packages/shared`: Shared types and validation schemas
+- `packages/seeding`: Firestore seeding scripts
+- `packages/rag`: VintuSure AI components
+- `functions`: Firebase Cloud Functions & tRPC API
+- `docs`: Documentation
 
-```bash
-npm run dev
-```
+### Build
 
-For development with Firebase emulators:
-
-```bash
-npm run dev:emulator
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Features
-
-- React + TypeScript for type-safe development
-- Firebase Authentication
-- Firestore for data storage
-- Firebase Storage for file uploads
-- Firebase Functions for backend logic
-- TanStack Query for data management
-- React Router for navigation
-- Tailwind CSS + shadcn/ui for styling
-- Vite for fast development and optimized builds
-
-## Project Structure
-
-```
-src/
-├── components/     # Reusable UI components
-├── contexts/      # React context providers
-├── hooks/         # Custom React hooks
-├── lib/           # Utility functions and services
-├── routes/        # Route components
-├── types/         # TypeScript type definitions
-└── main.tsx       # Application entry point
-```
-
-## Deployment
-
-Build the application:
+To build all apps and packages, run the following command:
 
 ```bash
-npm run build
+pnpm build
 ```
 
-Deploy to Firebase:
+### Develop
+
+To develop all apps and packages, run the following command:
 
 ```bash
-npm run deploy
+pnpm dev
 ```
 
-## Environment Variables
+### Tech Stack
 
-Copy `.env.example` to `.env` and fill in the required values:
+- **Runtime:** Node (Firebase Gen 2 Cloud Functions)
+- **Language:** TypeScript (strict)
+- **Front‑end:** React + Vite
+- **UI kit:** shadcn/ui (Radix + Tailwind)
+- **Styling:** Tailwind CSS
+- **State / data fetching:** TanStack Query
+- **Forms & validation:** React Hook Form + Zod
+- **API layer:** tRPC
+- **Backend services:** Firebase Auth · Firestore · Storage · Functions
+- **RAG Integration:** VintuSure AI
+- **Package manager:** PNPM workspaces
+- **Build orchestration:** Turborepo
 
+### Utilities
+
+This monorepo has some additional tools:
+
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
+- [Husky](https://typicode.github.io/husky/) for Git hooks
+- [Commitlint](https://commitlint.js.org/) for commit message linting
+
+## Setup
+
+1. Install dependencies:
 ```bash
-cp .env.example .env
+pnpm install
 ```
 
-Required environment variables:
+2. Copy environment variables:
+```bash
+cp apps/web/.env.example apps/web/.env
+```
 
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
-- `VITE_FIREBASE_MEASUREMENT_ID`
+3. Start development server:
+```bash
+pnpm dev
+```
 
-## Learn More
+## Documentation
 
-- [Vite Documentation](https://vitejs.dev/guide/)
-- [React Documentation](https://react.dev/)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [TanStack Query Documentation](https://tanstack.com/query/latest)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-- [shadcn/ui Documentation](https://ui.shadcn.com/)
+- [Technical Documentation](./docs/TECHNICAL.md)
+- [API Documentation](./docs/API.md)
+- [Contributing Guide](./CONTRIBUTING.md)
+
+## License
+
+Private - For internal use only.
