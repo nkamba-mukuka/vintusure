@@ -48,26 +48,27 @@
 ## **2\. TECH STACK (GOLDEN PATH)**
 
 **Runtime:** Node (Firebase Gen 2 Cloud Functions)  
- **Language:** TypeScript (strict)  
- **Front‑end:** React \+ Vite  
- **UI kit:** shadcn/ui (Radix \+ Tailwind)  
- **Styling:** Tailwind CSS  
- **State / data fetching:** TanStack Query  
- **Forms & validation:** React Hook Form \+ Zod  
- **Shared validation:** Zod  
- **API layer:** tRPC  
- **Backend services:** Firebase Auth · Firestore · Storage · Functions  
- **RAG Integration:** VintuSure AI (embedding \+ vector search \+ LLM)  
- **Package manager / mono:** PNPM workspaces  
- **Build orchestration:** Turborepo  
- **Component workshop:** Storybook  
- **Unit / component tests:** Vitest \+ Testing Library  
- **Visual / interaction:** Storybook  
- **End‑to‑end tests:** Playwright  
- **Linting:** ESLint \+ perfectionist  
- **Formatting:** Prettier  
- **Type-safe env vars:** T3 Env  
- **CI / CD:** GitHub Actions
+**Language:** TypeScript (strict)  
+**Front‑end:** React + Vite  
+**UI kit:** shadcn/ui (Radix + Tailwind)  
+**Styling:** Tailwind CSS  
+**Routing:** React Router  
+**State / data fetching:** TanStack Query  
+**Forms & validation:** React Hook Form + Zod  
+**Shared validation:** Zod  
+**API layer:** tRPC  
+**Backend services:** Firebase Auth · Firestore · Storage · Functions  
+**RAG Integration:** VintuSure AI (embedding + vector search + LLM)  
+**Package manager / mono:** PNPM workspaces  
+**Build orchestration:** Turborepo  
+**Component workshop:** Storybook  
+**Unit / component tests:** Vitest + Testing Library  
+**Visual / interaction:** Storybook  
+**End‑to‑end tests:** Playwright  
+**Linting:** ESLint + perfectionist  
+**Formatting:** Prettier  
+**Type-safe env vars:** T3 Env  
+**CI / CD:** GitHub Actions
 
  
 
@@ -187,9 +188,9 @@
 
 | Env | URL / target | Notes |
 | ----- | ----- | ----- |
-| local | localhost:5173 | Firebase Emulator Suite \+ .env |
-| preview-\* | Firebase Hosting channels | PR-based deployments |
-| prod | [https://vintusure.web.app](https://vintusure.web.app/) | Internal-use deployment only |
+| local | localhost:5173 | Firebase Emulator Suite + .env |
+| preview-* | Firebase Hosting channels | PR-based deployments |
+| prod | https://vintusure.web.app | Internal-use deployment only |
 
 **Secrets:**
 
