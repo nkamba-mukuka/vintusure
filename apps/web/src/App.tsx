@@ -7,6 +7,7 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import LoadingState from '@/components/LoadingState'
 
 // Lazy load route components
+const LandingPage = React.lazy(() => import('@/components/landingpage/LandingPage'))
 const LoginPage = React.lazy(() => import('@/routes/auth/Login'))
 const SignUpPage = React.lazy(() => import('@/routes/auth/SignUp'))
 const ForgotPasswordPage = React.lazy(() => import('@/routes/auth/ForgotPassword'))
@@ -18,6 +19,7 @@ const PolicyDetailsPage = React.lazy(() => import('@/routes/dashboard/policies/P
 const PolicyDocumentsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDocuments'))
 const ClaimsPage = React.lazy(() => import('@/routes/dashboard/claims/Claims'))
 const CustomersPage = React.lazy(() => import('@/routes/dashboard/customers/Customers'))
+const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
 
 function ProtectedRoute() {
     const { user, loading } = useAuthContext()
@@ -38,6 +40,9 @@ export default function App() {
         <ErrorBoundary>
             <Suspense fallback={<LoadingState />}>
                 <Routes>
+                    {/* Landing Page */}
+                    <Route path="/" element={<LandingPage />} />
+
                     {/* Public Routes */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
@@ -58,14 +63,9 @@ export default function App() {
                             </Route>
                             <Route path="/claims" element={<ClaimsPage />} />
                             <Route path="/customers" element={<CustomersPage />} />
+                            <Route path="/rag-test" element={<RAGTestPage />} />
                         </Route>
                     </Route>
-
-                    {/* Redirect root to dashboard or login */}
-                    <Route
-                        path="/"
-                        element={<Navigate to="/dashboard" replace />}
-                    />
 
                     {/* 404 route */}
                     <Route

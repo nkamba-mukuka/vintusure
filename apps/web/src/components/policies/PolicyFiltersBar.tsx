@@ -27,13 +27,16 @@ interface PolicyFiltersBarProps {
 const policyTypes: PolicyType[] = ['comprehensive', 'third_party'];
 const policyStatuses: PolicyStatus[] = ['active', 'expired', 'cancelled', 'pending'];
 
+type FilterStatus = PolicyStatus | 'all';
+type FilterType = PolicyType | 'all';
+
 export default function PolicyFiltersBar({
     filters,
     onFilterChange,
 }: PolicyFiltersBarProps) {
     const [searchTerm, setSearchTerm] = useState(filters.searchTerm || '');
-    const [status, setStatus] = useState(filters.status || '');
-    const [type, setType] = useState(filters.type || '');
+    const [status, setStatus] = useState<FilterStatus>(filters.status || 'all');
+    const [type, setType] = useState<FilterType>(filters.type || 'all');
     const [startDate, setStartDate] = useState<Date | undefined>(filters.startDate);
     const [endDate, setEndDate] = useState<Date | undefined>(filters.endDate);
 
@@ -42,8 +45,8 @@ export default function PolicyFiltersBar({
             onFilterChange({
                 ...filters,
                 searchTerm,
-                status: status as PolicyStatus || undefined,
-                type: type as PolicyType || undefined,
+                status: status === 'all' ? undefined : status,
+                type: type === 'all' ? undefined : type,
                 startDate,
                 endDate,
             });
@@ -54,8 +57,8 @@ export default function PolicyFiltersBar({
 
     const handleReset = () => {
         setSearchTerm('');
-        setStatus('');
-        setType('');
+        setStatus('all');
+        setType('all');
         setStartDate(undefined);
         setEndDate(undefined);
         onFilterChange({});
@@ -77,13 +80,13 @@ export default function PolicyFiltersBar({
             <div className="w-[150px]">
                 <Select
                     value={status}
-                    onValueChange={setStatus}
+                    onValueChange={(value: FilterStatus) => setStatus(value)}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Status</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
                         {policyStatuses.map((status) => (
                             <SelectItem key={status} value={status} className="capitalize">
                                 {status.replace('_', ' ')}
@@ -95,13 +98,13 @@ export default function PolicyFiltersBar({
             <div className="w-[150px]">
                 <Select
                     value={type}
-                    onValueChange={setType}
+                    onValueChange={(value: FilterType) => setType(value)}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Types</SelectItem>
+                        <SelectItem value="all">All Types</SelectItem>
                         {policyTypes.map((type) => (
                             <SelectItem key={type} value={type} className="capitalize">
                                 {type.replace('_', ' ')}
@@ -144,7 +147,7 @@ export default function PolicyFiltersBar({
                     </PopoverContent>
                 </Popover>
             </div>
-            {(searchTerm || status || type || startDate || endDate) && (
+            {(searchTerm || status !== 'all' || type !== 'all' || startDate || endDate) && (
                 <Button
                     variant="outline"
                     onClick={handleReset}
