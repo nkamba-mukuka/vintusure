@@ -40,10 +40,15 @@ function convertTimestampsToDate(data: any): any {
 
 export const customerService = {
     async list(filters: CustomerFilters = {}) {
-        const { searchTerm, sortBy = 'firstName', sortOrder = 'asc' } = filters;
+        const { searchTerm, sortBy = 'firstName', sortOrder = 'asc', userId } = filters;
         const customersRef = collection(db, COLLECTION_NAME);
 
         let q = query(customersRef, orderBy(sortBy, sortOrder), limit(PAGE_SIZE));
+
+        // Filter by user if provided (for user-specific data access)
+        if (userId) {
+            q = query(q, where('createdBy', '==', userId));
+        }
 
         if (searchTerm) {
             q = query(q, where('searchableText', '>=', searchTerm.toLowerCase()));

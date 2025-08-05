@@ -17,41 +17,104 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'agent';
     }
 
-    // Users collection
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasValidRole() {
+      return isAuthenticated() && 
+        (isAdmin() || isAgent());
+    }
+
+    function isValidUserData() {
+      return request.resource.data.keys().hasAll(['email', 'role', 'createdAt']) &&
+        request.resource.data.role in ['admin', 'agent'] &&
+        request.resource.data.email is string &&
+        request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$');
+    }
+
+    function isValidPolicyData() {
+      return request.resource.data.keys().hasAll(['customerId', 'type', 'status', 'startDate', 'endDate', 'premium']) &&
+        request.resource.data.type in ['comprehensive', 'third_party'] &&
+        request.resource.data.status in ['active', 'expired', 'cancelled', 'pending'] &&
+        request.resource.data.customerId is string &&
+        request.resource.data.premium.amount is number &&
+        request.resource.data.premium.amount > 0;
+    }
+
+    function isValidClaimData() {
+      return request.resource.data.keys().hasAll(['policyId', 'status', 'description', 'amount']) &&
+        request.resource.data.status in ['Submitted', 'UnderReview', 'Approved', 'Rejected', 'Paid'] &&
+        request.resource.data.amount is number &&
+        request.resource.data.amount > 0;
+    }
+
+    // Users collection - strict access control
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUserData();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin() && request.auth.uid != userId; // Prevent self-deletion
     }
 
-    // Customers collection
+    // Customers collection - role-based access with data validation
     match /customers/{customerId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && (isAdmin() || isAgent());
+      allow read: if hasValidRole();
+      allow create: if hasValidRole() && 
+        request.resource.data.keys().hasAll(['name', 'email', 'phone', 'createdBy']) &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow update: if hasValidRole() && 
+        request.resource.data.createdBy == resource.data.createdBy;
+      allow delete: if isAdmin();
     }
 
-    // Policies collection
+    // Policies collection - strict validation and ownership
     match /policies/{policyId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && (isAdmin() || isAgent());
+      allow read: if hasValidRole();
+      allow create: if hasValidRole() && isValidPolicyData() &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow update: if hasValidRole() && isValidPolicyData() &&
+        (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
-    // Claims collection
+    // Claims collection - enhanced validation
     match /claims/{claimId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (isAdmin() || isAgent());
-      allow update: if isAuthenticated() && (isAdmin() || isAgent());
+      allow read: if hasValidRole();
+      allow create: if hasValidRole() && isValidClaimData() &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow update: if hasValidRole() && isValidClaimData() &&
+        (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isAdmin();
     }
 
-    // Documents collection
+    // Documents collection - file type and size validation
     match /documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (isAdmin() || isAgent());
-      allow update: if isAuthenticated() && (isAdmin() || isAgent());
-      allow delete: if isAdmin();
+      allow read: if hasValidRole();
+      allow create: if hasValidRole() &&
+        request.resource.data.keys().hasAll(['fileName', 'fileType', 'fileSize', 'uploadedBy']) &&
+        request.resource.data.uploadedBy == request.auth.uid &&
+        request.resource.data.fileSize <= 10 * 1024 * 1024 && // 10MB limit
+        request.resource.data.fileType in ['application/pdf', 'image/jpeg', 'image/png'];
+      allow update: if hasValidRole() &&
+        (resource.data.uploadedBy == request.auth.uid || isAdmin());
+      allow delete: if isAdmin() || 
+        (hasValidRole() && resource.data.uploadedBy == request.auth.uid);
+    }
+
+    // Query logs - admin only access
+    match /queryLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Security logs - admin only access
+    match /securityLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Rate limiting data - system managed
+    match /rateLimits/{userId} {
+      allow read, write: if false; // Only system can access
     }
   }
 } 

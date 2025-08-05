@@ -1,25 +1,5 @@
 {
   "projects": {
-<<<<<<< HEAD
     "default": "vintusure"
-=======
-    "default": "vintusure",
-    "q": "vintusure"
->>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
-  },
-  "targets": {
-    "vintusure": {
-      "hosting": {
-        "vintusure-cb8f0": [
-          "vintusure-cb8f0"
-        ]
-      }
-    }
-<<<<<<< HEAD
   }
 }
-=======
-  },
-  "etags": {}
-}
->>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
