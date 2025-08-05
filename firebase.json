@@ -1,4 +1,10 @@
 {
+    "functions": {
+        "source": "functions",
+        "predeploy": [
+            "cd functions && pnpm run build"
+        ]
+    },
     "hosting": {
         "public": "dist",
         "ignore": [
@@ -21,6 +27,9 @@
         "rules": "storage.rules"
     },
     "emulators": {
+        "functions": {
+            "port": 5001
+        },
         "auth": {
             "port": 9098
         },
@@ -28,13 +37,14 @@
             "port": 8081
         },
         "hosting": {
-            "port": 5001
+            "port": 5002
         },
         "storage": {
             "port": 9198
         },
         "ui": {
-            "enabled": true
+            "enabled": true,
+            "port": 4000
         }
     }
 }
