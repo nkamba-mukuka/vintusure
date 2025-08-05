@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "vintusure"
+    "default": "vintusure",
+    "q": "vintusure"
   },
   "targets": {
     "vintusure": {
@@ -10,5 +11,6 @@
         ]
       }
     }
-  }
+  },
+  "etags": {}
 }

@@ -60,6 +60,12 @@
    - [ ] Add input sanitization
    - [ ] Implement file upload restrictions
    - [ ] Add rate limiting
+   - [ ] Implement Firebase Auth for Cloud Functions
+   - [ ] Add API key authentication for external services
+   - [ ] Set up rate limiting for Cloud Functions
+   - [ ] Implement request validation middleware
+   - [ ] Add IP whitelisting for sensitive endpoints
+   - [ ] Set up monitoring for suspicious activities
 
 ## Upcoming 📅
 1. Features
@@ -85,6 +91,7 @@
    - [ ] Create user guide
    - [ ] Add component documentation
    - [ ] Create deployment guide
+   - [ ] Document security best practices and configurations
 
 ## Notes
 - Successfully migrated to Vite + React
@@ -92,6 +99,7 @@
 - Firebase integration working with emulators
 - Form validation using Zod implemented
 - Toast notifications added for better UX
+- Cloud Functions deployed with basic setup
 
 ## Known Issues
 1. Performance
@@ -108,6 +116,7 @@
    - Some components need better type definitions
    - Error handling could be more consistent
    - Test coverage needs improvement with Vitest
+   - Cloud Functions need proper security implementation
 
 ## Next Steps
 1. Immediate
@@ -121,9 +130,11 @@
    - Add offline support
    - Improve mobile experience
    - Add dark mode with Tailwind
+   - Implement Cloud Functions security measures
 
 3. Long Term
    - Set up CI/CD with Vite build
    - Add analytics
    - Implement monitoring
    - Add automated testing with Vitest and Playwright
+   - Set up comprehensive security monitoring

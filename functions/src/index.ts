@@ -1,136 +1,90 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { VertexAI } from '@google-cloud/vertexai';
-import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirebaseApp } from './firebase';
 
 // Initialize Firebase Admin SDK
-initializeApp();
-
+getFirebaseApp();
 const db = getFirestore();
 
-// Initialize Vertex AI
-const vertexAI = new VertexAI({
-  project: 'vintusure',
-  location: 'us-central1'
-});
-
-const model = 'gemini-1.5-flash';
-
-// Generation configuration
-const generationConfig = {
-  maxOutputTokens: 65535,
-  temperature: 1,
-  topP: 0.95,
-  safetySettings: [
-    {
-      category: 'HARM_CATEGORY_HATE_SPEECH',
-      threshold: 'BLOCK_NONE',
-    },
-    {
-      category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-      threshold: 'BLOCK_NONE',
-    },
-    {
-      category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-      threshold: 'BLOCK_NONE',
-    },
-    {
-      category: 'HARM_CATEGORY_HARASSMENT',
-      threshold: 'BLOCK_NONE',
-    }
-  ],
-};
-
 interface QueryRequest {
-  query: string;
-  userId?: string;
+    query: string;
 }
 
-interface QueryResponse {
-  answer?: string;
-  success: boolean;
-  error?: string;
-  details?: string;
-}
+export const askQuestion = onRequest({
+    cors: true,
+    maxInstances: 10,
+    invoker: 'public',
+}, async (req, res) => {
+    try {
+        console.log('Received request:', req.body);
+        const { query } = req.body as QueryRequest;
+        const userId = 'anonymous'; // Simplified for testing
 
-export const askQuestion = onRequest(async (req, res) => {
-  try {
-    console.log('Received RAG request:', req.body);
-    const { query, userId = 'anonymous' } = req.body as QueryRequest;
-
-    if (!query) {
-      res.status(400).json({ 
-        success: false, 
-        error: 'Query is required.' 
-      } as QueryResponse);
-      return;
-    }
-
-    console.log('Processing query:', query);
-
-    console.log('Generating content with RAG...');
-    
-    // Get the generative model
-    const generativeModel = vertexAI.getGenerativeModel({
-      model: model,
-      generation_config: generationConfig,
-    });
-
-    // Generate content with RAG
-    const result = await generativeModel.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: query }]
+        if (!query) {
+            res.status(400).json({ error: 'Query is required.' });
+            return;
         }
-      ],
-    });
 
-    const fullResponse = result.response.candidates?.[0]?.content?.parts?.[0]?.text || 
-      "I couldn't generate an answer at this time.";
+        // Since RAG is not implemented yet, we'll just use the query directly
+        const prompt = `Answer this insurance-related question: ${query}`;
+        console.log('Using prompt:', prompt);
 
-    console.log('Full response generated:', fullResponse);
+        // Call Vertex AI LLM
+        const project = process.env.GCLOUD_PROJECT || 'vintusure';
+        console.log('Using project ID:', project);
+        const location = 'us-central1';
+        const modelName = 'gemini-pro';
 
-    // Log the query and response to Firestore
-    await db.collection('queryLogs').add({
-      userId,
-      query,
-      answer: fullResponse,
-      timestamp: FieldValue.serverTimestamp(),
-      model: model,
-      ragEnabled: true,
-    });
+        console.log('Initializing Vertex AI...');
+        const vertexAI = new VertexAI({ project, location });
+        const model = vertexAI.getGenerativeModel({ model: modelName });
 
-    res.json({ 
-      answer: fullResponse,
-      success: true 
-    } as QueryResponse);
+        console.log('Generating content...');
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        });
 
-  } catch (error) {
-    console.error("Error in RAG askQuestion function:", error);
-    
-    // Log detailed error information
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+        const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text ||
+            "I couldn't generate an answer at this time.";
+        console.log('Generated answer:', answer);
+
+        // Log query usage
+        console.log('Logging to Firestore...');
+        await db.collection('queryLogs').add({
+            userId,
+            query,
+            answer,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        res.json({ answer });
+    } catch (error) {
+        console.error("Error in askQuestion function:", error);
+        // Log detailed error information
+        if (error instanceof Error) {
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+        }
+        res.status(500).json({
+            error: 'Failed to process query.',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to process query with RAG.',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    } as QueryResponse);
-  }
 });
 
 // Health check endpoint
-export const healthCheck = onRequest(async (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    service: 'VintuSure RAG API',
-    timestamp: new Date().toISOString()
-  });
+export const healthCheck = onRequest({
+    cors: true,
+    maxInstances: 10,
+    invoker: 'public',
+}, async (req, res) => {
+    res.json({
+        status: 'healthy',
+        service: 'VintuSure RAG API',
+        timestamp: new Date().toISOString()
+    });
 }); 
