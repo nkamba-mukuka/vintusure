@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { onRequest } from 'firebase-functions/v2/https';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { beforeUserCreated } from 'firebase-functions/v2/identity';
@@ -41,6 +42,23 @@ const generationConfig = {
     ],
 };
 export const askQuestion = onRequest(async (req, res) => {
+=======
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.healthCheck = exports.askQuestion = void 0;
+const https_1 = require("firebase-functions/v2/https");
+const vertexai_1 = require("@google-cloud/vertexai");
+const firestore_1 = require("firebase-admin/firestore");
+const firebase_1 = require("./firebase");
+// Initialize Firebase Admin SDK
+(0, firebase_1.getFirebaseApp)();
+const db = (0, firestore_1.getFirestore)();
+exports.askQuestion = (0, https_1.onRequest)({
+    cors: true,
+    maxInstances: 10,
+    invoker: 'public',
+}, async (req, res) => {
+>>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
     try {
         console.log('Received RAG request:', req.body);
         const { query, userId = 'anonymous' } = req.body;
@@ -51,12 +69,29 @@ export const askQuestion = onRequest(async (req, res) => {
             });
             return;
         }
+<<<<<<< HEAD
         console.log('Processing query:', query);
         console.log('Generating content with RAG...');
         // Get the generative model
         const generativeModel = vertexAI.getGenerativeModel({
             model: model,
             generation_config: generationConfig,
+=======
+        // Since RAG is not implemented yet, we'll just use the query directly
+        const prompt = `Answer this insurance-related question: ${query}`;
+        console.log('Using prompt:', prompt);
+        // Call Vertex AI LLM
+        const project = process.env.GCLOUD_PROJECT || 'vintusure';
+        console.log('Using project ID:', project);
+        const location = 'us-central1';
+        const modelName = 'gemini-pro';
+        console.log('Initializing Vertex AI...');
+        const vertexAI = new vertexai_1.VertexAI({ project, location });
+        const model = vertexAI.getGenerativeModel({ model: modelName });
+        console.log('Generating content...');
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+>>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
         });
         // Generate content with RAG
         const result = await generativeModel.generateContent({
@@ -74,6 +109,7 @@ export const askQuestion = onRequest(async (req, res) => {
         await db.collection('queryLogs').add({
             userId,
             query,
+<<<<<<< HEAD
             answer: fullResponse,
             timestamp: FieldValue.serverTimestamp(),
             model: model,
@@ -82,6 +118,10 @@ export const askQuestion = onRequest(async (req, res) => {
         res.json({
             answer: fullResponse,
             success: true
+=======
+            answer,
+            timestamp: firestore_1.FieldValue.serverTimestamp(),
+>>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
         });
     }
     catch (error) {
@@ -102,13 +142,22 @@ export const askQuestion = onRequest(async (req, res) => {
     }
 });
 // Health check endpoint
+<<<<<<< HEAD
 export const healthCheck = onRequest(async (req, res) => {
+=======
+exports.healthCheck = (0, https_1.onRequest)({
+    cors: true,
+    maxInstances: 10,
+    invoker: 'public',
+}, async (req, res) => {
+>>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
     res.json({
         status: 'healthy',
         service: 'VintuSure RAG API',
         timestamp: new Date().toISOString()
     });
 });
+<<<<<<< HEAD
 // Firestore Triggers
 // Trigger when a new policy is created
 export const onPolicyCreated = onDocumentCreated('policies/{policyId}', async (event) => {
@@ -323,4 +372,6 @@ export const onDocumentDeleted = onObjectDeleted(async (event) => {
         console.error('Error in onDocumentDeleted trigger:', error);
     }
 });
+=======
+>>>>>>> 811808aa2b0a90c1be863033748b2f89a9b32289
 //# sourceMappingURL=index.js.map
