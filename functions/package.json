@@ -20,7 +20,7 @@
   "dependencies": {
     "@google-cloud/vertexai": "^0.5.0",
     "firebase-admin": "^12.7.0",
-    "firebase-functions": "^4.9.0"
+    "firebase-functions": "^6.4.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
