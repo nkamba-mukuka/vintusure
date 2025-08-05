@@ -19,6 +19,7 @@ const PolicyDetailsPage = React.lazy(() => import('@/routes/dashboard/policies/P
 const PolicyDocumentsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDocuments'))
 const ClaimsPage = React.lazy(() => import('@/routes/dashboard/claims/Claims'))
 const CustomersPage = React.lazy(() => import('@/routes/dashboard/customers/Customers'))
+const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
 
 function ProtectedRoute() {
     const { user, loading } = useAuthContext()
@@ -62,6 +63,7 @@ export default function App() {
                             </Route>
                             <Route path="/claims" element={<ClaimsPage />} />
                             <Route path="/customers" element={<CustomersPage />} />
+                            <Route path="/rag-test" element={<RAGTestPage />} />
                         </Route>
                     </Route>
 
