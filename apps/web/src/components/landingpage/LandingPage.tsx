@@ -19,6 +19,7 @@ export default function LandingPage() {
                         <span className="text-2xl font-bold text-gray-800" style={{ textShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>VintuSure</span>
                     </div>
 
+
                     <div className="flex items-center space-x-4">
                         {user ? (
                             <Link to="/dashboard">
@@ -49,10 +50,11 @@ export default function LandingPage() {
                         <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent" style={{ textShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>
                             AI-Powered Insurance Intelligence
                         </h1>
-                        <p className="text-xl md:text-2xl mb-12 text-gray-700 max-w-2xl mx-auto" style={{ textShadow: '4px 4px 4px rgba(0,0,0,0.2)' }}>
+                        <p className="text-xl md:text-2xl mb-12 text-gray-700 max-w-2xl mx-auto">
                             VintuSure is an AI-powered online platform that provides advanced RAG (Retrieval-Augmented Generation)
                             services to insurance companies, enhancing their knowledge management and customer support capabilities.
                         </p>
+
 
                         {/* Main Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
@@ -73,6 +75,7 @@ export default function LandingPage() {
                                 </Link>
                             )}
 
+
                             {/* I'm a Customer Button */}
                             <Link to="/explore">
                                 <Button size="lg" variant="outline" className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 bg-white/80 backdrop-blur-sm" style={{ boxShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>
@@ -91,16 +94,16 @@ export default function LandingPage() {
                             Why Choose VintuSure for Your Insurance Business?
                         </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                            {/* <div className="text-center">
-                                <div className="rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#E9E1F5', boxShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                            <div className="text-center">
+                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300">
                                     <Shield className="h-12 w-12 mx-auto mb-4 text-gray-800" />
                                     <h3 className="text-xl font-semibold mb-2 text-gray-800" style={{ textShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>Advanced RAG Technology</h3>
                                     <p className="text-gray-700" style={{ textShadow: '4px 4px 4px rgba(0,0,0,0.2)' }}>
                                         State-of-the-art Retrieval-Augmented Generation for intelligent document processing and knowledge retrieval.
                                     </p>
                                 </div>
-                            </div> */}
+                            </div>
 
                             <div className="text-center">
                                 <div className="rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#E9E1F5', boxShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>
@@ -112,6 +115,7 @@ export default function LandingPage() {
                                 </div>
                             </div>
 
+
                             <div className="text-center">
                                 <div className="rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#E9E1F5', boxShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>
                                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-800" />
@@ -121,6 +125,7 @@ export default function LandingPage() {
                                     </p>
                                 </div>
                             </div>
+
 
                             <div className="text-center">
                                 <div className="rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#E9E1F5', boxShadow: '4px 4px 4px rgba(0,0,0,0.3)' }}>

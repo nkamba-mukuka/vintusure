@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testFunction = exports.healthCheck = exports.askQuestion = void 0;
+exports.analyzeCarPhoto = exports.healthCheck = exports.askQuestion = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const vertexai_1 = require("@google-cloud/vertexai");
 const firestore_1 = require("firebase-admin/firestore");
