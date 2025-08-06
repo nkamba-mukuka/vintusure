@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CustomerFilters } from '@/types/customer';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,32 +16,28 @@ type CustomerStatus = 'active' | 'inactive' | 'all';
 
 interface CustomerFiltersBarProps {
     filters: CustomerFilters;
-    onFilterChange: (filters: CustomerFilters) => void;
+    onFiltersChange: (filters: CustomerFilters) => void;
 }
 
 export default function CustomerFiltersBar({
     filters,
-    onFilterChange,
+    onFiltersChange,
 }: CustomerFiltersBarProps) {
     const [searchTerm, setSearchTerm] = useState(filters.searchTerm || '');
     const [status, setStatus] = useState<CustomerStatus>(filters.status || 'all');
 
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            onFilterChange({
-                ...filters,
-                searchTerm,
-                status: status === 'all' ? undefined : status,
-            });
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm, status]);
+    const handleApplyFilters = () => {
+        onFiltersChange({
+            ...filters,
+            searchTerm,
+            status: status === 'all' ? undefined : status,
+        });
+    };
 
     const handleReset = () => {
         setSearchTerm('');
         setStatus('all');
-        onFilterChange({});
+        onFiltersChange({});
     };
 
     return (
@@ -53,6 +49,11 @@ export default function CustomerFiltersBar({
                         placeholder="Search customers..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleApplyFilters();
+                            }
+                        }}
                         className="pl-9"
                     />
                 </div>
@@ -72,6 +73,13 @@ export default function CustomerFiltersBar({
                     </SelectContent>
                 </Select>
             </div>
+            <Button
+                onClick={handleApplyFilters}
+                className="flex items-center gap-2"
+            >
+                <SearchIcon className="h-4 w-4" />
+                Apply Filters
+            </Button>
             {(searchTerm || status !== 'all') && (
                 <Button
                     variant="outline"

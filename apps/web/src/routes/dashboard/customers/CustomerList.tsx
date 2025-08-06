@@ -1,4 +1,3 @@
-
 import { Customer } from '@/types/customer';
 import {
     Table,
@@ -27,7 +26,7 @@ interface CustomerListProps {
 }
 
 export default function CustomerList({
-    customers,
+    customers = [], // Add a default value here
     isLoading,
     onPageChange,
     currentPage,
@@ -84,7 +83,7 @@ export default function CustomerList({
             {/* Header with Create Button */}
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">Customers</h2>
-                <Link to="/customers/new">
+                <Link to="/dashboard/customers/new">
                     <Button className="flex items-center gap-2">
                         <PlusIcon className="h-4 w-4" />
                         Create Customer
@@ -125,7 +124,7 @@ export default function CustomerList({
                                 {format(new Date(customer.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
-                                <Link to={`/customers/${customer.id}/edit`}>
+                                <Link to={`/dashboard/customers/${customer.id}/edit`}>
                                     <Button variant="outline" size="sm">
                                         <EditIcon className="h-4 w-4" />
                                     </Button>
@@ -178,4 +177,4 @@ export default function CustomerList({
             )}
         </div>
     );
-} 
+}
