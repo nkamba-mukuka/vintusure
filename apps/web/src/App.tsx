@@ -20,6 +20,8 @@ const PolicyDetailsPage = React.lazy(() => import('@/routes/dashboard/policies/P
 const PolicyDocumentsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDocuments'))
 const ClaimsPage = React.lazy(() => import('@/routes/dashboard/claims/Claims'))
 const CustomersPage = React.lazy(() => import('@/routes/dashboard/customers/Customers'))
+const NewCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/NewCustomer'))
+const EditCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/EditCustomer'))
 const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
 
 function ProtectedRoute() {
@@ -64,7 +66,11 @@ export default function App() {
                                 </Route>
                             </Route>
                             <Route path="/claims" element={<ClaimsPage />} />
-                            <Route path="/customers" element={<CustomersPage />} />
+                            <Route path="/customers">
+                                <Route index element={<CustomersPage />} />
+                                <Route path="/customers/new" element={<NewCustomerPage />} />
+                                <Route path=":id/edit" element={<EditCustomerPage />} />
+                            </Route>
                             <Route path="/rag-test" element={<RAGTestPage />} />
                         </Route>
                     </Route>
