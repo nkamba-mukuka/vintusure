@@ -7,16 +7,52 @@ import { getFirebaseApp } from './firebase';
 getFirebaseApp();
 const db = getFirestore();
 
+// Initialize Vertex AI
+const vertexAI = new VertexAI({
+    project: 'vintusure',
+    location: 'us-central1'
+});
+
+// Generation configuration
+const generationConfig = {
+    maxOutputTokens: 2048,
+    temperature: 0.9,
+    topP: 1,
+    safetySettings: [
+        {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_NONE',
+        },
+        {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_NONE',
+        },
+        {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_NONE',
+        },
+        {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_NONE',
+        }
+    ],
+};
+
 interface QueryRequest {
     query: string;
-    userId?: string;
 }
 
 interface QueryResponse {
-    answer?: string;
     success: boolean;
+    answer?: string;
     error?: string;
     details?: string;
+}
+
+interface HealthCheckResponse {
+    status: string;
+    service: string;
+    timestamp: string;
 }
 
 // Rate limiting store (in production, use Redis or similar)
@@ -36,7 +72,7 @@ function validateAndSanitizeQuery(query: string): { isValid: boolean; sanitizedQ
 
     // Trim whitespace
     const trimmedQuery = query.trim();
-    
+
     if (trimmedQuery.length === 0) {
         return { isValid: false, sanitizedQuery: '', error: 'Query cannot be empty' };
     }
@@ -96,21 +132,31 @@ async function logSecurityEvent(event: string, userId: string, details: any) {
     }
 }
 
-export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
+export const askQuestion = onCall<QueryRequest, QueryResponse>({
+    memory: '1GiB',
+    timeoutSeconds: 120,
     maxInstances: 10,
+<<<<<<< HEAD
     cors: true,
+=======
+    region: 'us-central1'
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
 }, async (request) => {
     try {
         console.log('Received request:', request.data);
-        
+
         // Extract user ID from Firebase Auth context
         const userId = request.auth?.uid || 'anonymous';
+<<<<<<< HEAD
         const { query } = request.data || {};
+=======
+        const query = request.data?.query;
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
 
         // Log the request
-        await logSecurityEvent('rag_query_request', userId, { 
+        await logSecurityEvent('rag_query_request', userId, {
             hasQuery: !!query,
-            queryLength: query?.length || 0 
+            queryLength: query?.length || 0
         });
 
         // Validate input
@@ -126,8 +172,8 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
         // Check rate limiting
         const rateLimit = checkRateLimit(userId);
         if (!rateLimit.allowed) {
-            await logSecurityEvent('rag_rate_limit_exceeded', userId, { 
-                resetTime: rateLimit.resetTime 
+            await logSecurityEvent('rag_rate_limit_exceeded', userId, {
+                resetTime: rateLimit.resetTime
             });
             return {
                 success: false,
@@ -139,8 +185,8 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
         // Validate and sanitize query
         const validation = validateAndSanitizeQuery(query);
         if (!validation.isValid) {
-            await logSecurityEvent('rag_query_validation_failed', userId, { 
-                error: validation.error 
+            await logSecurityEvent('rag_query_validation_failed', userId, {
+                error: validation.error
             });
             return {
                 success: false,
@@ -150,32 +196,30 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
         }
 
         // Log successful validation
-        await logSecurityEvent('rag_query_validated', userId, { 
+        await logSecurityEvent('rag_query_validated', userId, {
             originalLength: query.length,
-            sanitizedLength: validation.sanitizedQuery.length 
+            sanitizedLength: validation.sanitizedQuery.length
         });
 
         // Create safe prompt
         const prompt = `Answer this insurance-related question: ${validation.sanitizedQuery}`;
         console.log('Using sanitized prompt:', prompt);
 
-        // Call Vertex AI LLM
-        const project = 'vintusure';
-        const location = 'us-central1';
-        const modelName = 'gemini-2.5-flash-lite';
-
-        console.log('Initializing Vertex AI...');
-        const vertexAI = new VertexAI({ project, location });
-        const model = vertexAI.getGenerativeModel({ model: modelName });
+        // Get the model
+        const model = vertexAI.preview.getGenerativeModel({
+            model: 'gemini-pro',
+            generation_config: generationConfig
+        });
 
         console.log('Generating content...');
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
 
-        const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text ||
+        const response = await result.response;
+        const answer = response.candidates?.[0]?.content?.parts?.[0]?.text ||
             "I couldn't generate an answer at this time.";
-        
+
         // Sanitize the answer
         const sanitizedAnswer = answer
             .replace(/[<>]/g, '') // Remove angle brackets
@@ -196,8 +240,8 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
         });
 
         // Log successful response
-        await logSecurityEvent('rag_query_success', userId, { 
-            answerLength: sanitizedAnswer.length 
+        await logSecurityEvent('rag_query_success', userId, {
+            answerLength: sanitizedAnswer.length
         });
 
         return {
@@ -206,11 +250,11 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
         };
     } catch (error) {
         console.error("Error in askQuestion function:", error);
-        
+
         // Log error
         const userId = request.auth?.uid || 'anonymous';
-        await logSecurityEvent('rag_query_error', userId, { 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+        await logSecurityEvent('rag_query_error', userId, {
+            error: error instanceof Error ? error.message : 'Unknown error'
         });
 
         // Don't expose internal error details to client
@@ -222,9 +266,12 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
     }
 });
 
-// Health check endpoint with authentication
-export const healthCheck = onCall<{}, { status: string; service: string; timestamp: string }>({
+// Health check endpoint
+export const healthCheck = onCall<void, HealthCheckResponse>({
+    memory: '256MiB',
+    timeoutSeconds: 30,
     maxInstances: 10,
+<<<<<<< HEAD
     cors: true,
 }, (request) => {
     try {
@@ -253,6 +300,15 @@ export const testFunction = onCall<{}, { message: string }>({
     maxInstances: 10,
     cors: true,
 }, () => {
+=======
+    region: 'us-central1'
+}, async (request) => {
+    const userId = request.auth?.uid || 'anonymous';
+
+    // Log health check
+    await logSecurityEvent('health_check', userId, {});
+
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
     return {
         message: 'Test function is working!'
     };

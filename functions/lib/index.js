@@ -8,6 +8,38 @@ const firebase_1 = require("./firebase");
 // Initialize Firebase Admin SDK
 (0, firebase_1.getFirebaseApp)();
 const db = (0, firestore_1.getFirestore)();
+<<<<<<< HEAD
+=======
+// Initialize Vertex AI
+const vertexAI = new vertexai_1.VertexAI({
+    project: 'vintusure',
+    location: 'us-central1'
+});
+// Generation configuration
+const generationConfig = {
+    maxOutputTokens: 2048,
+    temperature: 0.9,
+    topP: 1,
+    safetySettings: [
+        {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_NONE',
+        },
+        {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_NONE',
+        },
+        {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_NONE',
+        },
+        {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_NONE',
+        }
+    ],
+};
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
 // Rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map();
 // Rate limiting configuration
@@ -73,14 +105,24 @@ async function logSecurityEvent(event, userId, details) {
     }
 }
 exports.askQuestion = (0, https_1.onCall)({
+    memory: '1GiB',
+    timeoutSeconds: 120,
     maxInstances: 10,
+<<<<<<< HEAD
     cors: true,
+=======
+    region: 'us-central1'
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
 }, async (request) => {
     try {
         console.log('Received request:', request.data);
         // Extract user ID from Firebase Auth context
         const userId = request.auth?.uid || 'anonymous';
+<<<<<<< HEAD
         const { query } = request.data || {};
+=======
+        const query = request.data?.query;
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
         // Log the request
         await logSecurityEvent('rag_query_request', userId, {
             hasQuery: !!query,
@@ -127,6 +169,7 @@ exports.askQuestion = (0, https_1.onCall)({
         // Create safe prompt
         const prompt = `Answer this insurance-related question: ${validation.sanitizedQuery}`;
         console.log('Using sanitized prompt:', prompt);
+<<<<<<< HEAD
         // Call Vertex AI LLM
         const project = 'vintusure';
         const location = 'us-central1';
@@ -134,11 +177,19 @@ exports.askQuestion = (0, https_1.onCall)({
         console.log('Initializing Vertex AI...');
         const vertexAI = new vertexai_1.VertexAI({ project, location });
         const model = vertexAI.getGenerativeModel({ model: modelName });
+=======
+        // Get the model
+        const model = vertexAI.preview.getGenerativeModel({
+            model: 'gemini-pro',
+            generation_config: generationConfig
+        });
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
         console.log('Generating content...');
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
-        const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text ||
+        const response = await result.response;
+        const answer = response.candidates?.[0]?.content?.parts?.[0]?.text ||
             "I couldn't generate an answer at this time.";
         // Sanitize the answer
         const sanitizedAnswer = answer
@@ -182,7 +233,10 @@ exports.askQuestion = (0, https_1.onCall)({
 });
 // Health check endpoint with authentication
 exports.healthCheck = (0, https_1.onCall)({
+    memory: '256MiB',
+    timeoutSeconds: 30,
     maxInstances: 10,
+<<<<<<< HEAD
     cors: true,
 }, (request) => {
     try {
@@ -209,6 +263,13 @@ exports.testFunction = (0, https_1.onCall)({
     maxInstances: 10,
     cors: true,
 }, () => {
+=======
+    region: 'us-central1'
+}, async (request) => {
+    const userId = request.auth?.uid || 'anonymous';
+    // Log health check
+    await logSecurityEvent('health_check', userId, {});
+>>>>>>> 43a853f8d45051f4acf0819db2793f05c22ba728
     return {
         message: 'Test function is working!'
     };
