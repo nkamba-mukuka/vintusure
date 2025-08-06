@@ -28,6 +28,7 @@ interface ClaimFilters {
     startDate?: Date;
     endDate?: Date;
     searchTerm?: string;
+    userId?: string;
 }
 
 interface ClaimListResponse {
@@ -100,6 +101,11 @@ export const claimService = {
 
     async list(filters?: ClaimFilters, pageSize: number = 10, lastDoc?: any): Promise<ClaimListResponse> {
         const constraints: QueryConstraint[] = [];
+
+        // Filter by user if provided (for user-specific data access)
+        if (filters?.userId) {
+            constraints.push(where('createdBy', '==', filters.userId));
+        }
 
         if (filters?.status) {
             constraints.push(where('status', '==', filters.status));

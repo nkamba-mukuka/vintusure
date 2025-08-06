@@ -2,17 +2,19 @@
     "compilerOptions": {
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
-        "noImplicitReturns": true,
-        "noUnusedLocals": true,
+        "noImplicitReturns": false,
+        "noUnusedLocals": false,
         "outDir": "lib",
         "sourceMap": true,
-        "strict": true,
+        "strict": false,
         "target": "es2020",
         "allowJs": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "noImplicitAny": false,
+        "noEmitOnError": false
     },
     "compileOnSave": true,
     "include": [

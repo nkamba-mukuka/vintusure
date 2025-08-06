@@ -1,18 +1,18 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.healthCheck = exports.askQuestion = void 0;
-const https_1 = require("firebase-functions/v2/https");
-const vertexai_1 = require("@google-cloud/vertexai");
-const firestore_1 = require("firebase-admin/firestore");
-const firebase_1 = require("./firebase");
+import { onCall } from 'firebase-functions/v2/https';
+import { VertexAI } from '@google-cloud/vertexai';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirebaseApp } from './firebase';
+
 // Initialize Firebase Admin SDK
-(0, firebase_1.getFirebaseApp)();
-const db = (0, firestore_1.getFirestore)();
+getFirebaseApp();
+const db = getFirestore();
+
 // Initialize Vertex AI
-const vertexAI = new vertexai_1.VertexAI({
+const vertexAI = new VertexAI({
     project: 'vintusure',
     location: 'us-central1'
 });
+
 // Generation configuration
 const generationConfig = {
     maxOutputTokens: 2048,
@@ -37,39 +37,66 @@ const generationConfig = {
         }
     ],
 };
+
+interface QueryRequest {
+    query: string;
+}
+
+interface QueryResponse {
+    success: boolean;
+    answer?: string;
+    error?: string;
+    details?: string;
+}
+
+interface HealthCheckResponse {
+    status: string;
+    service: string;
+    timestamp: string;
+}
+
 // Rate limiting store (in production, use Redis or similar)
-const rateLimitStore = new Map();
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
 // Rate limiting configuration
 const RATE_LIMIT = {
     MAX_REQUESTS: 10,
     WINDOW_MS: 60000, // 1 minute
 };
+
 // Input validation and sanitization
-function validateAndSanitizeQuery(query) {
+function validateAndSanitizeQuery(query: string): { isValid: boolean; sanitizedQuery: string; error?: string } {
     if (!query || typeof query !== 'string') {
         return { isValid: false, sanitizedQuery: '', error: 'Query must be a non-empty string' };
     }
+
     // Trim whitespace
     const trimmedQuery = query.trim();
+
     if (trimmedQuery.length === 0) {
         return { isValid: false, sanitizedQuery: '', error: 'Query cannot be empty' };
     }
+
     if (trimmedQuery.length > 1000) {
         return { isValid: false, sanitizedQuery: '', error: 'Query too long (max 1000 characters)' };
     }
+
     // Basic sanitization - remove potentially dangerous characters
     const sanitizedQuery = trimmedQuery
         .replace(/[<>]/g, '') // Remove angle brackets
         .replace(/javascript:/gi, '') // Remove javascript: protocol
         .replace(/on\w+=/gi, '') // Remove event handlers
         .substring(0, 1000); // Limit length
+
     return { isValid: true, sanitizedQuery };
 }
+
 // Rate limiting function
-function checkRateLimit(userId) {
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetTime: number } {
     const now = Date.now();
     const key = userId || 'anonymous';
     const userLimit = rateLimitStore.get(key);
+
     if (!userLimit || now > userLimit.resetTime) {
         // Reset or initialize rate limit
         rateLimitStore.set(key, {
@@ -78,30 +105,34 @@ function checkRateLimit(userId) {
         });
         return { allowed: true, remaining: RATE_LIMIT.MAX_REQUESTS - 1, resetTime: now + RATE_LIMIT.WINDOW_MS };
     }
+
     if (userLimit.count >= RATE_LIMIT.MAX_REQUESTS) {
         return { allowed: false, remaining: 0, resetTime: userLimit.resetTime };
     }
+
     // Increment count
     userLimit.count++;
     rateLimitStore.set(key, userLimit);
+
     return { allowed: true, remaining: RATE_LIMIT.MAX_REQUESTS - userLimit.count, resetTime: userLimit.resetTime };
 }
+
 // Security logging
-async function logSecurityEvent(event, userId, details) {
+async function logSecurityEvent(event: string, userId: string, details: any) {
     try {
         await db.collection('securityLogs').add({
             event,
             userId,
             details,
-            timestamp: firestore_1.FieldValue.serverTimestamp(),
+            timestamp: FieldValue.serverTimestamp(),
             ip: 'cloud-function', // In production, extract from request context
         });
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Failed to log security event:', error);
     }
 }
-exports.askQuestion = (0, https_1.onCall)({
+
+export const askQuestion = onCall<QueryRequest, QueryResponse>({
     memory: '1GiB',
     timeoutSeconds: 120,
     maxInstances: 10,
@@ -109,14 +140,17 @@ exports.askQuestion = (0, https_1.onCall)({
 }, async (request) => {
     try {
         console.log('Received request:', request.data);
+
         // Extract user ID from Firebase Auth context
         const userId = request.auth?.uid || 'anonymous';
         const query = request.data?.query;
+
         // Log the request
         await logSecurityEvent('rag_query_request', userId, {
             hasQuery: !!query,
             queryLength: query?.length || 0
         });
+
         // Validate input
         if (!query) {
             await logSecurityEvent('rag_query_missing', userId, {});
@@ -126,6 +160,7 @@ exports.askQuestion = (0, https_1.onCall)({
                 details: 'No query provided in request'
             };
         }
+
         // Check rate limiting
         const rateLimit = checkRateLimit(userId);
         if (!rateLimit.allowed) {
@@ -138,6 +173,7 @@ exports.askQuestion = (0, https_1.onCall)({
                 details: `Too many requests. Try again in ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.`
             };
         }
+
         // Validate and sanitize query
         const validation = validateAndSanitizeQuery(query);
         if (!validation.isValid) {
@@ -150,32 +186,40 @@ exports.askQuestion = (0, https_1.onCall)({
                 details: validation.error
             };
         }
+
         // Log successful validation
         await logSecurityEvent('rag_query_validated', userId, {
             originalLength: query.length,
             sanitizedLength: validation.sanitizedQuery.length
         });
+
         // Create safe prompt
         const prompt = `Answer this insurance-related question: ${validation.sanitizedQuery}`;
         console.log('Using sanitized prompt:', prompt);
+
         // Get the model
         const model = vertexAI.preview.getGenerativeModel({
             model: 'gemini-pro',
             generation_config: generationConfig
         });
+
         console.log('Generating content...');
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
+
         const response = await result.response;
         const answer = response.candidates?.[0]?.content?.parts?.[0]?.text ||
             "I couldn't generate an answer at this time.";
+
         // Sanitize the answer
         const sanitizedAnswer = answer
             .replace(/[<>]/g, '') // Remove angle brackets
             .replace(/javascript:/gi, '') // Remove javascript: protocol
             .substring(0, 2000); // Limit answer length
+
         console.log('Generated sanitized answer:', sanitizedAnswer);
+
         // Log query usage
         console.log('Logging to Firestore...');
         await db.collection('queryLogs').add({
@@ -183,25 +227,28 @@ exports.askQuestion = (0, https_1.onCall)({
             originalQuery: query,
             sanitizedQuery: validation.sanitizedQuery,
             answer: sanitizedAnswer,
-            timestamp: firestore_1.FieldValue.serverTimestamp(),
+            timestamp: FieldValue.serverTimestamp(),
             rateLimitRemaining: rateLimit.remaining,
         });
+
         // Log successful response
         await logSecurityEvent('rag_query_success', userId, {
             answerLength: sanitizedAnswer.length
         });
+
         return {
             success: true,
             answer: sanitizedAnswer
         };
-    }
-    catch (error) {
+    } catch (error) {
         console.error("Error in askQuestion function:", error);
+
         // Log error
         const userId = request.auth?.uid || 'anonymous';
         await logSecurityEvent('rag_query_error', userId, {
             error: error instanceof Error ? error.message : 'Unknown error'
         });
+
         // Don't expose internal error details to client
         return {
             success: false,
@@ -210,20 +257,22 @@ exports.askQuestion = (0, https_1.onCall)({
         };
     }
 });
+
 // Health check endpoint
-exports.healthCheck = (0, https_1.onCall)({
+export const healthCheck = onCall<void, HealthCheckResponse>({
     memory: '256MiB',
     timeoutSeconds: 30,
     maxInstances: 10,
     region: 'us-central1'
 }, async (request) => {
     const userId = request.auth?.uid || 'anonymous';
+
     // Log health check
     await logSecurityEvent('health_check', userId, {});
+
     return {
         status: 'healthy',
         service: 'VintuSure RAG API',
         timestamp: new Date().toISOString()
     };
-});
-//# sourceMappingURL=index.js.map
+}); 

@@ -11,6 +11,7 @@ const LandingPage = React.lazy(() => import('@/components/landingpage/LandingPag
 const LoginPage = React.lazy(() => import('@/routes/auth/Login'))
 const SignUpPage = React.lazy(() => import('@/routes/auth/SignUp'))
 const ForgotPasswordPage = React.lazy(() => import('@/routes/auth/ForgotPassword'))
+const ExplorePage = React.lazy(() => import('@/routes/Explore'))
 const DashboardPage = React.lazy(() => import('@/routes/dashboard/Dashboard'))
 const PoliciesPage = React.lazy(() => import('@/routes/dashboard/policies/Policies'))
 const NewPolicyPage = React.lazy(() => import('@/routes/dashboard/policies/NewPolicy'))
@@ -47,6 +48,7 @@ export default function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/explore" element={<ExplorePage />} />
 
                     {/* Protected Routes */}
                     <Route element={<ProtectedRoute />}>
