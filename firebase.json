@@ -1,23 +1,19 @@
 {
-  "functions": [
-    {
-      "source": "functions",
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
-      ],
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ]
-    }
-  ],
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log"
+    ],
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run build"
+    ]
+  },
   "hosting": {
-    "public": "dist",
+    "public": "apps/web/dist",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -28,6 +24,25 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Access-Control-Allow-Methods",
+            "value": "GET,POST,PUT,DELETE,OPTIONS"
+          },
+          {
+            "key": "Access-Control-Allow-Headers",
+            "value": "Content-Type,Authorization,X-Requested-With"
+          }
+        ]
+      }
     ]
   },
   "firestore": {
@@ -36,26 +51,5 @@
   },
   "storage": {
     "rules": "storage.rules"
-  },
-  "emulators": {
-    "functions": {
-      "port": 5001
-    },
-    "auth": {
-      "port": 9098
-    },
-    "firestore": {
-      "port": 8081
-    },
-    "hosting": {
-      "port": 5002
-    },
-    "storage": {
-      "port": 9198
-    },
-    "ui": {
-      "enabled": true,
-      "port": 4000
-    }
   }
 }
