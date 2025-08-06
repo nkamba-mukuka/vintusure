@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.analyzeCarPhoto = exports.healthCheck = exports.askQuestion = void 0;
+exports.testFunction = exports.healthCheck = exports.askQuestion = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const vertexai_1 = require("@google-cloud/vertexai");
 const firestore_1 = require("firebase-admin/firestore");
@@ -8,35 +8,6 @@ const firebase_1 = require("./firebase");
 // Initialize Firebase Admin SDK
 (0, firebase_1.getFirebaseApp)();
 const db = (0, firestore_1.getFirestore)();
-// Initialize Vertex AI
-const vertexAI = new vertexai_1.VertexAI({
-    project: 'vintusure',
-    location: 'us-central1'
-});
-// Generation configuration
-const generationConfig = {
-    maxOutputTokens: 2048,
-    temperature: 0.9,
-    topP: 1,
-    safetySettings: [
-        {
-            category: 'HARM_CATEGORY_HATE_SPEECH',
-            threshold: 'BLOCK_NONE',
-        },
-        {
-            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            threshold: 'BLOCK_NONE',
-        },
-        {
-            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-            threshold: 'BLOCK_NONE',
-        },
-        {
-            category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_NONE',
-        }
-    ],
-};
 // Rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map();
 // Rate limiting configuration
@@ -105,13 +76,13 @@ exports.askQuestion = (0, https_1.onCall)({
     memory: '1GiB',
     timeoutSeconds: 120,
     maxInstances: 10,
-    region: 'us-central1'
+    cors: true,
 }, async (request) => {
     try {
         console.log('Received request:', request.data);
         // Extract user ID from Firebase Auth context
         const userId = request.auth?.uid || 'anonymous';
-        const query = request.data?.query;
+        const { query } = request.data || {};
         // Log the request
         await logSecurityEvent('rag_query_request', userId, {
             hasQuery: !!query,
@@ -119,6 +90,7 @@ exports.askQuestion = (0, https_1.onCall)({
         });
         // Validate input
         if (!query) {
+            await logSecurityEvent('rag_query_missing', userId, {});
             await logSecurityEvent('rag_query_missing', userId, {});
             return {
                 success: false,
@@ -158,11 +130,13 @@ exports.askQuestion = (0, https_1.onCall)({
         // Create safe prompt
         const prompt = `Answer this insurance-related question: ${validation.sanitizedQuery}`;
         console.log('Using sanitized prompt:', prompt);
-        // Get the model
-        const model = vertexAI.preview.getGenerativeModel({
-            model: 'gemini-pro',
-            generation_config: generationConfig
-        });
+        // Call Vertex AI LLM
+        const project = 'vintusure';
+        const location = 'us-central1';
+        const modelName = 'gemini-2.5-flash-lite';
+        console.log('Initializing Vertex AI...');
+        const vertexAI = new vertexai_1.VertexAI({ project, location });
+        const model = vertexAI.getGenerativeModel({ model: modelName });
         console.log('Generating content...');
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -176,10 +150,19 @@ exports.askQuestion = (0, https_1.onCall)({
             .replace(/javascript:/gi, '') // Remove javascript: protocol
             .substring(0, 2000); // Limit answer length
         console.log('Generated sanitized answer:', sanitizedAnswer);
+        // Sanitize the answer
+        const sanitizedAnswer = answer
+            .replace(/[<>]/g, '') // Remove angle brackets
+            .replace(/javascript:/gi, '') // Remove javascript: protocol
+            .substring(0, 2000); // Limit answer length
+        console.log('Generated sanitized answer:', sanitizedAnswer);
         // Log query usage
         console.log('Logging to Firestore...');
         await db.collection('queryLogs').add({
             userId,
+            originalQuery: query,
+            sanitizedQuery: validation.sanitizedQuery,
+            answer: sanitizedAnswer,
             originalQuery: query,
             sanitizedQuery: validation.sanitizedQuery,
             answer: sanitizedAnswer,
@@ -189,9 +172,15 @@ exports.askQuestion = (0, https_1.onCall)({
         // Log successful response
         await logSecurityEvent('rag_query_success', userId, {
             answerLength: sanitizedAnswer.length
+            rateLimitRemaining: rateLimit.remaining,
+        });
+        // Log successful response
+        await logSecurityEvent('rag_query_success', userId, {
+            answerLength: sanitizedAnswer.length
         });
         return {
             success: true,
+            answer: sanitizedAnswer
             answer: sanitizedAnswer
         };
     }
@@ -203,27 +192,53 @@ exports.askQuestion = (0, https_1.onCall)({
             error: error instanceof Error ? error.message : 'Unknown error'
         });
         // Don't expose internal error details to client
+        // Log error
+        const userId = request.auth?.uid || 'anonymous';
+        await logSecurityEvent('rag_query_error', userId, {
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        // Don't expose internal error details to client
         return {
             success: false,
             error: 'Failed to process query.',
             details: 'An internal error occurred. Please try again later.'
+            details: 'An internal error occurred. Please try again later.'
         };
     }
 });
-// Health check endpoint
+// Health check endpoint with authentication
 exports.healthCheck = (0, https_1.onCall)({
     memory: '256MiB',
     timeoutSeconds: 30,
     maxInstances: 10,
-    region: 'us-central1'
-}, async (request) => {
-    const userId = request.auth?.uid || 'anonymous';
-    // Log health check
-    await logSecurityEvent('health_check', userId, {});
+    cors: true,
+}, (request) => {
+    try {
+        const userId = request.auth?.uid || 'anonymous';
+        // Log health check (fire and forget)
+        logSecurityEvent('health_check', userId, {});
+        return {
+            status: 'healthy',
+            service: 'VintuSure RAG API',
+            timestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        console.error('Health check error:', error);
+        return {
+            status: 'error',
+            service: 'VintuSure RAG API',
+            timestamp: new Date().toISOString()
+        };
+    }
+});
+// Simple test function for debugging
+exports.testFunction = (0, https_1.onCall)({
+    maxInstances: 10,
+    cors: true,
+}, () => {
     return {
-        status: 'healthy',
-        service: 'VintuSure RAG API',
-        timestamp: new Date().toISOString()
+        message: 'Test function is working!'
     };
 });
 // Car Analysis Function
