@@ -79,10 +79,15 @@ export const policyService = {
     },
 
     async list(filters: any = {}) {
-        const { searchTerm, status, type } = filters
+        const { searchTerm, status, type, userId } = filters
         const policiesRef = collection(db, COLLECTION_NAME)
 
         let q = query(policiesRef, orderBy('createdAt', 'desc'), limit(10))
+
+        // Filter by user if provided (for user-specific data access)
+        if (userId) {
+            q = query(q, where('createdBy', '==', userId))
+        }
 
         if (status) {
             q = query(q, where('status', '==', status))

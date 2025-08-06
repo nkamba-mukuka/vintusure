@@ -29,6 +29,7 @@ export interface CustomerFilters {
     status?: Customer['status'];
     sortBy?: keyof Customer;
     sortOrder?: 'asc' | 'desc';
+    userId?: string;
 }
 
 export interface CustomerListResponse {

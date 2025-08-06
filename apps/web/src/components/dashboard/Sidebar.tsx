@@ -8,7 +8,8 @@ import {
     FileText,
     AlertCircle,
     Settings,
-    LogOut
+    LogOut,
+    Brain
 } from 'lucide-react'
 
 const navigation = [
@@ -16,6 +17,7 @@ const navigation = [
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Policies', href: '/policies', icon: FileText },
     { name: 'Claims', href: '/claims', icon: AlertCircle },
+    { name: 'RAG Test', href: '/rag-test', icon: Brain },
     { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

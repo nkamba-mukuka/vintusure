@@ -40,8 +40,8 @@ export default function ClaimFiltersBar({
     onFilterChange,
 }: ClaimFiltersBarProps) {
     const [searchTerm, setSearchTerm] = useState(filters.searchTerm || '');
-    const [status, setStatus] = useState<ClaimStatus | ''>(filters.status || '');
-    const [damageType, setDamageType] = useState<DamageType | ''>(filters.damageType || '');
+    const [status, setStatus] = useState<ClaimStatus | 'all'>(filters.status || 'all');
+    const [damageType, setDamageType] = useState<DamageType | 'all'>(filters.damageType || 'all');
     const [startDate, setStartDate] = useState<Date | undefined>(filters.startDate);
     const [endDate, setEndDate] = useState<Date | undefined>(filters.endDate);
 
@@ -50,8 +50,8 @@ export default function ClaimFiltersBar({
             onFilterChange({
                 ...filters,
                 searchTerm,
-                status: status || undefined,
-                damageType: damageType || undefined,
+                status: status === 'all' ? undefined : status,
+                damageType: damageType === 'all' ? undefined : damageType,
                 startDate,
                 endDate,
             });
@@ -62,8 +62,8 @@ export default function ClaimFiltersBar({
 
     const handleReset = () => {
         setSearchTerm('');
-        setStatus('');
-        setDamageType('');
+        setStatus('all');
+        setDamageType('all');
         setStartDate(undefined);
         setEndDate(undefined);
         onFilterChange({});
@@ -85,13 +85,13 @@ export default function ClaimFiltersBar({
             <div className="w-[150px]">
                 <Select
                     value={status}
-                    onValueChange={(value) => setStatus(value as ClaimStatus)}
+                    onValueChange={(value) => setStatus(value as ClaimStatus | 'all')}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Status</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
                         {claimStatuses.map((status) => (
                             <SelectItem key={status} value={status}>
                                 {status}
@@ -103,13 +103,13 @@ export default function ClaimFiltersBar({
             <div className="w-[150px]">
                 <Select
                     value={damageType}
-                    onValueChange={(value) => setDamageType(value as DamageType)}
+                    onValueChange={(value) => setDamageType(value as DamageType | 'all')}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Damage Type" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Types</SelectItem>
+                        <SelectItem value="all">All Types</SelectItem>
                         {damageTypes.map((type) => (
                             <SelectItem key={type} value={type}>
                                 {type}
@@ -152,7 +152,7 @@ export default function ClaimFiltersBar({
                     </PopoverContent>
                 </Popover>
             </div>
-            {(searchTerm || status || damageType || startDate || endDate) && (
+            {(searchTerm || status !== 'all' || damageType !== 'all' || startDate || endDate) && (
                 <Button
                     variant="outline"
                     onClick={handleReset}

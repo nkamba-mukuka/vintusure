@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { SearchIcon, XIcon } from 'lucide-react';
 
+type CustomerStatus = 'active' | 'inactive' | 'all';
+
 interface CustomerFiltersBarProps {
     filters: CustomerFilters;
     onFilterChange: (filters: CustomerFilters) => void;
@@ -22,14 +24,14 @@ export default function CustomerFiltersBar({
     onFilterChange,
 }: CustomerFiltersBarProps) {
     const [searchTerm, setSearchTerm] = useState(filters.searchTerm || '');
-    const [status, setStatus] = useState(filters.status || '');
+    const [status, setStatus] = useState<CustomerStatus>(filters.status || 'all');
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             onFilterChange({
                 ...filters,
                 searchTerm,
-                status: status || undefined,
+                status: status === 'all' ? undefined : status,
             });
         }, 300);
 
@@ -38,7 +40,7 @@ export default function CustomerFiltersBar({
 
     const handleReset = () => {
         setSearchTerm('');
-        setStatus('');
+        setStatus('all');
         onFilterChange({});
     };
 
@@ -58,19 +60,19 @@ export default function CustomerFiltersBar({
             <div className="w-48">
                 <Select
                     value={status}
-                    onValueChange={setStatus}
+                    onValueChange={(value: CustomerStatus) => setStatus(value)}
                 >
                     <SelectTrigger>
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Status</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
-            {(searchTerm || status) && (
+            {(searchTerm || status !== 'all') && (
                 <Button
                     variant="outline"
                     onClick={handleReset}
