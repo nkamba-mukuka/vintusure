@@ -98,13 +98,14 @@ async function logSecurityEvent(event: string, userId: string, details: any) {
 
 export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
     maxInstances: 10,
+    cors: true,
 }, async (request) => {
     try {
         console.log('Received request:', request.data);
         
         // Extract user ID from Firebase Auth context
         const userId = request.auth?.uid || 'anonymous';
-        const { query } = request.data;
+        const { query } = request.data || {};
 
         // Log the request
         await logSecurityEvent('rag_query_request', userId, { 
@@ -224,15 +225,35 @@ export const askQuestion = onCall<QueryRequest, Promise<QueryResponse>>({
 // Health check endpoint with authentication
 export const healthCheck = onCall<{}, { status: string; service: string; timestamp: string }>({
     maxInstances: 10,
-}, async (request) => {
-    const userId = request.auth?.uid || 'anonymous';
-    
-    // Log health check
-    await logSecurityEvent('health_check', userId, {});
-    
+    cors: true,
+}, (request) => {
+    try {
+        const userId = request.auth?.uid || 'anonymous';
+        
+        // Log health check (fire and forget)
+        logSecurityEvent('health_check', userId, {});
+        
+        return {
+            status: 'healthy',
+            service: 'VintuSure RAG API',
+            timestamp: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Health check error:', error);
+        return {
+            status: 'error',
+            service: 'VintuSure RAG API',
+            timestamp: new Date().toISOString()
+        };
+    }
+});
+
+// Simple test function for debugging
+export const testFunction = onCall<{}, { message: string }>({
+    maxInstances: 10,
+    cors: true,
+}, () => {
     return {
-        status: 'healthy',
-        service: 'VintuSure RAG API',
-        timestamp: new Date().toISOString()
+        message: 'Test function is working!'
     };
 }); 
