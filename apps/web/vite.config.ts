@@ -10,6 +10,7 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src')
         }
     },
+    envPrefix: ['VITE_', 'GOOGLE_AI_'],
     server: {
         port: 3000,
         open: true

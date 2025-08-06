@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { RAGService, QueryResponse } from '@/lib/services/ragService';
-import { carAnalysisService, type CarAnalysisResult } from '@/lib/services/carAnalysisService';
+import { carAnalysisService, type CarAnalysisResult, type CarDetails, type InsuranceRecommendation, type MarketplaceListing, type Marketplace } from '@/lib/services/carAnalysisService';
 import { premiumService } from '@/lib/services/premiumService';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -136,31 +136,95 @@ const Explore: React.FC = () => {
 
         setIsAnalyzing(true);
         try {
-            const base64 = await carAnalysisService.fileToBase64(file);
-            const result = await carAnalysisService.analyzeCarPhoto({ photoBase64: base64 });
-            setCarAnalysis(result);
-
-            toast({
-                title: 'Success',
-                description: 'Car photo analyzed successfully',
+            console.log('Starting car photo analysis...', {
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size
             });
-        } catch (error) {
-            console.error('Error analyzing car photo:', error);
-            let errorMessage = 'Failed to analyze car photo';
 
-            if (error instanceof Error) {
+            const base64 = await carAnalysisService.fileToBase64(file);
+            console.log('Converted image to base64', {
+                base64Length: base64.length,
+                firstChars: base64.substring(0, 50) + '...'
+            });
+
+            try {
+                const result = await carAnalysisService.analyzeCarPhoto({ photoBase64: base64 });
+                console.log('Analysis result:', {
+                    hasResult: !!result,
+                    carDetails: result?.carDetails ? {
+                        hasMake: !!result.carDetails.make,
+                        hasModel: !!result.carDetails.model,
+                        hasYear: !!result.carDetails.estimatedYear,
+                    } : null,
+                    insuranceRecommendation: result?.insuranceRecommendation ? {
+                        hasCoverage: !!result.insuranceRecommendation.recommendedCoverage,
+                        hasPremium: !!result.insuranceRecommendation.estimatedPremium,
+                    } : null,
+                    marketplaceRecommendations: result?.marketplaceRecommendations ? {
+                        listingsCount: result.marketplaceRecommendations.similarListings?.length,
+                        marketplacesCount: result.marketplaceRecommendations.marketplaces?.length,
+                    } : null
+                });
+
+                setCarAnalysis(result);
+                toast({
+                    title: 'Success',
+                    description: 'Car photo analyzed successfully',
+                });
+            } catch (err) {
+                const error = err as Error & { code?: string; details?: unknown };
+                console.error('Error from car analysis service:', {
+                    error,
+                    name: error.name,
+                    message: error.message,
+                    code: error.code,
+                    details: error.details,
+                    stack: error.stack,
+                });
+
+                let errorMessage = 'Failed to analyze car photo';
+
+                console.log('Error instance details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack,
+                    isCarAnalysisError: error.name === 'CarAnalysisError',
+                    additionalProps: Object.keys(error),
+                });
+
                 if (error.message.includes('CORS')) {
                     errorMessage = 'Server connection error. Please try again.';
                 } else if (error.message.includes('timeout')) {
                     errorMessage = 'Analysis took too long. Please try with a smaller image.';
                 } else if (error.message.includes('permission')) {
                     errorMessage = 'Permission denied. Please check your connection.';
+                } else if (error.message.includes('not-found')) {
+                    errorMessage = 'AI service not available. Please try again later.';
+                } else if (error.message.includes('invalid-argument')) {
+                    errorMessage = 'Invalid image format. Please try a different image.';
+                } else if (error.message.includes('unauthenticated')) {
+                    errorMessage = 'Please sign in to use this feature.';
                 }
+
+                toast({
+                    title: 'Error',
+                    description: errorMessage,
+                    variant: 'destructive',
+                });
             }
+        } catch (err) {
+            const error = err as Error;
+            console.error('Error in image processing:', {
+                error,
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
 
             toast({
                 title: 'Error',
-                description: errorMessage,
+                description: 'Failed to process image. Please try again.',
                 variant: 'destructive',
             });
         } finally {
@@ -346,8 +410,8 @@ const Explore: React.FC = () => {
                                         onDragOver={handleDragOver}
                                         onDrop={handleDrop}
                                         className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors ${isDragging
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : 'border-gray-200 hover:border-blue-400'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:border-blue-400'
                                             }`}
                                     >
                                         <input
@@ -408,6 +472,10 @@ const Explore: React.FC = () => {
                                                     <div>
                                                         <p className="text-sm text-gray-500">Body Type</p>
                                                         <p className="font-medium">{carAnalysis.carDetails.bodyType}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-gray-500">Condition</p>
+                                                        <p className="font-medium">{carAnalysis.carDetails.condition}</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-sm text-gray-500">Estimated Value</p>

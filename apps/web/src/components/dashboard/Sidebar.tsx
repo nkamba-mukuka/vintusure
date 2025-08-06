@@ -9,7 +9,9 @@ import {
     AlertCircle,
     Settings,
     LogOut,
-    Brain
+    Brain,
+    Sparkles,
+    Car
 } from 'lucide-react'
 
 const navigation = [
@@ -17,7 +19,9 @@ const navigation = [
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Policies', href: '/policies', icon: FileText },
     { name: 'Claims', href: '/claims', icon: AlertCircle },
+    { name: 'Car Analyzer', href: '/car-analyzer', icon: Car },
     { name: 'RAG Test', href: '/rag-test', icon: Brain },
+    { name: 'AI Generator', href: '/ai-generator', icon: Sparkles },
     { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

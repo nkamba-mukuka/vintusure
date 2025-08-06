@@ -23,6 +23,8 @@ const CustomersPage = React.lazy(() => import('@/routes/dashboard/customers/Cust
 const NewCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/NewCustomer'))
 const EditCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/EditCustomer'))
 const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
+const AIGeneratorPage = React.lazy(() => import('@/routes/dashboard/AIGenerator'))
+const CarAnalyzerPage = React.lazy(() => import('@/routes/dashboard/CarAnalyzer'))
 
 function ProtectedRoute() {
     const { user, loading } = useAuthContext()
@@ -72,6 +74,8 @@ export default function App() {
                                 <Route path=":id/edit" element={<EditCustomerPage />} />
                             </Route>
                             <Route path="/rag-test" element={<RAGTestPage />} />
+                            <Route path="/ai-generator" element={<AIGeneratorPage />} />
+                            <Route path="/car-analyzer" element={<CarAnalyzerPage />} />
                         </Route>
                     </Route>
 
