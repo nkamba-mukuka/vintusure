@@ -66,11 +66,9 @@ export default function App() {
                                 </Route>
                             </Route>
                             <Route path="/claims" element={<ClaimsPage />} />
-                            <Route path="/customers">
-                                <Route index element={<CustomersPage />} />
-                                <Route path="/customers/new" element={<NewCustomerPage />} />
-                                <Route path=":id/edit" element={<EditCustomerPage />} />
-                            </Route>
+                            <Route path="/customers/new" element={<NewCustomerPage />} />
+                            <Route path="/customers/:id/edit" element={<EditCustomerPage />} />
+                            <Route path="/customers" element={<CustomersPage />} />
                             <Route path="/rag-test" element={<RAGTestPage />} />
                         </Route>
                     </Route>

@@ -83,7 +83,7 @@ export default function CustomerList({
             {/* Header with Create Button */}
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">Customers</h2>
-                <Link to="/dashboard/customers/new">
+                <Link to="/customers/new">
                     <Button className="flex items-center gap-2">
                         <PlusIcon className="h-4 w-4" />
                         Create Customer

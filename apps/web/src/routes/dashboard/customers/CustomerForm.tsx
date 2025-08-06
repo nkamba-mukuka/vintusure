@@ -83,7 +83,7 @@ export default function CustomerForm({ customer, mode }: CustomerFormProps) {
                         title: "Customer created",
                         description: "Customer has been created successfully.",
                     });
-                    navigate('/dashboard/customers');
+                    navigate('/customers');
                 }
             } else if (mode === 'edit' && customer) {
                 const success = await updateCustomer(customer.id, formData);
@@ -92,7 +92,7 @@ export default function CustomerForm({ customer, mode }: CustomerFormProps) {
                         title: "Customer updated",
                         description: "Customer has been updated successfully.",
                     });
-                    navigate('/dashboard/customers');
+                    navigate('/customers');
                 }
             }
         } catch (error) {
