@@ -17,50 +17,58 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onMenuClick }: TopBarProps) {
-    const { user, userProfile, logout } = useAuthContext();
+    const { user, signOut } = useAuthContext();
 
     return (
-        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-40">
             <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center space-x-4">
                     {/* Mobile Menu Button */}
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="lg:hidden"
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden text-muted-foreground hover:text-primary hover:bg-primary/5"
                         onClick={onMenuClick}
                     >
                         <Menu className="h-5 w-5" />
                     </Button>
-                    
+
                     {/* Logo - Hidden on mobile when sidebar is open */}
                     <div className="flex items-center space-x-2 lg:hidden">
                         <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
-                        <span className="text-xl font-bold text-gray-800">VintuSure</span>
+                        <span className="text-xl font-bold text-primary">VintuSure</span>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="icon" className="hidden sm:flex">
-                        <Bell className="h-5 w-5 text-gray-500" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hidden sm:flex text-muted-foreground hover:text-primary hover:bg-primary/5"
+                    >
+                        <Bell className="h-5 w-5" />
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <User className="h-5 w-5 text-gray-500" />
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/5"
+                            >
+                                <User className="h-5 w-5" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>
-                                {user?.email}
-                                {userProfile?.role && (
-                                    <span className="block text-sm text-gray-500">
-                                        {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)}
-                                    </span>
-                                )}
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium text-primary">{user?.email}</p>
+                                </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => logout()}>
+                            <DropdownMenuItem
+                                onSelect={() => signOut()}
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/5"
+                            >
                                 Sign out
                             </DropdownMenuItem>
                         </DropdownMenuContent>

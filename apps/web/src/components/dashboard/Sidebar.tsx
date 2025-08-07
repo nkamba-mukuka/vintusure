@@ -16,7 +16,6 @@ import {
     Sparkles,
     Car,
     Menu,
-    X
 } from 'lucide-react'
 import vintusureLogo from '@/assets/vintusure-logo.ico'
 
@@ -36,34 +35,35 @@ function SidebarContent() {
     const { signOut } = useAuthContext()
 
     return (
-        <div className="flex flex-col h-full bg-white/80 backdrop-blur-sm border-r border-gray-200">
+        <div className="flex flex-col h-full bg-card">
             <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
                 <div className="flex items-center flex-shrink-0 px-4">
                     <div className="flex items-center space-x-2">
                         <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
-                        <span className="text-xl font-bold text-gray-800">VintuSure</span>
+                        <span className="text-xl font-bold text-primary">VintuSure</span>
                     </div>
                 </div>
                 <nav className="mt-5 flex-1 px-2 space-y-1">
                     {navigation.map((item) => {
                         const Icon = item.icon
+                        const isActive = location.pathname === item.href
                         return (
                             <Link
                                 key={item.name}
                                 to={item.href}
                                 className={cn(
-                                    location.pathname === item.href
-                                        ? 'bg-blue-100 text-blue-900 border-r-2 border-blue-500'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                                    'group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors'
+                                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                                    isActive
+                                        ? "bg-primary/10 text-primary border-r-2 border-primary"
+                                        : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                                 )}
                             >
                                 <Icon
                                     className={cn(
-                                        location.pathname === item.href
-                                            ? 'text-blue-600'
-                                            : 'text-gray-400 group-hover:text-gray-500',
-                                        'mr-3 h-5 w-5'
+                                        "mr-3 h-5 w-5",
+                                        isActive
+                                            ? "text-primary"
+                                            : "text-muted-foreground group-hover:text-primary"
                                     )}
                                 />
                                 {item.name}
@@ -72,14 +72,14 @@ function SidebarContent() {
                     })}
                 </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+            <div className="flex-shrink-0 flex border-t border-border p-4">
                 <Button
                     onClick={() => signOut()}
                     variant="ghost"
-                    className="flex-shrink-0 w-full justify-start group"
+                    className="flex-shrink-0 w-full justify-start group text-muted-foreground hover:text-primary hover:bg-primary/5"
                 >
-                    <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                    <LogOut className="mr-3 h-5 w-5 group-hover:text-primary" />
+                    <span className="text-sm font-medium">
                         Sign Out
                     </span>
                 </Button>
@@ -95,7 +95,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
     const [internalIsOpen, setInternalIsOpen] = useState(false)
-    
+
     // Use external state if provided, otherwise use internal state
     const isSidebarOpen = isOpen !== undefined ? isOpen : internalIsOpen
     const setIsSidebarOpen = onOpenChange || setInternalIsOpen
@@ -115,7 +115,7 @@ export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
             </Sheet>
 
             {/* Desktop Sidebar */}
-            <div className="hidden lg:block w-64">
+            <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:z-40 lg:w-64 border-r border-border">
                 <SidebarContent />
             </div>
         </>

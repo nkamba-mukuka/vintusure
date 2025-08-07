@@ -285,23 +285,23 @@ const Explore: React.FC = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="min-h-screen bg-background">
             {/* Navigation */}
-            <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+            <nav className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center space-x-2">
                             <Link to="/" className="flex items-center space-x-2">
                                 <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
-                                <span className="text-xl font-bold text-gray-800">VintuSure</span>
+                                <span className="text-xl font-bold text-primary">VintuSure</span>
                             </Link>
                         </div>
-                        
+
                         {/* Navigation Buttons */}
                         <div className="flex items-center space-x-4">
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button className="flex items-center gap-2">
+                                    <Button variant="purple" className="flex items-center gap-2">
                                         <Bot className="h-4 w-4" />
                                         Ask VintuSure AI
                                     </Button>
@@ -322,11 +322,10 @@ const Explore: React.FC = () => {
                                                 onDragLeave={handleDragLeave}
                                                 onDragOver={handleDragOver}
                                                 onDrop={handleDrop}
-                                                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                                                    isDragging
+                                                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging
                                                         ? 'border-blue-500 bg-blue-50'
                                                         : 'border-gray-200 hover:border-blue-400'
-                                                }`}
+                                                    }`}
                                             >
                                                 <input
                                                     type="file"
@@ -411,7 +410,7 @@ const Explore: React.FC = () => {
 
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button variant="outline" className="flex items-center gap-2">
+                                    <Button variant="outline" className="flex items-center gap-2 hover:bg-primary/5 hover:text-primary">
                                         <Users className="h-4 w-4" />
                                         Agents
                                     </Button>
@@ -451,7 +450,7 @@ const Explore: React.FC = () => {
                                                             <span className="text-sm">{agent.availability}</span>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div>
                                                         <h4 className="font-medium mb-2">Specialties:</h4>
                                                         <div className="flex flex-wrap gap-1">
@@ -462,7 +461,7 @@ const Explore: React.FC = () => {
                                                             ))}
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <Button className="w-full" asChild>
                                                         <a href={`mailto:${agent.email}?subject=Insurance Inquiry`}>
                                                             <Shield className="h-4 w-4 mr-2" />
@@ -477,7 +476,10 @@ const Explore: React.FC = () => {
                             </Dialog>
 
                             <Link to="/">
-                                <Button variant="outline" className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex items-center gap-2 hover:bg-primary/5 hover:text-primary"
+                                >
                                     <ArrowLeft className="h-4 w-4" />
                                     <span className="hidden sm:inline">Back to Home</span>
                                 </Button>
@@ -490,21 +492,21 @@ const Explore: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
                 {/* Hero Section */}
                 <div className="text-center mb-8 sm:mb-12">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-3 sm:mb-4 text-primary">
                         AI-Powered Insurance Solutions
                     </h1>
-                    <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                        VintuSure helps insurance agents provide better service with AI-powered car analysis, 
+                    <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
+                        VintuSure helps insurance agents provide better service with AI-powered car analysis,
                         accurate valuations, and intelligent insurance recommendations.
                     </p>
                 </div>
 
-                {/* AI Assistant Section - Moved to Top */}
+                {/* AI Assistant Section */}
                 <section className="mb-8">
-                    <Card>
+                    <Card className="hover-card-effect">
                         <CardHeader>
                             <div className="flex items-center space-x-3">
-                                <Bot className="h-6 w-6 text-blue-600" />
+                                <Bot className="h-6 w-6 text-primary" />
                                 <CardTitle>VintuSure AI Assistant</CardTitle>
                             </div>
                             <CardDescription>
@@ -524,6 +526,7 @@ const Explore: React.FC = () => {
                                     onClick={handleAskQuestion}
                                     disabled={isLoading}
                                     className="w-full"
+                                    variant="purple"
                                 >
                                     {isLoading ? (
                                         <div className="flex items-center space-x-2">
@@ -540,13 +543,13 @@ const Explore: React.FC = () => {
                             </div>
 
                             {response && (
-                                <div className="mt-6 p-4 bg-gray-50 rounded-lg max-h-64 overflow-y-auto">
-                                    <h4 className="font-semibold mb-2 text-gray-800">AI Response:</h4>
-                                    <p className="text-gray-700">{response.answer}</p>
-                                    <div className="mt-3 p-2 bg-blue-50 rounded border-l-4 border-blue-400">
+                                <div className="mt-6 p-4 bg-card rounded-lg max-h-64 overflow-y-auto border">
+                                    <h4 className="font-semibold mb-2 text-primary">AI Response:</h4>
+                                    <p className="text-muted-foreground">{response.answer}</p>
+                                    <div className="mt-3 p-2 bg-primary/5 rounded border-l-4 border-primary">
                                         <div className="flex items-center space-x-2">
-                                            <Info className="h-4 w-4 text-blue-600" />
-                                            <span className="text-sm text-blue-800">
+                                            <Info className="h-4 w-4 text-primary" />
+                                            <span className="text-sm text-primary">
                                                 This is general information only. For personalized advice, please contact our agents.
                                             </span>
                                         </div>
@@ -559,39 +562,39 @@ const Explore: React.FC = () => {
 
                 {/* Insurance Products */}
                 <section className="mb-8">
-                    <h2 className="text-3xl font-bold mb-6 text-gray-800">Insurance Products</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-primary">Insurance Products</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {insuranceProducts.map((product, index) => (
-                            <Card key={index} className="hover:shadow-lg transition-all duration-300">
+                            <Card key={index} className="hover-card-effect">
                                 <CardHeader>
                                     <div className="flex items-center space-x-3">
-                                        <div className="text-blue-600">
+                                        <div className="text-primary">
                                             {product.icon}
                                         </div>
                                         <CardTitle className="text-xl">{product.title}</CardTitle>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <CardDescription className="text-gray-600 mb-4">
+                                    <CardDescription className="text-muted-foreground mb-4">
                                         {product.description}
                                     </CardDescription>
                                     <div className="space-y-4">
                                         <div>
-                                            <h4 className="font-semibold text-sm text-gray-700 mb-2">Key Features:</h4>
+                                            <h4 className="font-semibold text-sm text-primary mb-2">Key Features:</h4>
                                             <div className="space-y-1">
                                                 {product.features.map((feature, featureIndex) => (
                                                     <div key={featureIndex} className="flex items-center space-x-2">
-                                                        <CheckCircle className="h-3 w-3 text-green-500" />
-                                                        <span className="text-sm text-gray-700">{feature}</span>
+                                                        <CheckCircle className="h-3 w-3 text-primary" />
+                                                        <span className="text-sm text-muted-foreground">{feature}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                         <div>
-                                            <h4 className="font-semibold text-sm text-gray-700 mb-2">Coverage Includes:</h4>
+                                            <h4 className="font-semibold text-sm text-primary mb-2">Coverage Includes:</h4>
                                             <div className="flex flex-wrap gap-1">
                                                 {product.coverage.map((item, itemIndex) => (
-                                                    <Badge key={itemIndex} variant="secondary" className="text-xs">
+                                                    <Badge key={itemIndex} variant="secondary" className="text-xs hover:bg-primary/5">
                                                         {item}
                                                     </Badge>
                                                 ))}
@@ -606,20 +609,20 @@ const Explore: React.FC = () => {
 
                 {/* Policy Overviews */}
                 <section className="mb-8">
-                    <h2 className="text-3xl font-bold mb-6 text-gray-800">Understanding Insurance</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-primary">Understanding Insurance</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {policyOverviews.map((overview, index) => (
-                            <Card key={index} className="hover:shadow-lg transition-all duration-300">
+                            <Card key={index} className="hover-card-effect">
                                 <CardHeader>
                                     <div className="flex items-center space-x-3">
-                                        <div className="text-blue-600">
+                                        <div className="text-primary">
                                             {overview.icon}
                                         </div>
                                         <CardTitle className="text-lg">{overview.title}</CardTitle>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <CardDescription className="text-gray-600">
+                                    <CardDescription className="text-muted-foreground">
                                         {overview.content}
                                     </CardDescription>
                                 </CardContent>
@@ -628,14 +631,14 @@ const Explore: React.FC = () => {
                     </div>
                 </section>
 
-                {/* FAQ Section - Moved to Bottom */}
+                {/* FAQ Section */}
                 <section id="faq-section">
-                    <h2 className="text-3xl font-bold mb-6 text-gray-800">Frequently Asked Questions</h2>
+                    <h2 className="text-3xl font-bold mb-6 text-primary">Frequently Asked Questions</h2>
                     <div className="space-y-4">
                         {faqData.map((category) => (
-                            <Card key={category.id}>
+                            <Card key={category.id} className="hover-card-effect">
                                 <CardHeader>
-                                    <CardTitle className="text-xl">{category.title}</CardTitle>
+                                    <CardTitle className="text-xl text-primary">{category.title}</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
@@ -652,7 +655,7 @@ const Explore: React.FC = () => {
                                                 <CollapsibleTrigger asChild>
                                                     <Button
                                                         variant="ghost"
-                                                        className="w-full justify-between p-4 h-auto"
+                                                        className="w-full justify-between p-4 h-auto hover:bg-primary/5 hover:text-primary"
                                                     >
                                                         <span className="text-left font-medium">{item.question}</span>
                                                         {activeFAQ === `${category.id}-${index}` ? (
@@ -663,7 +666,7 @@ const Explore: React.FC = () => {
                                                     </Button>
                                                 </CollapsibleTrigger>
                                                 <CollapsibleContent className="px-4 pb-4">
-                                                    <p className="text-gray-600">{item.answer}</p>
+                                                    <p className="text-muted-foreground">{item.answer}</p>
                                                 </CollapsibleContent>
                                             </Collapsible>
                                         ))}
