@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RAGService, QueryResponse } from '@/lib/services/ragService';
-import { carAnalysisService, type CarAnalysisResult, type CarDetails, type InsuranceRecommendation, type MarketplaceListing, type Marketplace } from '@/lib/services/carAnalysisService';
+import { carAnalysisService, type CarAnalysisResult, type CarDetails, type InsuranceRecommendation, type MarketplaceListing } from '@/lib/services/carAnalysisService';
 import { premiumService } from '@/lib/services/premiumService';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -323,8 +323,8 @@ const Explore: React.FC = () => {
                                                 onDragOver={handleDragOver}
                                                 onDrop={handleDrop}
                                                 className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging
-                                                        ? 'border-blue-500 bg-blue-50'
-                                                        : 'border-gray-200 hover:border-blue-400'
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:border-blue-400'
                                                     }`}
                                             >
                                                 <input
@@ -384,7 +384,16 @@ const Explore: React.FC = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm text-gray-500">Estimated Value</p>
-                                                            <p className="font-medium">{premiumService.formatCurrency(carAnalysis.carDetails.estimatedValue)}</p>
+                                                            <p className="font-medium">
+                                                                {carAnalysis.carDetails.estimatedValue
+                                                                    ? premiumService.formatCurrency(carAnalysis.carDetails.estimatedValue)
+                                                                    : "Not Found"}
+                                                            </p>
+                                                            {carAnalysis.carDetails.researchSources && (
+                                                                <p className="text-xs text-gray-500 mt-1">
+                                                                    {carAnalysis.carDetails.researchSources[0]}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -399,9 +408,67 @@ const Explore: React.FC = () => {
                                                         <div>
                                                             <p className="text-sm text-gray-500">Estimated Premium</p>
                                                             <p className="font-medium">{premiumService.formatCurrency(carAnalysis.insuranceRecommendation.estimatedPremium)}</p>
+                                                            {!carAnalysis.carDetails.estimatedValue && (
+                                                                <p className="text-xs text-gray-500 mt-1">
+                                                                    Base premium - actual premium may vary after assessment
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {carAnalysis.marketplaceRecommendations && (
+                                                    <div className="bg-gray-50 rounded-lg p-4">
+                                                        <h3 className="font-semibold mb-3">Where to Buy</h3>
+                                                        {carAnalysis.marketplaceRecommendations.similarListings?.length > 0 && (
+                                                            <div className="mb-4">
+                                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Similar Cars:</h4>
+                                                                <div className="space-y-2">
+                                                                    {carAnalysis.marketplaceRecommendations.similarListings.map((listing, index) => (
+                                                                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                                                                            <div>
+                                                                                <p className="text-sm font-medium">{listing.description}</p>
+                                                                                <p className="text-xs text-gray-500">{listing.platform}</p>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-sm font-medium">{premiumService.formatCurrency(listing.price)}</span>
+                                                                                <a
+                                                                                    href={listing.url}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:text-blue-800"
+                                                                                >
+                                                                                    <ExternalLink className="h-4 w-4" />
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div>
+                                                            <h4 className="text-sm font-medium text-gray-700 mb-2">Popular Marketplaces:</h4>
+                                                            <div className="grid gap-2">
+                                                                {carAnalysis.marketplaceRecommendations.marketplaces.map((marketplace, index) => (
+                                                                    <a
+                                                                        key={index}
+                                                                        href={marketplace.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center justify-between p-2 bg-white rounded-md hover:bg-gray-50 transition-colors"
+                                                                    >
+                                                                        <div>
+                                                                            <p className="text-sm font-medium">{marketplace.name}</p>
+                                                                            <p className="text-xs text-gray-500">{marketplace.description}</p>
+                                                                        </div>
+                                                                        <ExternalLink className="h-4 w-4 text-gray-400" />
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -563,9 +630,9 @@ const Explore: React.FC = () => {
                 {/* Insurance Products */}
                 <section className="mb-8">
                     <h2 className="text-3xl font-bold mb-6 text-primary">Insurance Products</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex justify-center">
                         {insuranceProducts.map((product, index) => (
-                            <Card key={index} className="hover-card-effect">
+                            <Card key={index} className="hover-card-effect max-w-2xl w-full">
                                 <CardHeader>
                                     <div className="flex items-center space-x-3">
                                         <div className="text-primary">
