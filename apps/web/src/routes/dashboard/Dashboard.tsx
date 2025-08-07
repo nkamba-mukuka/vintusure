@@ -151,16 +151,16 @@ export default function DashboardPage() {
     ]
 
     return (
-        <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="py-4 sm:py-6">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <div className="mb-6 sm:mb-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
                     <p className="text-gray-600 mt-2">Welcome back, {user?.email}</p>
                 </div>
 
                 <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
                         <TabsTrigger value="quick-actions">Quick Actions</TabsTrigger>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Recent Activity Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             {/* Recent Policies */}
                             <Card>
                                 <CardHeader>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                                             recentPolicies.map((policy) => (
                                                 <div key={policy.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                                     <div>
-                                                        <p className="font-medium">{policy.customerName}</p>
+                                                        <p className="font-medium">{policy.vehicle.registrationNumber}</p>
                                                         <p className="text-sm text-gray-600">{policy.type}</p>
                                                     </div>
                                                     <Badge variant={policy.status === 'active' ? 'default' : 'secondary'}>
@@ -268,8 +268,8 @@ export default function DashboardPage() {
                                             recentClaims.map((claim) => (
                                                 <div key={claim.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                                     <div>
-                                                        <p className="font-medium">{claim.customerName}</p>
-                                                        <p className="text-sm text-gray-600">{claim.type}</p>
+                                                        <p className="font-medium">{claim.damageType}</p>
+                                                        <p className="text-sm text-gray-600">Claim #{claim.id.slice(-6)}</p>
                                                     </div>
                                                     <Badge variant={claim.status === 'UnderReview' ? 'destructive' : 'default'}>
                                                         {claim.status}
@@ -349,11 +349,17 @@ export default function DashboardPage() {
                                 {/* AI Response */}
                                 {aiResponse && (
                                     <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                        <h4 className="font-semibold mb-2 text-blue-900 flex items-center gap-2">
+                                        <h4 className="font-semibold mb-3 text-blue-900 flex items-center gap-2">
                                             <MessageCircle className="h-4 w-4" />
                                             AI Response:
                                         </h4>
-                                        <p className="text-blue-800">{aiResponse.answer}</p>
+                                        <div className="max-h-64 overflow-y-auto pr-2 ai-response-scrollbar">
+                                            <div className="prose prose-sm max-w-none">
+                                                <p className="text-blue-800 font-['Roboto'] leading-relaxed whitespace-pre-wrap">
+                                                    {aiResponse.answer}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </CardContent>
@@ -373,7 +379,7 @@ export default function DashboardPage() {
                                 </p>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {quickActions.map((action, index) => (
                                         <Link key={index} to={action.link}>
                                             <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer">
@@ -419,7 +425,7 @@ export default function DashboardPage() {
                                                     <div key={policy.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                                         <div>
-                                                            <p className="text-sm font-medium">Policy updated for {policy.customerName}</p>
+                                                            <p className="text-sm font-medium">Policy updated for {policy.vehicle.registrationNumber}</p>
                                                             <p className="text-xs text-gray-500">{policy.type} • {policy.status}</p>
                                                         </div>
                                                     </div>
@@ -436,8 +442,8 @@ export default function DashboardPage() {
                                                     <div key={claim.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                                                         <AlertCircle className="h-4 w-4 text-orange-500" />
                                                         <div>
-                                                            <p className="text-sm font-medium">Claim filed by {claim.customerName}</p>
-                                                            <p className="text-xs text-gray-500">{claim.type} • {claim.status}</p>
+                                                            <p className="text-sm font-medium">Claim filed for {claim.damageType}</p>
+                                                            <p className="text-xs text-gray-500">Claim #{claim.id.slice(-6)} • {claim.status}</p>
                                                         </div>
                                                     </div>
                                                 ))}

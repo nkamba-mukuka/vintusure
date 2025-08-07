@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RAGService, QueryResponse } from '@/lib/services/ragService';
 import { carAnalysisService, type CarAnalysisResult, type CarDetails, type InsuranceRecommendation, type MarketplaceListing, type Marketplace } from '@/lib/services/carAnalysisService';
 import { premiumService } from '@/lib/services/premiumService';
@@ -29,7 +30,9 @@ import {
     Upload,
     Image,
     ExternalLink,
-    Shield
+    Shield,
+    Users,
+    Bot
 } from 'lucide-react';
 import vintusureLogo from '@/assets/vintusure-logo.ico';
 
@@ -57,7 +60,6 @@ const Explore: React.FC = () => {
 
         setIsLoading(true);
         try {
-            // Ensure no sensitive data is accessed by using anonymous user
             const result = await RAGService.askQuestion(query, 'anonymous');
             setResponse(result);
 
@@ -114,7 +116,6 @@ const Explore: React.FC = () => {
     const processCarPhoto = async (file: File) => {
         if (!file) return;
 
-        // Check file type
         if (!file.type.startsWith('image/')) {
             toast({
                 title: 'Error',
@@ -124,7 +125,6 @@ const Explore: React.FC = () => {
             return;
         }
 
-        // Check file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             toast({
                 title: 'Error',
@@ -136,95 +136,18 @@ const Explore: React.FC = () => {
 
         setIsAnalyzing(true);
         try {
-            console.log('Starting car photo analysis...', {
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: file.size
-            });
-
             const base64 = await carAnalysisService.fileToBase64(file);
-            console.log('Converted image to base64', {
-                base64Length: base64.length,
-                firstChars: base64.substring(0, 50) + '...'
+            const result = await carAnalysisService.analyzeCarPhoto({ photoBase64: base64 });
+            setCarAnalysis(result);
+            toast({
+                title: 'Success',
+                description: 'Car photo analyzed successfully',
             });
-
-            try {
-                const result = await carAnalysisService.analyzeCarPhoto({ photoBase64: base64 });
-                console.log('Analysis result:', {
-                    hasResult: !!result,
-                    carDetails: result?.carDetails ? {
-                        hasMake: !!result.carDetails.make,
-                        hasModel: !!result.carDetails.model,
-                        hasYear: !!result.carDetails.estimatedYear,
-                    } : null,
-                    insuranceRecommendation: result?.insuranceRecommendation ? {
-                        hasCoverage: !!result.insuranceRecommendation.recommendedCoverage,
-                        hasPremium: !!result.insuranceRecommendation.estimatedPremium,
-                    } : null,
-                    marketplaceRecommendations: result?.marketplaceRecommendations ? {
-                        listingsCount: result.marketplaceRecommendations.similarListings?.length,
-                        marketplacesCount: result.marketplaceRecommendations.marketplaces?.length,
-                    } : null
-                });
-
-                setCarAnalysis(result);
-                toast({
-                    title: 'Success',
-                    description: 'Car photo analyzed successfully',
-                });
-            } catch (err) {
-                const error = err as Error & { code?: string; details?: unknown };
-                console.error('Error from car analysis service:', {
-                    error,
-                    name: error.name,
-                    message: error.message,
-                    code: error.code,
-                    details: error.details,
-                    stack: error.stack,
-                });
-
-                let errorMessage = 'Failed to analyze car photo';
-
-                console.log('Error instance details:', {
-                    name: error.name,
-                    message: error.message,
-                    stack: error.stack,
-                    isCarAnalysisError: error.name === 'CarAnalysisError',
-                    additionalProps: Object.keys(error),
-                });
-
-                if (error.message.includes('CORS')) {
-                    errorMessage = 'Server connection error. Please try again.';
-                } else if (error.message.includes('timeout')) {
-                    errorMessage = 'Analysis took too long. Please try with a smaller image.';
-                } else if (error.message.includes('permission')) {
-                    errorMessage = 'Permission denied. Please check your connection.';
-                } else if (error.message.includes('not-found')) {
-                    errorMessage = 'AI service not available. Please try again later.';
-                } else if (error.message.includes('invalid-argument')) {
-                    errorMessage = 'Invalid image format. Please try a different image.';
-                } else if (error.message.includes('unauthenticated')) {
-                    errorMessage = 'Please sign in to use this feature.';
-                }
-
-                toast({
-                    title: 'Error',
-                    description: errorMessage,
-                    variant: 'destructive',
-                });
-            }
-        } catch (err) {
-            const error = err as Error;
-            console.error('Error in image processing:', {
-                error,
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
-
+        } catch (error) {
+            console.error('Error analyzing car photo:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to process image. Please try again.',
+                description: 'Failed to analyze car photo. Please try again.',
                 variant: 'destructive',
             });
         } finally {
@@ -269,37 +192,70 @@ const Explore: React.FC = () => {
         }
     ];
 
-    const agentInfo = {
-        name: 'Sarah Johnson',
-        phone: '+260 97 1234567',
-        email: 'sarah.johnson@vintusure.com',
-        location: 'Lusaka, Zambia',
-        specialties: ['Motor Insurance', 'Fleet Coverage', 'Commercial Vehicles'],
-        experience: '15+ years',
-        languages: ['English', 'Nyanja', 'Bemba'],
-        availability: 'Mon-Fri 8AM-5PM, Sat 9AM-1PM'
-    };
+    const agents = [
+        {
+            name: 'Sarah Johnson',
+            company: 'VintuSure Insurance Partners',
+            phone: '+260 97 1234567',
+            email: 'sarah.johnson@vintusure.com',
+            location: 'Lusaka, Zambia',
+            specialties: ['Motor Insurance', 'Fleet Coverage', 'Commercial Vehicles'],
+            experience: '15+ years',
+            languages: ['English', 'Nyanja', 'Bemba'],
+            availability: 'Mon-Fri 8AM-5PM, Sat 9AM-1PM'
+        },
+        {
+            name: 'Michael Banda',
+            company: 'VintuSure Insurance Partners',
+            phone: '+260 96 9876543',
+            email: 'michael.banda@vintusure.com',
+            location: 'Kitwe, Zambia',
+            specialties: ['Personal Insurance', 'Business Insurance', 'Life Insurance'],
+            experience: '12+ years',
+            languages: ['English', 'Bemba', 'Tonga'],
+            availability: 'Mon-Fri 8AM-6PM, Sat 9AM-2PM'
+        },
+        {
+            name: 'Grace Mwale',
+            company: 'VintuSure Insurance Partners',
+            phone: '+260 95 4567890',
+            email: 'grace.mwale@vintusure.com',
+            location: 'Ndola, Zambia',
+            specialties: ['Health Insurance', 'Travel Insurance', 'Property Insurance'],
+            experience: '10+ years',
+            languages: ['English', 'Nyanja', 'Bemba'],
+            availability: 'Mon-Fri 9AM-5PM, Sat 10AM-1PM'
+        }
+    ];
 
     const faqData = [
         {
-            id: 'motor',
-            title: 'Motor Insurance FAQ',
+            id: 'vintusure',
+            title: 'About VintuSure Platform',
             items: [
                 {
-                    question: 'What types of motor insurance do you offer?',
-                    answer: 'We offer two main types of motor insurance: Comprehensive Coverage and Third Party Insurance. Comprehensive covers both your vehicle and third-party damages, while Third Party covers only damages to other vehicles or property.'
+                    question: 'What is VintuSure and how does it help insurance agents?',
+                    answer: 'VintuSure is an AI-enabled SaaS platform designed to assist insurance agents in providing better service to their clients. Our platform offers AI-powered car valuation, insurance recommendations, market analysis, and automated document processing to streamline insurance operations.'
                 },
                 {
-                    question: 'How is my premium calculated?',
-                    answer: 'Your premium is calculated based on several factors including your vehicle\'s value, make and model, age, usage type (personal or commercial), and your driving history. Our AI system helps provide accurate vehicle valuations for better premium estimates.'
+                    question: 'How does the AI car analysis feature work?',
+                    answer: 'Our AI analyzes uploaded car photos to identify make, model, year, and condition. It then provides accurate vehicle valuations, insurance recommendations, and finds similar vehicles in the market. This helps agents provide more accurate quotes and better serve their clients.'
                 },
                 {
-                    question: 'What should I do after a car accident?',
-                    answer: 'After ensuring everyone\'s safety: 1) Document the scene with photos, 2) Exchange information with other parties, 3) Contact our 24/7 claims service, 4) Don\'t admit fault, and 5) Keep all documentation for your claim.'
+                    question: 'What types of insurance can VintuSure help with?',
+                    answer: 'VintuSure currently specializes in motor insurance but our platform is designed to expand to other insurance types. We provide comprehensive coverage options, third-party liability, and AI-powered premium calculations based on accurate vehicle valuations.'
                 },
                 {
-                    question: 'How do I make a claim?',
-                    answer: 'You can initiate a claim through our 24/7 hotline or online platform. Have your policy number, incident details, and any supporting documentation (photos, police report) ready. Our team will guide you through the process.'
+                    question: 'How secure is the VintuSure platform?',
+                    answer: 'VintuSure prioritizes data security and privacy. We use industry-standard encryption, secure cloud infrastructure, and follow strict data protection protocols. No sensitive personal data is stored or processed without proper authorization.'
+                },
+                {
+                    question: 'Can I integrate VintuSure with my existing insurance systems?',
+                    answer: 'Yes, VintuSure is designed to integrate with existing insurance management systems. Our API allows seamless data exchange and workflow integration to enhance your current processes without disruption.'
+                },
+                {
+                    question: 'What support does VintuSure provide to insurance agents?',
+                    answer: 'We provide comprehensive support including AI-powered tools, training resources, technical support, and access to our network of insurance professionals. Our platform is designed to make insurance agents more efficient and provide better service to clients.'
                 }
             ]
         }
@@ -328,31 +284,6 @@ const Explore: React.FC = () => {
         }
     ];
 
-    const handleQuickLink = (action: string) => {
-        switch (action) {
-            case 'faq':
-                // Scroll to FAQ section
-                document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
-                break;
-            case 'claims':
-                // Show claims process info
-                toast({
-                    title: 'Claims Process',
-                    description: 'Contact our agent for personalized claims assistance. We\'re here to help you through every step.',
-                });
-                break;
-            case 'quote':
-                // Show quote information
-                toast({
-                    title: 'Get a Quote',
-                    description: 'Contact our agent for a personalized quote. We\'ll assess your needs and provide competitive rates.',
-                });
-                break;
-            default:
-                break;
-        }
-    };
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
             {/* Navigation */}
@@ -365,12 +296,193 @@ const Explore: React.FC = () => {
                                 <span className="text-xl font-bold text-gray-800">VintuSure</span>
                             </Link>
                         </div>
-                        <Link to="/">
-                            <Button variant="outline" className="flex items-center gap-2">
-                                <ArrowLeft className="h-4 w-4" />
-                                <span className="hidden sm:inline">Back to Home</span>
-                            </Button>
-                        </Link>
+                        
+                        {/* Navigation Buttons */}
+                        <div className="flex items-center space-x-4">
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button className="flex items-center gap-2">
+                                        <Bot className="h-4 w-4" />
+                                        Ask VintuSure AI
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Bot className="h-5 w-5" />
+                                            Ask VintuSure AI
+                                        </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h3 className="font-semibold mb-2">Upload Car Photo for Analysis</h3>
+                                            <div
+                                                ref={dropZoneRef}
+                                                onDragEnter={handleDragEnter}
+                                                onDragLeave={handleDragLeave}
+                                                onDragOver={handleDragOver}
+                                                onDrop={handleDrop}
+                                                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                                    isDragging
+                                                        ? 'border-blue-500 bg-blue-50'
+                                                        : 'border-gray-200 hover:border-blue-400'
+                                                }`}
+                                            >
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleCarPhotoUpload}
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                />
+                                                <div className="space-y-4">
+                                                    <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+                                                        <Image className="h-8 w-8 text-blue-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold">Upload Car Photo</h3>
+                                                        <p className="text-sm text-gray-500 mt-1">
+                                                            {isDragging ? 'Drop your image here' : 'Drag and drop or click to browse'}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            Maximum file size: 5MB
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        onClick={handleBrowseClick}
+                                                        disabled={isAnalyzing}
+                                                        className="w-full sm:w-auto"
+                                                    >
+                                                        {isAnalyzing ? (
+                                                            <div className="flex items-center space-x-2">
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                                <span>Analyzing...</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center space-x-2">
+                                                                <Upload className="h-4 w-4" />
+                                                                <span>Browse Files</span>
+                                                            </div>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Analysis Results */}
+                                        {carAnalysis && (
+                                            <div className="space-y-4 max-h-96 overflow-y-auto">
+                                                <div className="bg-gray-50 rounded-lg p-4">
+                                                    <h3 className="font-semibold mb-3">Car Details</h3>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Make & Model</p>
+                                                            <p className="font-medium">{carAnalysis.carDetails.make} {carAnalysis.carDetails.model}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Estimated Year</p>
+                                                            <p className="font-medium">{carAnalysis.carDetails.estimatedYear}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Estimated Value</p>
+                                                            <p className="font-medium">{premiumService.formatCurrency(carAnalysis.carDetails.estimatedValue)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-blue-50 rounded-lg p-4">
+                                                    <h3 className="font-semibold mb-3">Insurance Recommendation</h3>
+                                                    <div className="space-y-2">
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Recommended Coverage</p>
+                                                            <p className="font-medium">{carAnalysis.insuranceRecommendation.recommendedCoverage}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Estimated Premium</p>
+                                                            <p className="font-medium">{premiumService.formatCurrency(carAnalysis.insuranceRecommendation.estimatedPremium)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" className="flex items-center gap-2">
+                                        <Users className="h-4 w-4" />
+                                        Agents
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Users className="h-5 w-5" />
+                                            Insurance Agents
+                                        </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {agents.map((agent, index) => (
+                                            <Card key={index}>
+                                                <CardHeader>
+                                                    <CardTitle className="text-lg">{agent.name}</CardTitle>
+                                                    <CardDescription className="font-medium text-blue-600">
+                                                        {agent.company}
+                                                    </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-3">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center space-x-2">
+                                                            <Shield className="h-4 w-4 text-gray-500" />
+                                                            <span className="text-sm">{agent.phone}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Shield className="h-4 w-4 text-gray-500" />
+                                                            <span className="text-sm">{agent.email}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Shield className="h-4 w-4 text-gray-500" />
+                                                            <span className="text-sm">{agent.location}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Shield className="h-4 w-4 text-gray-500" />
+                                                            <span className="text-sm">{agent.availability}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <h4 className="font-medium mb-2">Specialties:</h4>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {agent.specialties.map((specialty, idx) => (
+                                                                <Badge key={idx} variant="secondary" className="text-xs">
+                                                                    {specialty}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <Button className="w-full" asChild>
+                                                        <a href={`mailto:${agent.email}?subject=Insurance Inquiry`}>
+                                                            <Shield className="h-4 w-4 mr-2" />
+                                                            Contact Agent
+                                                        </a>
+                                                    </Button>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Link to="/">
+                                <Button variant="outline" className="flex items-center gap-2">
+                                    <ArrowLeft className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Back to Home</span>
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -379,479 +491,188 @@ const Explore: React.FC = () => {
                 {/* Hero Section */}
                 <div className="text-center mb-8 sm:mb-12">
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                        Smart Motor Insurance Solutions
+                        AI-Powered Insurance Solutions
                     </h1>
                     <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-                        Upload your car photo for instant AI-powered valuation, insurance recommendations, and market insights.
+                        VintuSure helps insurance agents provide better service with AI-powered car analysis, 
+                        accurate valuations, and intelligent insurance recommendations.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-                    {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
-                        {/* Car Analysis Section */}
-                        <section>
-                            <Card className="overflow-hidden">
-                                <CardHeader className="space-y-1 sm:space-y-2">
-                                    <div className="flex items-center space-x-3">
-                                        <Car className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                                        <CardTitle className="text-lg sm:text-xl">Car Photo Analysis & Insurance Estimate</CardTitle>
-                                    </div>
-                                    <CardDescription className="text-sm sm:text-base">
-                                        Upload a photo of a car to get AI-powered analysis, insurance recommendations, and find similar cars in the Zambian market.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4 sm:space-y-6">
-                                    {/* Upload Section */}
-                                    <div
-                                        ref={dropZoneRef}
-                                        onDragEnter={handleDragEnter}
-                                        onDragLeave={handleDragLeave}
-                                        onDragOver={handleDragOver}
-                                        onDrop={handleDrop}
-                                        className={`border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors ${isDragging
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-200 hover:border-blue-400'
-                                            }`}
-                                    >
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleCarPhotoUpload}
-                                            accept="image/*"
-                                            className="hidden"
-                                        />
-                                        <div className="space-y-3 sm:space-y-4">
-                                            <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-blue-50 rounded-full flex items-center justify-center">
-                                                <Image className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-base sm:text-lg font-semibold">Upload Car Photo</h3>
-                                                <p className="text-sm text-gray-500 mt-1">
-                                                    {isDragging ? 'Drop your image here' : 'Drag and drop or click to browse'}
-                                                </p>
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    Maximum file size: 5MB
-                                                </p>
-                                            </div>
-                                            <Button
-                                                onClick={handleBrowseClick}
-                                                disabled={isAnalyzing}
-                                                className="w-full sm:w-auto"
-                                            >
-                                                {isAnalyzing ? (
-                                                    <div className="flex items-center space-x-2">
-                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                        <span>Analyzing...</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center space-x-2">
-                                                        <Upload className="h-4 w-4" />
-                                                        <span>Browse Files</span>
-                                                    </div>
-                                                )}
-                                            </Button>
+                {/* AI Assistant Section - Moved to Top */}
+                <section className="mb-8">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center space-x-3">
+                                <Bot className="h-6 w-6 text-blue-600" />
+                                <CardTitle>VintuSure AI Assistant</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Ask questions about insurance products, coverage options, or general insurance information.
+                                Our AI assistant provides guidance to help insurance agents serve their clients better.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Textarea
+                                    placeholder="Ask about insurance products, coverage options, or any insurance-related questions..."
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    className="min-h-[100px]"
+                                />
+                                <Button
+                                    onClick={handleAskQuestion}
+                                    disabled={isLoading}
+                                    className="w-full"
+                                >
+                                    {isLoading ? (
+                                        <div className="flex items-center space-x-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            <span>Processing...</span>
                                         </div>
-                                    </div>
-
-                                    {/* Analysis Results */}
-                                    {carAnalysis && (
-                                        <div className="space-y-4 sm:space-y-6">
-                                            {/* Car Details */}
-                                            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                                                <h3 className="font-semibold mb-2 sm:mb-3">Car Details</h3>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Make & Model</p>
-                                                        <p className="font-medium">{carAnalysis.carDetails.make} {carAnalysis.carDetails.model}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Estimated Year</p>
-                                                        <p className="font-medium">{carAnalysis.carDetails.estimatedYear}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Body Type</p>
-                                                        <p className="font-medium">{carAnalysis.carDetails.bodyType}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Condition</p>
-                                                        <p className="font-medium">{carAnalysis.carDetails.condition}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Estimated Value</p>
-                                                        <p className="font-medium">{premiumService.formatCurrency(carAnalysis.carDetails.estimatedValue)}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Insurance Recommendation */}
-                                            <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
-                                                <h3 className="font-semibold mb-2 sm:mb-3">Insurance Recommendation</h3>
-                                                <div className="space-y-2 sm:space-y-3">
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Recommended Coverage</p>
-                                                        <p className="font-medium">{carAnalysis.insuranceRecommendation.recommendedCoverage}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Estimated Premium</p>
-                                                        <p className="font-medium">{premiumService.formatCurrency(carAnalysis.insuranceRecommendation.estimatedPremium)}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm text-gray-500">Coverage Details</p>
-                                                        <p className="text-sm">{carAnalysis.insuranceRecommendation.coverageDetails}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Marketplace Recommendations */}
-                                            <div>
-                                                <h3 className="font-semibold mb-2 sm:mb-3">Similar Cars in the Market</h3>
-                                                <div className="space-y-3 sm:space-y-4">
-                                                    {carAnalysis.marketplaceRecommendations.similarListings.map((listing, index) => (
-                                                        <Card key={index}>
-                                                            <CardContent className="p-3 sm:p-4">
-                                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
-                                                                    <div>
-                                                                        <h4 className="font-medium">{listing.description}</h4>
-                                                                        <p className="text-sm text-gray-500">{listing.platform}</p>
-                                                                        <p className="font-medium text-blue-600">{premiumService.formatCurrency(listing.price)}</p>
-                                                                    </div>
-                                                                    <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
-                                                                        <a href={listing.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center space-x-1">
-                                                                            <span>View</span>
-                                                                            <ExternalLink className="h-3 w-3" />
-                                                                        </a>
-                                                                    </Button>
-                                                                </div>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <h3 className="font-semibold mb-2 sm:mb-3">Recommended Marketplaces</h3>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {carAnalysis.marketplaceRecommendations.marketplaces.map((marketplace, index) => (
-                                                            <Card key={index}>
-                                                                <CardContent className="p-3 sm:p-4">
-                                                                    <h4 className="font-medium">{marketplace.name}</h4>
-                                                                    <p className="text-sm text-gray-500 mb-2">{marketplace.description}</p>
-                                                                    <Button variant="outline" size="sm" asChild className="w-full">
-                                                                        <a href={marketplace.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center space-x-1">
-                                                                            <span>Visit Site</span>
-                                                                            <ExternalLink className="h-3 w-3" />
-                                                                        </a>
-                                                                    </Button>
-                                                                </CardContent>
-                                                            </Card>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    ) : (
+                                        <div className="flex items-center space-x-2">
+                                            <Search className="h-4 w-4" />
+                                            <span>Ask Question</span>
                                         </div>
                                     )}
-                                </CardContent>
-                            </Card>
-                        </section>
-
-                        {/* Insurance Products */}
-                        <section>
-                            <h2 className="text-3xl font-bold mb-6 text-gray-800">Our Insurance Products</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {insuranceProducts.map((product, index) => (
-                                    <Card key={index} className="hover:shadow-lg transition-all duration-300">
-                                        <CardHeader>
-                                            <div className="flex items-center space-x-3">
-                                                <div className="text-blue-600">
-                                                    {product.icon}
-                                                </div>
-                                                <CardTitle className="text-xl">{product.title}</CardTitle>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <CardDescription className="text-gray-600 mb-4">
-                                                {product.description}
-                                            </CardDescription>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Key Features:</h4>
-                                                    <div className="space-y-1">
-                                                        {product.features.map((feature, featureIndex) => (
-                                                            <div key={featureIndex} className="flex items-center space-x-2">
-                                                                <CheckCircle className="h-3 w-3 text-green-500" />
-                                                                <span className="text-sm text-gray-700">{feature}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-sm text-gray-700 mb-2">Coverage Includes:</h4>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {product.coverage.map((item, itemIndex) => (
-                                                            <Badge key={itemIndex} variant="secondary" className="text-xs">
-                                                                {item}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                </Button>
                             </div>
-                        </section>
 
-                        {/* Policy Overviews */}
-                        <section>
-                            <h2 className="text-3xl font-bold mb-6 text-gray-800">Understanding Insurance</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {policyOverviews.map((overview, index) => (
-                                    <Card key={index} className="hover:shadow-lg transition-all duration-300">
-                                        <CardHeader>
-                                            <div className="flex items-center space-x-3">
-                                                <div className="text-blue-600">
-                                                    {overview.icon}
-                                                </div>
-                                                <CardTitle className="text-lg">{overview.title}</CardTitle>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <CardDescription className="text-gray-600">
-                                                {overview.content}
-                                            </CardDescription>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </section>
+                            {response && (
+                                <div className="mt-6 p-4 bg-gray-50 rounded-lg max-h-64 overflow-y-auto">
+                                    <h4 className="font-semibold mb-2 text-gray-800">AI Response:</h4>
+                                    <p className="text-gray-700">{response.answer}</p>
+                                    <div className="mt-3 p-2 bg-blue-50 rounded border-l-4 border-blue-400">
+                                        <div className="flex items-center space-x-2">
+                                            <Info className="h-4 w-4 text-blue-600" />
+                                            <span className="text-sm text-blue-800">
+                                                This is general information only. For personalized advice, please contact our agents.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </section>
 
-                        {/* AI Assistant */}
-                        <section>
-                            <Card>
+                {/* Insurance Products */}
+                <section className="mb-8">
+                    <h2 className="text-3xl font-bold mb-6 text-gray-800">Insurance Products</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {insuranceProducts.map((product, index) => (
+                            <Card key={index} className="hover:shadow-lg transition-all duration-300">
                                 <CardHeader>
                                     <div className="flex items-center space-x-3">
-                                        <MessageCircle className="h-6 w-6 text-blue-600" />
-                                        <CardTitle>AI Insurance Assistant</CardTitle>
-                                    </div>
-                                    <CardDescription>
-                                        Ask questions about our insurance products, coverage options, or general insurance information.
-                                        Our AI assistant provides general guidance only and cannot access personal data.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Textarea
-                                            placeholder="Ask about our insurance products, coverage options, or any insurance-related questions..."
-                                            value={query}
-                                            onChange={(e) => setQuery(e.target.value)}
-                                            className="min-h-[100px]"
-                                        />
-                                        <Button
-                                            onClick={handleAskQuestion}
-                                            disabled={isLoading}
-                                            className="w-full"
-                                        >
-                                            {isLoading ? (
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                    <span>Processing...</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center space-x-2">
-                                                    <Search className="h-4 w-4" />
-                                                    <span>Ask Question</span>
-                                                </div>
-                                            )}
-                                        </Button>
-                                    </div>
-
-                                    {response && (
-                                        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                            <h4 className="font-semibold mb-2 text-gray-800">AI Response:</h4>
-                                            <p className="text-gray-700">{response.answer}</p>
-                                            <div className="mt-3 p-2 bg-blue-50 rounded border-l-4 border-blue-400">
-                                                <div className="flex items-center space-x-2">
-                                                    <Info className="h-4 w-4 text-blue-600" />
-                                                    <span className="text-sm text-blue-800">
-                                                        This is general information only. For personalized advice, please contact our agent.
-                                                    </span>
-                                                </div>
-                                            </div>
+                                        <div className="text-blue-600">
+                                            {product.icon}
                                         </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </section>
-
-                        {/* FAQ Section */}
-                        <section id="faq-section">
-                            <h2 className="text-3xl font-bold mb-6 text-gray-800">Frequently Asked Questions</h2>
-                            <div className="space-y-4">
-                                {faqData.map((category) => (
-                                    <Card key={category.id}>
-                                        <CardHeader>
-                                            <CardTitle className="text-xl">{category.title}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                {category.items.map((item, index) => (
-                                                    <Collapsible
-                                                        key={index}
-                                                        open={activeFAQ === `${category.id}-${index}`}
-                                                        onOpenChange={() => setActiveFAQ(
-                                                            activeFAQ === `${category.id}-${index}`
-                                                                ? null
-                                                                : `${category.id}-${index}`
-                                                        )}
-                                                    >
-                                                        <CollapsibleTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="w-full justify-between p-4 h-auto"
-                                                            >
-                                                                <span className="text-left font-medium">{item.question}</span>
-                                                                {activeFAQ === `${category.id}-${index}` ? (
-                                                                    <ChevronDown className="h-4 w-4" />
-                                                                ) : (
-                                                                    <ChevronRight className="h-4 w-4" />
-                                                                )}
-                                                            </Button>
-                                                        </CollapsibleTrigger>
-                                                        <CollapsibleContent className="px-4 pb-4">
-                                                            <p className="text-gray-600">{item.answer}</p>
-                                                        </CollapsibleContent>
-                                                    </Collapsible>
+                                        <CardTitle className="text-xl">{product.title}</CardTitle>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <CardDescription className="text-gray-600 mb-4">
+                                        {product.description}
+                                    </CardDescription>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-gray-700 mb-2">Key Features:</h4>
+                                            <div className="space-y-1">
+                                                {product.features.map((feature, featureIndex) => (
+                                                    <div key={featureIndex} className="flex items-center space-x-2">
+                                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                                        <span className="text-sm text-gray-700">{feature}</span>
+                                                    </div>
                                                 ))}
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </section>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-sm text-gray-700 mb-2">Coverage Includes:</h4>
+                                            <div className="flex flex-wrap gap-1">
+                                                {product.coverage.map((item, itemIndex) => (
+                                                    <Badge key={itemIndex} variant="secondary" className="text-xs">
+                                                        {item}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
+                </section>
 
-                    {/* Sidebar */}
-                    <div className="space-y-4 sm:space-y-6">
-                        {/* Agent Contact */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                                    <Shield className="h-5 w-5" />
-                                    <span>Contact Our Agent</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="text-center">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                {/* Policy Overviews */}
+                <section className="mb-8">
+                    <h2 className="text-3xl font-bold mb-6 text-gray-800">Understanding Insurance</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {policyOverviews.map((overview, index) => (
+                            <Card key={index} className="hover:shadow-lg transition-all duration-300">
+                                <CardHeader>
+                                    <div className="flex items-center space-x-3">
+                                        <div className="text-blue-600">
+                                            {overview.icon}
+                                        </div>
+                                        <CardTitle className="text-lg">{overview.title}</CardTitle>
                                     </div>
-                                    <h3 className="font-semibold text-base sm:text-lg">{agentInfo.name}</h3>
-                                    <p className="text-sm text-gray-600">Senior Insurance Agent</p>
-                                    <p className="text-xs text-gray-500 mt-1">{agentInfo.experience} Experience</p>
-                                </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <CardDescription className="text-gray-600">
+                                        {overview.content}
+                                    </CardDescription>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
 
-                                <div className="space-y-3">
-                                    <div className="flex items-center space-x-3">
-                                        <Shield className="h-4 w-4 text-gray-500" />
-                                        <span className="text-sm">{agentInfo.phone}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        <Shield className="h-4 w-4 text-gray-500" />
-                                        <span className="text-sm">{agentInfo.email}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        <Shield className="h-4 w-4 text-gray-500" />
-                                        <span className="text-sm">{agentInfo.location}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        <Shield className="h-4 w-4 text-gray-500" />
-                                        <span className="text-sm">{agentInfo.availability}</span>
-                                    </div>
-                                </div>
-
-                                <div className="pt-3 border-t">
-                                    <h4 className="font-medium mb-2">Specialties:</h4>
-                                    <div className="flex flex-wrap gap-1 mb-3">
-                                        {agentInfo.specialties.map((specialty, index) => (
-                                            <Badge key={index} variant="secondary" className="text-xs">
-                                                {specialty}
-                                            </Badge>
+                {/* FAQ Section - Moved to Bottom */}
+                <section id="faq-section">
+                    <h2 className="text-3xl font-bold mb-6 text-gray-800">Frequently Asked Questions</h2>
+                    <div className="space-y-4">
+                        {faqData.map((category) => (
+                            <Card key={category.id}>
+                                <CardHeader>
+                                    <CardTitle className="text-xl">{category.title}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {category.items.map((item, index) => (
+                                            <Collapsible
+                                                key={index}
+                                                open={activeFAQ === `${category.id}-${index}`}
+                                                onOpenChange={() => setActiveFAQ(
+                                                    activeFAQ === `${category.id}-${index}`
+                                                        ? null
+                                                        : `${category.id}-${index}`
+                                                )}
+                                            >
+                                                <CollapsibleTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="w-full justify-between p-4 h-auto"
+                                                    >
+                                                        <span className="text-left font-medium">{item.question}</span>
+                                                        {activeFAQ === `${category.id}-${index}` ? (
+                                                            <ChevronDown className="h-4 w-4" />
+                                                        ) : (
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="px-4 pb-4">
+                                                    <p className="text-gray-600">{item.answer}</p>
+                                                </CollapsibleContent>
+                                            </Collapsible>
                                         ))}
                                     </div>
-                                    <h4 className="font-medium mb-2">Languages:</h4>
-                                    <div className="flex flex-wrap gap-1">
-                                        {agentInfo.languages.map((language, index) => (
-                                            <Badge key={index} variant="outline" className="text-xs">
-                                                {language}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="pt-3 border-t">
-                                    <Button className="w-full" asChild>
-                                        <a href={`mailto:${agentInfo.email}?subject=Insurance Inquiry`}>
-                                            <Shield className="h-4 w-4 mr-2" />
-                                            Send Email
-                                        </a>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quick Links */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <FileText className="h-5 w-5" />
-                                    <span>Quick Links</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
-                                    onClick={() => handleQuickLink('faq')}
-                                >
-                                    <HelpCircle className="h-4 w-4 mr-2" />
-                                    FAQ
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
-                                    onClick={() => handleQuickLink('claims')}
-                                >
-                                    <Shield className="h-4 w-4 mr-2" />
-                                    Claims Process
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
-                                    onClick={() => handleQuickLink('quote')}
-                                >
-                                    <Calculator className="h-4 w-4 mr-2" />
-                                    Get Quote
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Security Notice */}
-                        <Card className="border-blue-200 bg-blue-50">
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2 text-blue-800">
-                                    <ShieldCheck className="h-5 w-5" />
-                                    <span>Security Notice</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2 text-sm text-blue-700">
-                                    <p>This is a public information platform. No sensitive personal data is accessible here.</p>
-                                    <p>For personalized service and policy management, please contact our agent or log into your secure account.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     );

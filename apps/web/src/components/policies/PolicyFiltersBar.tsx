@@ -73,7 +73,7 @@ export default function PolicyFiltersBar({
                         placeholder="Search policies..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                 </div>
             </div>
@@ -82,10 +82,10 @@ export default function PolicyFiltersBar({
                     value={status}
                     onValueChange={(value: FilterStatus) => setStatus(value)}
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-300">
                         <SelectItem value="all">All Status</SelectItem>
                         {policyStatuses.map((status) => (
                             <SelectItem key={status} value={status} className="capitalize">
@@ -100,10 +100,10 @@ export default function PolicyFiltersBar({
                     value={type}
                     onValueChange={(value: FilterType) => setType(value)}
                 >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue placeholder="Type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-300">
                         <SelectItem value="all">All Types</SelectItem>
                         {policyTypes.map((type) => (
                             <SelectItem key={type} value={type} className="capitalize">

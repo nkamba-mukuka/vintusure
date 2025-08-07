@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -73,5 +75,26 @@
   body {
     @apply text-foreground;
     background-color: #f3e2d6;
+  }
+}
+
+@layer components {
+  /* Custom scrollbar for AI response area */
+  .ai-response-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .ai-response-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  
+  .ai-response-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  
+  .ai-response-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 } 

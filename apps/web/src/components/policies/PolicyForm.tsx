@@ -148,11 +148,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                     value={field.value}
                                 >
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                             <SelectValue placeholder="Select a customer" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white border-gray-300">
                                         {customers?.customers.map((customer) => (
                                             <SelectItem key={customer.id} value={customer.id}>
                                                 {customer.firstName} {customer.lastName}
@@ -174,11 +174,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                 <FormLabel>Policy Type</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                             <SelectValue placeholder="Select policy type" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white border-gray-300">
                                         <SelectItem value="comprehensive">Comprehensive</SelectItem>
                                         <SelectItem value="third_party">Third Party</SelectItem>
                                     </SelectContent>
@@ -302,11 +302,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                             <FormLabel>Usage</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                                         <SelectValue placeholder="Select usage type" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white border-gray-300">
                                                     <SelectItem value="private">Private</SelectItem>
                                                     <SelectItem value="commercial">Commercial</SelectItem>
                                                 </SelectContent>
@@ -459,11 +459,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                 disabled={!!premiumBreakdown}
                                             >
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                                         <SelectValue placeholder="Select currency" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white border-gray-300">
                                                     <SelectItem value="ZMW">ZMW</SelectItem>
                                                     <SelectItem value="USD">USD</SelectItem>
                                                 </SelectContent>
@@ -481,11 +481,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                             <FormLabel>Payment Status</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                                         <SelectValue placeholder="Select payment status" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white border-gray-300">
                                                     <SelectItem value="paid">Paid</SelectItem>
                                                     <SelectItem value="pending">Pending</SelectItem>
                                                     <SelectItem value="partial">Partial</SelectItem>

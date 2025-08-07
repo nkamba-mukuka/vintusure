@@ -187,10 +187,10 @@ export default function CustomerForm({ customer, mode }: CustomerFormProps) {
                                     value={formData.gender}
                                     onValueChange={(value) => handleInputChange('gender', value)}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white border-gray-300">
                                         <SelectItem value="male">Male</SelectItem>
                                         <SelectItem value="female">Female</SelectItem>
                                         <SelectItem value="other">Other</SelectItem>
@@ -253,10 +253,10 @@ export default function CustomerForm({ customer, mode }: CustomerFormProps) {
                                     value={formData.status}
                                     onValueChange={(value) => handleInputChange('status', value)}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white border-gray-300">
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="inactive">Inactive</SelectItem>
                                     </SelectContent>
