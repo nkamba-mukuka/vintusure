@@ -8,6 +8,7 @@ import { customerService } from '@/lib/services/customerService';
 import { policyService } from '@/lib/services/policyService';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
     Form,
@@ -51,6 +52,7 @@ interface PolicyFormProps {
 export default function PolicyForm({ initialData, customerId }: PolicyFormProps) {
     const router = useNavigate();
     const { toast } = useToast();
+    const { user } = useAuthContext();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [premiumBreakdown, setPremiumBreakdown] = useState<PremiumBreakdown | null>(null);
 
@@ -91,8 +93,16 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
     const onSubmit = async (data: PolicyFormData) => {
         try {
             setIsSubmitting(true);
-            // Get the current user's ID from your auth context
-            const userId = 'TODO: Get from auth context'; // Replace with actual user ID
+            
+            // Check if user is authenticated
+            if (!user?.uid) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'You must be logged in to create or update policies.',
+                    variant: 'destructive',
+                });
+                return;
+            }
 
             if (initialData?.id) {
                 await policyService.update(initialData.id, data);
@@ -105,7 +115,7 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                     ...data,
                     status: 'pending',
                     policyNumber: `POL-${Date.now()}`,
-                }, userId);
+                }, user.uid);
                 toast({
                     title: 'Policy created',
                     description: 'The policy has been created successfully.',
@@ -287,7 +297,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                 <Input
                                                     {...field}
                                                     type="number"
-                                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                        field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -438,7 +452,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                 <Input
                                                     type="number"
                                                     {...field}
-                                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                        field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                    }}
                                                     disabled={!!premiumBreakdown}
                                                 />
                                             </FormControl>

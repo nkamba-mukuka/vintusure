@@ -17,6 +17,7 @@ export interface Customer {
     createdAt: Date;
     updatedAt: Date;
     createdBy: string; // Reference to user who created the customer
+    agent_id: string; // ID of the agent who created the customer
     status: 'active' | 'inactive';
 }
 

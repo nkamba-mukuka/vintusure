@@ -3,11 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import PolicyForm from '@/components/policies/PolicyForm'
 import { policyService } from '@/lib/services/policyService'
 import LoadingState from '@/components/LoadingState'
-import { useToast } from '@/components/ui/use-toast'
 
 export default function EditPolicyPage() {
     const { id } = useParams<{ id: string }>()
-    const { toast } = useToast()
 
     const { data: policy, isLoading } = useQuery({
         queryKey: ['policy', id],

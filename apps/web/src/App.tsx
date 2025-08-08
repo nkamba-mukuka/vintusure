@@ -13,18 +13,24 @@ const SignUpPage = React.lazy(() => import('@/routes/auth/SignUp'))
 const ForgotPasswordPage = React.lazy(() => import('@/routes/auth/ForgotPassword'))
 const ExplorePage = React.lazy(() => import('@/routes/Explore'))
 const DashboardPage = React.lazy(() => import('@/routes/dashboard/Dashboard'))
+const ProfilePage = React.lazy(() => import('@/routes/dashboard/Profile'))
+const SettingsPage = React.lazy(() => import('@/routes/dashboard/Settings'))
 const PoliciesPage = React.lazy(() => import('@/routes/dashboard/policies/Policies'))
 const NewPolicyPage = React.lazy(() => import('@/routes/dashboard/policies/NewPolicy'))
 const EditPolicyPage = React.lazy(() => import('@/routes/dashboard/policies/EditPolicy'))
 const PolicyDetailsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDetails'))
 const PolicyDocumentsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDocuments'))
 const ClaimsPage = React.lazy(() => import('@/routes/dashboard/claims/Claims'))
+const NewClaimPage = React.lazy(() => import('@/routes/dashboard/claims/NewClaim'))
+const EditClaimPage = React.lazy(() => import('@/routes/dashboard/claims/EditClaim'))
+const ClaimDetailsPage = React.lazy(() => import('@/routes/dashboard/claims/ClaimDetails'))
 const CustomersPage = React.lazy(() => import('@/routes/dashboard/customers/Customers'))
 const NewCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/NewCustomer'))
 const EditCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/EditCustomer'))
 const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
 const AIGeneratorPage = React.lazy(() => import('@/routes/dashboard/AIGenerator'))
 const CarAnalyzerPage = React.lazy(() => import('@/routes/dashboard/CarAnalyzer'))
+const ProfileOnboardingPage = React.lazy(() => import('@/routes/auth/ProfileOnboarding'))
 
 function ProtectedRoute() {
     const { user, loading } = useAuthContext()
@@ -37,7 +43,38 @@ function ProtectedRoute() {
         return <Navigate to="/login" replace />
     }
 
+    // Check if profile is completed
+    if (!user.profileCompleted) {
+        return <Navigate to="/onboarding" replace />
+    }
+
     return <Outlet />
+}
+
+function OnboardingRoute() {
+  const { user, loading } = useAuthContext()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  // If profile is already completed, redirect to dashboard
+  if (user.profileCompleted) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <ProfileOnboardingPage />
 }
 
 export default function App() {
@@ -54,10 +91,20 @@ export default function App() {
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
 
+                    {/* Onboarding route */}
+                    <Route
+                        path="/onboarding"
+                        element={
+                            <OnboardingRoute />
+                        }
+                    />
+
                     {/* Protected Routes */}
                     <Route element={<ProtectedRoute />}>
                         <Route element={<DashboardLayout />}>
                             <Route path="/dashboard" element={<DashboardPage />} />
+                            <Route path="/profile" element={<ProfilePage />} />
+                            <Route path="/settings" element={<SettingsPage />} />
                             <Route path="/policies">
                                 <Route index element={<PoliciesPage />} />
                                 <Route path="new" element={<NewPolicyPage />} />
@@ -67,7 +114,14 @@ export default function App() {
                                     <Route path="documents" element={<PolicyDocumentsPage />} />
                                 </Route>
                             </Route>
-                            <Route path="/claims" element={<ClaimsPage />} />
+                            <Route path="/claims">
+                                <Route index element={<ClaimsPage />} />
+                                <Route path="new" element={<NewClaimPage />} />
+                                <Route path=":id">
+                                    <Route index element={<ClaimDetailsPage />} />
+                                    <Route path="edit" element={<EditClaimPage />} />
+                                </Route>
+                            </Route>
                             <Route path="/customers/new" element={<NewCustomerPage />} />
                             <Route path="/customers/:id/edit" element={<EditCustomerPage />} />
                             <Route path="/customers" element={<CustomersPage />} />

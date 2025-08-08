@@ -31,8 +31,8 @@ export default function SignUpForm() {
     useEffect(() => {
         if (user && !isRedirecting) {
             setIsRedirecting(true)
-            console.log('User registered, redirecting to dashboard...')
-            navigate('/dashboard', { replace: true })
+            console.log('User registered, redirecting to onboarding...')
+            navigate('/onboarding', { replace: true })
         }
     }, [user, navigate, isRedirecting])
 

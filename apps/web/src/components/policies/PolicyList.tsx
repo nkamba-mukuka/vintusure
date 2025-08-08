@@ -2,6 +2,8 @@
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { Trash2, Edit } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 import type { PolicyFormData } from '@/lib/validations/policy'
 import LoadingState from '@/components/LoadingState'
 
@@ -11,9 +13,40 @@ interface PolicyListProps {
     currentPage: number
     totalPages: number
     onPageChange: (page: number) => void
+    onPolicyDelete?: (policyId: string) => Promise<void>
 }
 
-export default function PolicyList({ policies, isLoading, currentPage, totalPages, onPageChange }: PolicyListProps) {
+export default function PolicyList({ 
+    policies, 
+    isLoading, 
+    currentPage, 
+    totalPages, 
+    onPageChange,
+    onPolicyDelete 
+}: PolicyListProps) {
+    const { toast } = useToast()
+
+    const handleDelete = async (policyId: string, policyNumber: string) => {
+        if (!window.confirm(`Are you sure you want to delete policy ${policyNumber}? This action cannot be undone.`)) {
+            return
+        }
+
+        try {
+            await onPolicyDelete?.(policyId)
+            toast({
+                title: 'Policy deleted',
+                description: `Policy ${policyNumber} has been deleted successfully.`,
+            })
+        } catch (error) {
+            console.error('Error deleting policy:', error)
+            toast({
+                title: 'Error',
+                description: 'Failed to delete policy. Please try again.',
+                variant: 'destructive',
+            })
+        }
+    }
+
     if (isLoading) {
         return <LoadingState />
     }
@@ -76,10 +109,25 @@ export default function PolicyList({ policies, isLoading, currentPage, totalPage
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {policy.premium.amount} {policy.premium.currency}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                     <Button asChild variant="ghost" size="sm">
                                         <Link to={`/policies/${policy.id}`}>View</Link>
                                     </Button>
+                                    <Button asChild variant="ghost" size="sm">
+                                        <Link to={`/policies/${policy.id}/edit`}>
+                                            <Edit className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    {onPolicyDelete && (
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => handleDelete(policy.id, policy.policyNumber || 'Unknown')}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>
                         ))}

@@ -7,32 +7,37 @@ service firebase.storage {
       return request.auth != null;
     }
     
-    function isAdmin() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
     
-    function isAgent() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'agent';
+    function isValidFileType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+    
+    function isValidFileSize() {
+      return request.resource.size < 5 * 1024 * 1024; // 5MB
     }
 
-    // Document uploads
-    match /documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (isAdmin() || isAgent()) &&
-        request.resource.size < 10 * 1024 * 1024 && // 10MB
-        request.resource.contentType.matches('application/pdf');
-      allow delete: if isAdmin();
+    // Policy documents
+    match /policies/{userId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && isOwner(userId) && isValidFileType() && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(userId);
     }
 
-    // Claim evidence uploads
-    match /claims/{claimId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (isAdmin() || isAgent()) &&
-        request.resource.size < 5 * 1024 * 1024 && // 5MB
-        request.resource.contentType.matches('image/.*|application/pdf');
-      allow delete: if isAdmin();
+    // Claim documents
+    match /claims/{userId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && isOwner(userId) && isValidFileType() && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+
+    // General documents (fallback)
+    match /{entityType}/{userId}/documents/{fileName} {
+      allow read, write: if isAuthenticated() && isOwner(userId) && isValidFileType() && isValidFileSize();
+      allow delete: if isAuthenticated() && isOwner(userId);
     }
   }
 } 

@@ -91,7 +91,11 @@ export default function PremiumCalculator({
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                    field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                }}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -176,7 +180,11 @@ export default function PremiumCalculator({
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                    field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                }}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -194,7 +202,11 @@ export default function PremiumCalculator({
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                    field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                }}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -212,7 +224,11 @@ export default function PremiumCalculator({
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                    field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                }}
                                             />
                                         </FormControl>
                                         <FormMessage />

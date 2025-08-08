@@ -1,6 +1,7 @@
 
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Bell, User, Menu } from 'lucide-react';
+import { Bell, User, Menu, Settings, LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -61,14 +62,38 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                         <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel className="font-normal">
                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium text-primary">{user?.email}</p>
+                                    <p className="text-sm font-medium text-primary">
+                                        {user?.firstName && user?.lastName 
+                                            ? `${user.firstName} ${user.lastName}`
+                                            : user?.email
+                                        }
+                                    </p>
+                                    {user?.firstName && user?.lastName && (
+                                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground capitalize">
+                                        {user?.role || 'User'}
+                                    </p>
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                                    <User className="h-4 w-4" />
+                                    Profile
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
+                                    <Settings className="h-4 w-4" />
+                                    Settings
+                                </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                                 onSelect={() => signOut()}
-                                className="text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
                             >
+                                <LogOut className="h-4 w-4 mr-2" />
                                 Sign out
                             </DropdownMenuItem>
                         </DropdownMenuContent>

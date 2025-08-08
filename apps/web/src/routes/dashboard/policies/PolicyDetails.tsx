@@ -1,19 +1,47 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { policyService } from '@/lib/services/policyService'
 import LoadingState from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
+import { Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Timestamp } from 'firebase/firestore'
 
 export default function PolicyDetailsPage() {
     const { id } = useParams<{ id: string }>()
+    const navigate = useNavigate()
+    const { toast } = useToast()
 
     const { data: policy, isLoading } = useQuery({
         queryKey: ['policy', id],
         queryFn: () => policyService.getById(id!),
         enabled: !!id,
     })
+
+    const handleDelete = async () => {
+        if (!policy || !id) return
+
+        if (!window.confirm(`Are you sure you want to delete policy ${policy.policyNumber}? This action cannot be undone.`)) {
+            return
+        }
+
+        try {
+            await policyService.delete(id)
+            toast({
+                title: 'Policy deleted',
+                description: `Policy ${policy.policyNumber} has been deleted successfully.`,
+            })
+            navigate('/policies')
+        } catch (error) {
+            console.error('Error deleting policy:', error)
+            toast({
+                title: 'Error',
+                description: 'Failed to delete policy. Please try again.',
+                variant: 'destructive',
+            })
+        }
+    }
 
     if (isLoading) {
         return <LoadingState />
@@ -47,6 +75,14 @@ export default function PolicyDetailsPage() {
                         </Button>
                         <Button asChild>
                             <Link to={`/policies/${id}/edit`}>Edit Policy</Link>
+                        </Button>
+                        <Button 
+                            variant="destructive" 
+                            onClick={handleDelete}
+                            className="flex items-center gap-2"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Delete Policy
                         </Button>
                     </div>
                 </div>

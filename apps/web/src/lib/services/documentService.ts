@@ -45,6 +45,7 @@ export const documentService = {
                     }
                 },
                 (error) => {
+                    console.error('Upload error:', error);
                     reject(error);
                 },
                 async () => {
@@ -55,6 +56,7 @@ export const documentService = {
                             path: filePath,
                         });
                     } catch (error) {
+                        console.error('Download URL error:', error);
                         reject(error);
                     }
                 }
@@ -63,7 +65,12 @@ export const documentService = {
     },
 
     async deleteDocument(path: string): Promise<void> {
-        const storageRef = ref(storage, path);
-        await deleteObject(storageRef);
+        try {
+            const storageRef = ref(storage, path);
+            await deleteObject(storageRef);
+        } catch (error) {
+            console.error('Delete error:', error);
+            throw error;
+        }
     },
 }; 

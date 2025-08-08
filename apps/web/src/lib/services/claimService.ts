@@ -53,9 +53,11 @@ const convertTimestamps = (data: any): any => {
 };
 
 export const claimService = {
-    async create(data: Omit<Claim, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Claim> {
+    async create(data: Omit<Claim, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'createdBy' | 'agent_id'>, userId: string): Promise<Claim> {
         const claimData = {
             ...data,
+            createdBy: userId, // Add the authenticated user's ID
+            agent_id: userId, // Add agent_id field for tracking which agent created the claim
             status: 'Submitted' as const,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),

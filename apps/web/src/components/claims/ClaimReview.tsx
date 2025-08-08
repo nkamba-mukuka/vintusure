@@ -133,7 +133,7 @@ export default function ClaimReview({ claim, onUpdate }: ClaimReviewProps) {
                         </div>
                         <div>
                             <h4 className="text-sm font-medium text-gray-500">Amount Claimed</h4>
-                            <p>{claim.amount.toLocaleString('en-ZM', {
+                            <p>{(claim.amount || 0).toLocaleString('en-ZM', {
                                 style: 'currency',
                                 currency: 'ZMW',
                             })}</p>
@@ -218,7 +218,11 @@ export default function ClaimReview({ claim, onUpdate }: ClaimReviewProps) {
                                                 <Input
                                                     type="number"
                                                     {...field}
-                                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                        field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />

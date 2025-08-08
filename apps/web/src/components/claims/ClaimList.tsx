@@ -1,5 +1,8 @@
 
-import { Claim, ClaimStatus } from '@/types/policy';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
     Table,
     TableBody,
@@ -8,32 +11,18 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { EditIcon, FileIcon, EyeIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { EyeIcon, EditIcon, FileIcon, Trash2Icon } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { Claim } from '@/types/policy';
 
 interface ClaimListProps {
     claims: Claim[];
     isLoading: boolean;
-    onPageChange: (page: number) => void;
     currentPage: number;
     totalPages: number;
+    onPageChange: (page: number) => void;
+    onClaimDelete?: (claimId: string) => Promise<void>;
 }
-
-const statusColors: Record<ClaimStatus, string> = {
-    'Submitted': 'default',
-    'UnderReview': 'secondary',
-    'Approved': 'outline',
-    'Rejected': 'destructive',
-};
-
-const damageTypeLabels = {
-    'Vehicle': 'Vehicle Damage',
-    'Property': 'Property Damage',
-    'Personal': 'Personal Injury',
-};
 
 export default function ClaimList({
     claims,
@@ -41,134 +30,173 @@ export default function ClaimList({
     onPageChange,
     currentPage,
     totalPages,
+    onClaimDelete,
 }: ClaimListProps) {
+    const { toast } = useToast();
+
+    const handleDelete = async (claimId: string, claimNumber?: string) => {
+        if (!window.confirm(`Are you sure you want to delete this claim? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await onClaimDelete?.(claimId);
+            toast({
+                title: 'Claim deleted',
+                description: `Claim has been deleted successfully.`,
+            });
+        } catch (error) {
+            console.error('Error deleting claim:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete claim. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const getStatusBadgeVariant = (status: string) => {
+        switch (status) {
+            case 'Submitted':
+                return 'secondary';
+            case 'UnderReview':
+                return 'destructive';
+            case 'Approved':
+                return 'default';
+            case 'Rejected':
+                return 'destructive';
+            case 'Paid':
+                return 'default';
+            default:
+                return 'secondary';
+        }
+    };
+
     if (isLoading) {
         return (
-            <div className="w-full h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading claims...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (claims.length === 0) {
+        return (
+            <div className="text-center py-8">
+                <p className="text-gray-500">No claims found.</p>
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Claim ID</TableHead>
-                        <TableHead>Policy</TableHead>
-                        <TableHead>Incident Date</TableHead>
-                        <TableHead>Damage Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {claims.map((claim) => (
-                        <TableRow key={claim.id}>
-                            <TableCell>
-                                <Link
-                                    to={`/claims/${claim.id}`}
-                                    className="text-indigo-600 hover:text-indigo-900"
-                                >
-                                    {claim.id.slice(0, 8).toUpperCase()}
-                                </Link>
-                            </TableCell>
-                            <TableCell>
-                                <Link
-                                    to={`/policies/${claim.policyId}`}
-                                    className="text-indigo-600 hover:text-indigo-900"
-                                >
-                                    View Policy
-                                </Link>
-                            </TableCell>
-                            <TableCell>
-                                {format(new Date(claim.incidentDate), 'PP')}
-                            </TableCell>
-                            <TableCell>
-                                {damageTypeLabels[claim.damageType]}
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant={getStatusVariant(claim.status)}>
-                                    {claim.status}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                {claim.amount.toLocaleString('en-ZM', {
-                                    style: 'currency',
-                                    currency: 'ZMW',
-                                })}
-                                {claim.approvedAmount && (
-                                    <div className="text-sm text-gray-500">
-                                        Approved: {claim.approvedAmount.toLocaleString('en-ZM', {
-                                            style: 'currency',
-                                            currency: 'ZMW',
-                                        })}
-                                    </div>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right space-x-2">
-                                <Link to={`/claims/${claim.id}`}>
-                                    <Button variant="outline" size="sm">
-                                        <EyeIcon className="h-4 w-4" />
-                                    </Button>
-                                </Link>
-                                {claim.status === 'Submitted' && (
-                                    <Link to={`/claims/${claim.id}/edit`}>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Claim ID</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Policy</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Damage Type</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Incident Date</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {claims.map((claim) => (
+                            <TableRow key={claim.id}>
+                                <TableCell className="font-medium">{claim.id}</TableCell>
+                                <TableCell>{claim.customerId}</TableCell>
+                                <TableCell>{claim.policyId}</TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusBadgeVariant(claim.status)}>
+                                        {claim.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>{claim.damageType}</TableCell>
+                                <TableCell>
+                                    {(claim.amount || 0).toLocaleString('en-ZM', {
+                                        style: 'currency',
+                                        currency: 'ZMW',
+                                    })}
+                                    {claim.approvedAmount && (
+                                        <div className="text-sm text-gray-500">
+                                            Approved: {(claim.approvedAmount || 0).toLocaleString('en-ZM', {
+                                                style: 'currency',
+                                                currency: 'ZMW',
+                                            })}
+                                        </div>
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {claim.incidentDate ? new Date(claim.incidentDate).toLocaleDateString() : 'N/A'}
+                                </TableCell>
+                                <TableCell className="text-right space-x-2">
+                                    <Link to={`/claims/${claim.id}`}>
                                         <Button variant="outline" size="sm">
-                                            <EditIcon className="h-4 w-4" />
+                                            <EyeIcon className="h-4 w-4" />
                                         </Button>
                                     </Link>
-                                )}
-                                <Link to={`/claims/${claim.id}/documents`}>
-                                    <Button variant="outline" size="sm">
-                                        <FileIcon className="h-4 w-4" />
-                                    </Button>
-                                </Link>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                                    {claim.status === 'Submitted' && (
+                                        <Link to={`/claims/${claim.id}/edit`}>
+                                            <Button variant="outline" size="sm">
+                                                <EditIcon className="h-4 w-4" />
+                                            </Button>
+                                        </Link>
+                                    )}
+                                    <Link to={`/claims/${claim.id}/documents`}>
+                                        <Button variant="outline" size="sm">
+                                            <FileIcon className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                    {onClaimDelete && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleDelete(claim.id)}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                            <Trash2Icon className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
 
-            {claims.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                    No claims found.
-                </div>
-            )}
-
+            {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex justify-center space-x-2 mt-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => onPageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => onPageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                    >
-                        Next
-                    </Button>
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex space-x-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onPageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onPageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
                 </div>
             )}
         </div>
     );
-}
-
-function getStatusVariant(status: string): "default" | "destructive" | "outline" | "secondary" {
-    switch (status.toLowerCase()) {
-        case 'approved':
-            return 'default'
-        case 'rejected':
-            return 'destructive'
-        case 'pending':
-            return 'secondary'
-        default:
-            return 'outline'
-    }
 } 

@@ -58,7 +58,7 @@ export default function ClaimFiltersBar({
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [searchTerm, status, damageType, startDate, endDate]);
+    }, [searchTerm, status, damageType, startDate, endDate, onFilterChange, filters]);
 
     const handleReset = () => {
         setSearchTerm('');

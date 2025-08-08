@@ -1,13 +1,216 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.askQuestion = exports.analyzeCarPhoto = void 0;
+exports.askQuestion = exports.analyzeCarPhoto = exports.uploadFile = exports.getSignedDownloadUrl = exports.getSignedUploadUrl = void 0;
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const https_1 = require("firebase-functions/v2/https");
 const vertexai_1 = require("@google-cloud/vertexai");
+const https_2 = require("firebase-functions/v2/https");
+const storage_1 = require("@google-cloud/storage");
 // Initialize Firebase Admin SDK
 (0, app_1.initializeApp)();
 const db = (0, firestore_1.getFirestore)();
+// --- Configuration ---
+// Replace with your actual bucket name.
+const bucketName = 'vintusure-gcs-bucket';
+// Create a new Storage client instance
+const storage = new storage_1.Storage();
+/**
+ * Generates a signed upload URL for a file in Google Cloud Storage.
+ * This is a callable function, invoked by the client.
+ * @param {object} data - The data sent from the client.
+ * @param {string} data.fileName - The full path of the file to upload (e.g., 'agent documents/policies/user123/file.pdf').
+ * @param {string} data.contentType - The MIME type of the file (e.g., 'application/pdf').
+ * @returns {object} An object containing a success flag and the signed URL.
+ */
+exports.getSignedUploadUrl = (0, https_2.onRequest)(async (request, response) => {
+    // Enable CORS
+    response.set('Access-Control-Allow-Origin', '*');
+    response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Handle preflight requests
+    if (request.method === 'OPTIONS') {
+        response.status(204).send('');
+        return;
+    }
+    if (request.method !== 'POST') {
+        response.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+    try {
+        const { fileName, contentType } = request.body;
+        // Ensure file name and content type are provided
+        if (!fileName || !contentType) {
+            response.status(400).json({
+                success: false,
+                error: 'File name and content type are required.'
+            });
+            return;
+        }
+        // Get a reference to the file in the bucket
+        const bucket = storage.bucket(bucketName);
+        const file = bucket.file(fileName);
+        // Configure the options for the signed URL
+        const options = {
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + 15 * 60 * 1000, // URL expires in 15 minutes
+            contentType: contentType,
+        };
+        // Generate the signed URL
+        const [url] = await file.getSignedUrl(options);
+        console.log(`Generated signed upload URL for file: ${fileName}`);
+        response.json({ success: true, url: url });
+    }
+    catch (error) {
+        console.error('Error generating signed upload URL:', error);
+        response.status(500).json({
+            success: false,
+            error: 'Failed to generate signed upload URL.'
+        });
+    }
+});
+/**
+ * Generates a signed download URL for a file in Google Cloud Storage.
+ * This is a callable function, invoked by the client.
+ * @param {object} data - The data sent from the client.
+ * @param {string} data.fileName - The full path of the file to download.
+ * @returns {object} An object containing a success flag and the signed URL.
+ */
+exports.getSignedDownloadUrl = (0, https_2.onRequest)(async (request, response) => {
+    // Enable CORS
+    response.set('Access-Control-Allow-Origin', '*');
+    response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Handle preflight requests
+    if (request.method === 'OPTIONS') {
+        response.status(204).send('');
+        return;
+    }
+    if (request.method !== 'POST') {
+        response.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+    try {
+        const { fileName } = request.body;
+        // Ensure file name is provided
+        if (!fileName) {
+            response.status(400).json({
+                success: false,
+                error: 'File name is required.'
+            });
+            return;
+        }
+        // Get a reference to the file in the bucket
+        const bucket = storage.bucket(bucketName);
+        const file = bucket.file(fileName);
+        // Configure the options for the signed URL
+        const options = {
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000, // URL expires in 1 hour
+        };
+        // Generate the signed URL
+        const [url] = await file.getSignedUrl(options);
+        console.log(`Generated signed download URL for file: ${fileName}`);
+        response.json({ success: true, url: url });
+    }
+    catch (error) {
+        console.error('Error generating signed download URL:', error);
+        response.status(500).json({
+            success: false,
+            error: 'Failed to generate signed download URL.'
+        });
+    }
+});
+// Legacy function for backward compatibility (can be removed later)
+exports.uploadFile = (0, https_2.onRequest)(async (request, response) => {
+    // Enable CORS
+    response.set('Access-Control-Allow-Origin', '*');
+    response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Handle preflight requests
+    if (request.method === 'OPTIONS') {
+        response.status(204).send('');
+        return;
+    }
+    if (request.method !== 'POST') {
+        response.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+    try {
+        const { fileData, fileName, userId } = request.body;
+        if (!fileData || !fileName || !userId) {
+            response.status(400).json({
+                success: false,
+                error: 'File data, file name, and user ID are required.'
+            });
+            return;
+        }
+        // Convert base64 to buffer
+        const buffer = Buffer.from(fileData, 'base64');
+        // Get content type based on file extension
+        const contentType = getContentType(fileName);
+        // Upload to Google Cloud Storage
+        const bucket = storage.bucket(bucketName);
+        const file = bucket.file(fileName);
+        await file.save(buffer, {
+            metadata: {
+                contentType: contentType,
+                metadata: {
+                    uploaded_at: new Date().toISOString(),
+                    file_size: buffer.length.toString(),
+                    content_type: contentType,
+                    uploaded_by: userId,
+                },
+            },
+        });
+        // Generate signed URL for download
+        const [signedUrl] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000, // 1 hour
+        });
+        console.log(`File uploaded successfully: ${fileName}`);
+        response.json({
+            success: true,
+            data: {
+                url: signedUrl,
+                path: fileName,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Error uploading file:', error);
+        response.status(500).json({
+            success: false,
+            error: 'Failed to upload file.'
+        });
+    }
+});
+/**
+ * Helper function to determine content type based on file extension
+ */
+function getContentType(fileName) {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+        case 'pdf':
+            return 'application/pdf';
+        case 'jpg':
+        case 'jpeg':
+            return 'image/jpeg';
+        case 'png':
+            return 'image/png';
+        case 'doc':
+            return 'application/msword';
+        case 'docx':
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        case 'txt':
+            return 'text/plain';
+        default:
+            return 'application/octet-stream';
+    }
+}
 // Car Analysis Function
 exports.analyzeCarPhoto = (0, https_1.onCall)({
     cors: [

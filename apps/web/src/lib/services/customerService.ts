@@ -45,7 +45,7 @@ export const customerService = {
 
         let q = query(customersRef, orderBy(sortBy, sortOrder), limit(PAGE_SIZE));
 
-        // Filter by user if provided (for user-specific data access)
+        // Always filter by user for user-specific data access
         if (userId) {
             q = query(q, where('createdBy', '==', userId));
         }
@@ -74,21 +74,22 @@ export const customerService = {
         };
     },
 
-    async create(data: CustomerFormData, userId: string): Promise<Customer> {
+    async create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'>, userId: string): Promise<Customer> {
         const customerData = {
             ...data,
+            createdBy: userId, // Add the authenticated user's ID
+            agent_id: userId, // Add agent_id field for tracking which agent created the customer
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            createdBy: userId,
-            status: 'active',
         };
 
         const docRef = await addDoc(collection(db, COLLECTION_NAME), customerData);
-        const docSnap = await getDoc(docRef);
 
         return {
+            ...customerData,
             id: docRef.id,
-            ...convertTimestampsToDate(docSnap.data()),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         } as Customer;
     },
 

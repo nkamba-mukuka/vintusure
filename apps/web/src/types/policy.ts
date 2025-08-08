@@ -36,6 +36,7 @@ export interface Policy {
     createdAt: Timestamp
     updatedAt: Timestamp
     createdBy: string
+    agent_id: string // ID of the agent who created the policy
 }
 
 export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'documents'> {
@@ -70,13 +71,15 @@ export interface Claim {
         address: string;
     };
     damageType: 'Vehicle' | 'Property' | 'Personal';
-    status: 'Submitted' | 'UnderReview' | 'Approved' | 'Rejected';
+    status: 'Submitted' | 'UnderReview' | 'Approved' | 'Rejected' | 'Paid';
     documents: string[]; // Array of document URLs
     amount: number;
     approvedAmount?: number;
     reviewNotes?: string;
     createdAt: string;
     updatedAt: string;
+    createdBy: string;
+    agent_id: string; // ID of the agent who created the claim
 }
 
 export type ClaimStatus = Claim['status'];

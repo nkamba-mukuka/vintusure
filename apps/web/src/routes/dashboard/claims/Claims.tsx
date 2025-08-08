@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { claimService } from '@/lib/services/claimService'
 import { RAGService, QueryResponse } from '@/lib/services/ragService'
 import LoadingState from '@/components/LoadingState'
+import ClaimList from '@/components/claims/ClaimList'
+import ClaimFiltersBar from '@/components/claims/ClaimFiltersBar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,23 +31,36 @@ import { Link } from 'react-router-dom'
 export default function ClaimsPage() {
     const { user } = useAuthContext()
     const { toast } = useToast()
+    const queryClient = useQueryClient()
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
     const [aiQuery, setAiQuery] = useState('')
     const [aiResponse, setAiResponse] = useState<QueryResponse | null>(null)
     const [isAiLoading, setIsAiLoading] = useState(false)
     const [showAiAssistant, setShowAiAssistant] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
 
     // User-specific claims data
-    const { data: claimsData, isLoading: claimsLoading } = useQuery({
-        queryKey: ['claims', user?.uid, searchTerm, statusFilter],
+    const { data: claimsData, isLoading: claimsLoading, error: claimsError } = useQuery({
+        queryKey: ['claims', user?.uid, searchTerm, statusFilter, currentPage],
         queryFn: () => claimService.list({ 
             userId: user?.uid,
             searchTerm: searchTerm || undefined,
             status: statusFilter as any || undefined
-        }),
-        enabled: !!user?.uid
+        }, 10),
+        enabled: !!user?.uid,
+        retry: 1
     })
+
+    const handleClaimDelete = async (claimId: string) => {
+        try {
+            await claimService.delete(claimId)
+            await queryClient.invalidateQueries({ queryKey: ['claims'] })
+        } catch (error) {
+            console.error('Error deleting claim:', error)
+            throw error // Re-throw to let the ClaimList component handle the error
+        }
+    }
 
     const handleAiQuestion = async () => {
         if (!aiQuery.trim()) {
@@ -120,6 +135,20 @@ export default function ClaimsPage() {
         return <LoadingState />
     }
 
+    if (claimsError) {
+        return (
+            <div className="p-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center py-8">
+                        <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Claims</h2>
+                        <p className="text-gray-600 mb-4">There was an error loading your claims.</p>
+                        <Button onClick={() => window.location.reload()}>Retry</Button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     const claims = claimsData?.claims || []
     const totalClaims = claimsData?.total || 0
 
@@ -152,168 +181,104 @@ export default function ClaimsPage() {
 
                 {/* AI Assistant */}
                 {showAiAssistant && (
-                    <Card className="mb-6">
+                    <Card className="mb-8">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <MessageCircle className="h-5 w-5" />
-                                Claims AI Assistant
+                                AI Claims Assistant
                             </CardTitle>
-                            <p className="text-sm text-gray-600">
-                                Need help creating a claim? Ask questions about claim processing, status updates, or get guidance on claim procedures.
-                            </p>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Textarea
-                                    placeholder="Ask about claim processing, status updates, or any claims-related questions..."
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Ask about claims processing, policies, or get help..."
                                     value={aiQuery}
                                     onChange={(e) => setAiQuery(e.target.value)}
-                                    className="min-h-[100px]"
+                                    onKeyPress={(e) => e.key === 'Enter' && handleAiQuestion()}
                                 />
-                                <Button 
-                                    onClick={handleAiQuestion} 
-                                    disabled={isAiLoading}
-                                    className="w-full"
-                                >
-                                    {isAiLoading ? (
-                                        <div className="flex items-center space-x-2">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                            <span>Processing...</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center space-x-2">
-                                            <Search className="h-4 w-4" />
-                                            <span>Ask AI Assistant</span>
-                                        </div>
-                                    )}
+                                <Button onClick={handleAiQuestion} disabled={isAiLoading}>
+                                    {isAiLoading ? 'Thinking...' : 'Ask'}
                                 </Button>
                             </div>
-                            
                             {aiResponse && (
-                                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <h4 className="font-semibold mb-2 text-blue-900 flex items-center gap-2">
-                                        <MessageCircle className="h-4 w-4" />
-                                        AI Response:
-                                    </h4>
-                                    <p className="text-blue-800">{aiResponse.answer}</p>
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                    <h4 className="font-semibold mb-2">AI Response:</h4>
+                                    <p className="text-gray-700">{aiResponse.answer}</p>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
                 )}
 
-                {/* Filters */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Filter className="h-5 w-5" />
-                            Filters
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Search Claims
-                                </label>
-                                <Input
-                                    placeholder="Search by customer name, claim type..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Claims</CardTitle>
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{totalClaims}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {claims.filter(c => c.status === 'Submitted').length}
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Status
-                                </label>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">All Statuses</option>
-                                    <option value="Submitted">Submitted</option>
-                                    <option value="UnderReview">Under Review</option>
-                                    <option value="Approved">Approved</option>
-                                    <option value="Rejected">Rejected</option>
-                                </select>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Under Review</CardTitle>
+                            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {claims.filter(c => c.status === 'UnderReview').length}
                             </div>
-                            <div className="flex items-end">
-                                <Button
-                                    onClick={() => {
-                                        setSearchTerm('')
-                                        setStatusFilter('')
-                                    }}
-                                    variant="outline"
-                                    className="w-full"
-                                >
-                                    Clear Filters
-                                </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {claims.filter(c => c.status === 'Approved').length}
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Filters and Search */}
+                <ClaimFiltersBar
+                    filters={{
+                        searchTerm: searchTerm || undefined,
+                        status: statusFilter as any || undefined
+                    }}
+                    onFilterChange={(filters) => {
+                        setSearchTerm(filters.searchTerm || '');
+                        setStatusFilter(filters.status || '');
+                    }}
+                />
 
                 {/* Claims List */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" />
-                                Claims ({totalClaims})
-                            </div>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {claims.length > 0 ? (
-                            <div className="space-y-4">
-                                {claims.map((claim) => (
-                                    <div key={claim.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="font-semibold text-lg">{claim.customerName}</h3>
-                                                    <Badge variant={getStatusBadgeVariant(claim.status)} className="flex items-center gap-1">
-                                                        {getStatusIcon(claim.status)}
-                                                        {claim.status}
-                                                    </Badge>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                                                    <div>
-                                                        <span className="font-medium">Claim Type:</span> {claim.type}
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium">Damage Type:</span> {claim.damageType}
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium">Amount:</span> ${claim.amount}
-                                                    </div>
-                                                </div>
-                                                <div className="mt-2 text-sm text-gray-500">
-                                                    Filed on {new Date(claim.createdAt).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Link to={`/claims/${claim.id}`}>
-                                                    <Button variant="outline" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Link to={`/claims/${claim.id}/edit`}>
-                                                    <Button variant="outline" size="sm">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8">
+                <div className="mt-6">
+                    {claims.length === 0 && !claimsLoading ? (
+                        <Card>
+                            <CardContent className="text-center py-12">
                                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No claims found</h3>
-                                <p className="text-gray-600 mb-4">
+                                <p className="text-gray-600 mb-6">
                                     {searchTerm || statusFilter 
                                         ? 'Try adjusting your filters to see more results.'
                                         : 'Get started by creating your first claim.'
@@ -327,10 +292,19 @@ export default function ClaimsPage() {
                                         </Button>
                                     </Link>
                                 )}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <ClaimList
+                            claims={claims}
+                            isLoading={claimsLoading}
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(totalClaims / 10)}
+                            onPageChange={setCurrentPage}
+                            onClaimDelete={handleClaimDelete}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     )
