@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,21 +9,24 @@ import { useQuery } from '@tanstack/react-query';
 import { policyService } from '@/lib/services/policyService';
 import { customerService } from '@/lib/services/customerService';
 import { claimService } from '@/lib/services/claimService';
-import DocumentUploadModal from '@/components/documents/DocumentUploadModal';
+
 import DocumentList from '@/components/documents/DocumentList';
 import { 
   Users, 
   FileText, 
   Shield, 
-  TrendingUp, 
   Upload, 
   AlertCircle,
-  UserCheck
+  UserCheck,
+  BarChart3,
+  Brain,
+  Car
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'ai'>('overview');
+
   const [documents, setDocuments] = useState<any[]>([]);
 
   // Fetch dashboard data
@@ -51,9 +54,7 @@ export default function DashboardPage() {
     // Documents will be loaded from Google Cloud Storage in production
   }, []);
 
-  const handleDocumentUpload = (newDocument: any) => {
-    setDocuments(prev => [...prev, newDocument]);
-  };
+
 
   const handleDocumentDelete = (documentId: string) => {
     setDocuments(prev => prev.filter(doc => doc.id !== documentId));
@@ -82,12 +83,7 @@ export default function DashboardPage() {
       icon: FileText,
       link: '/claims/new',
     },
-    {
-      title: 'Upload Document',
-      description: 'Upload a document',
-      icon: Upload,
-      action: () => setIsUploadModalOpen(true),
-    },
+
   ];
 
   return (
@@ -132,8 +128,41 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Navigation Menu */}
+      <div className="flex justify-center">
+        <div className="flex space-x-1 bg-background border rounded-lg p-1 shadow-sm">
+          <Button 
+            variant={activeTab === 'overview' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('overview')}
+            className={`transition-all duration-200 px-6 py-2 ${
+              activeTab === 'overview' 
+                ? 'bg-primary text-primary-foreground shadow-sm' 
+                : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+            }`}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Overall Information
+          </Button>
+          <Button 
+            variant={activeTab === 'ai' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('ai')}
+            className={`transition-all duration-200 px-6 py-2 ${
+              activeTab === 'ai' 
+                ? 'bg-primary text-primary-foreground shadow-sm' 
+                : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+            }`}
+          >
+            <Brain className="h-4 w-4 mr-2" />
+            VintuSure AI
+          </Button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Policies</CardTitle>
@@ -201,25 +230,8 @@ export default function DashboardPage() {
               const Icon = action.icon;
               return (
                 <div key={action.title}>
-                  {action.link ? (
-                    <Link to={action.link}>
-                      <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                        <CardContent className="p-4">
-                          <div className="flex items-center space-x-3">
-                            <Icon className="h-5 w-5 text-primary" />
-                            <div>
-                              <h3 className="font-medium">{action.title}</h3>
-                              <p className="text-sm text-muted-foreground">{action.description}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ) : (
-                    <Card 
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={action.action}
-                    >
+                  <Link to={action.link}>
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardContent className="p-4">
                         <div className="flex items-center space-x-3">
                           <Icon className="h-5 w-5 text-primary" />
@@ -230,7 +242,7 @@ export default function DashboardPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  )}
+                  </Link>
                 </div>
               );
             })}
@@ -307,18 +319,118 @@ export default function DashboardPage() {
           </div>
         </TabsContent>
 
-                 <TabsContent value="documents" className="space-y-4">
-           <DocumentList 
-             documents={documents} 
-             onDocumentDelete={handleDocumentDelete}
-           />
-         </TabsContent>
-       </Tabs>
+        <TabsContent value="documents" className="space-y-4">
+          <DocumentList 
+            documents={documents} 
+            onDocumentDelete={handleDocumentDelete}
+          />
+        </TabsContent>
+      </Tabs>
+      </>
+      )}
 
-       {/* Document Upload Modal */}
-       <DocumentUploadModal
-         onUploadComplete={handleDocumentUpload}
-       />
+      {/* VintuSure AI Tab Content */}
+      {activeTab === 'ai' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                VintuSure AI Assistant
+              </CardTitle>
+              <CardDescription>
+                Access AI-powered tools for content generation, analysis, and insights
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* AI Content Generator */}
+                <Link to="/ai-generator">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Brain className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Content Generator</h3>
+                          <p className="text-sm text-muted-foreground">Generate insurance content with AI</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+
+                {/* Car Analyzer */}
+                <Link to="/car-analyzer">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Car className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Car Analyzer</h3>
+                          <p className="text-sm text-muted-foreground">Analyze vehicle damage with AI</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+
+                {/* RAG Test */}
+                <Link to="/rag-test">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">RAG Assistant</h3>
+                          <p className="text-sm text-muted-foreground">Knowledge-based AI assistance</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Features</CardTitle>
+              <CardDescription>
+                Explore what VintuSure AI can help you with
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-lg">Content Generation</h4>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• Generate policy descriptions</li>
+                    <li>• Create claim summaries</li>
+                    <li>• Draft customer communications</li>
+                    <li>• Generate marketing content</li>
+                  </ul>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-medium text-lg">Analysis & Insights</h4>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• Vehicle damage assessment</li>
+                    <li>• Risk analysis</li>
+                    <li>• Policy recommendations</li>
+                    <li>• Document analysis</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 } 

@@ -1,6 +1,6 @@
 
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Bell, User, Menu, Settings, LogOut } from 'lucide-react';
+import { User, Menu, Settings, LogOut, PanelLeftClose } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
     DropdownMenu,
@@ -17,7 +17,18 @@ interface TopBarProps {
     onMenuClick?: () => void;
 }
 
-export default function TopBar({ onMenuClick }: TopBarProps) {
+// Helper function to get user initials
+const getUserInitials = (firstName?: string, lastName?: string, email?: string): string => {
+    if (firstName && lastName) {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    }
+    if (email) {
+        return email.charAt(0).toUpperCase();
+    }
+    return 'U';
+};
+
+export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollapse }: TopBarProps) {
     const { user, signOut } = useAuthContext();
 
     return (
@@ -34,6 +45,19 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                         <Menu className="h-5 w-5" />
                     </Button>
 
+                    {/* Desktop Sidebar Collapse Button - Only show when sidebar is expanded */}
+                    {!isSidebarCollapsed && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hidden lg:flex text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                            onClick={onToggleCollapse}
+                            title="Collapse sidebar"
+                        >
+                            <PanelLeftClose className="h-5 w-5" />
+                        </Button>
+                    )}
+
                     {/* Logo - Hidden on mobile when sidebar is open */}
                     <div className="flex items-center space-x-2 lg:hidden">
                         <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
@@ -42,21 +66,23 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hidden sm:flex text-muted-foreground hover:text-primary hover:bg-primary/5"
-                    >
-                        <Bell className="h-5 w-5" />
-                    </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
-                                size="icon"
-                                className="text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                className="relative h-10 w-10 rounded-full border-2 border-indigo-500 hover:border-indigo-600 transition-colors duration-200 p-0"
                             >
-                                <User className="h-5 w-5" />
+                                {user?.profileImage ? (
+                                    <img
+                                        src={user.profileImage}
+                                        alt={`${user.firstName || ''} ${user.lastName || ''}`}
+                                        className="h-full w-full rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-sm font-medium text-primary">
+                                        {getUserInitials(user?.firstName, user?.lastName, user?.email)}
+                                    </span>
+                                )}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">

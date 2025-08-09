@@ -13,7 +13,6 @@ import {
     FileType
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { documentService } from '@/lib/services/documentService';
 
 interface Document {
     url: string;
@@ -96,23 +95,14 @@ export default function DocumentList({ documents, onDocumentDelete }: DocumentLi
 
     const handleDelete = async (doc: Document) => {
         if (window.confirm('Are you sure you want to delete this document?')) {
-            try {
-                // Use document service (removed DEV mode check)
-                await documentService.deleteDocument(doc.path);
-                onDocumentDelete(doc.path);
-                
-                toast({
-                    title: 'Success',
-                    description: 'Document deleted successfully',
-                });
-            } catch (error) {
-                console.error('Delete error:', error);
-                toast({
-                    title: 'Error',
-                    description: 'Failed to delete document',
-                    variant: 'destructive',
-                });
-            }
+            // File upload functionality has been removed
+            // Only remove from local state
+            onDocumentDelete(doc.path);
+            
+            toast({
+                title: 'Success',
+                description: 'Document removed from list',
+            });
         }
     };
 

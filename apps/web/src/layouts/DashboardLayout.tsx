@@ -1,20 +1,45 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Outlet } from "react-router-dom"
 import Sidebar from "@/components/dashboard/Sidebar"
 import TopBar from "@/components/dashboard/TopBar"
 
 export default function DashboardLayout() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+        // Initialize from localStorage or default to false
+        const saved = localStorage.getItem('sidebar-collapsed')
+        return saved ? JSON.parse(saved) : false
+    })
+
+    // Save collapse state to localStorage
+    useEffect(() => {
+        localStorage.setItem('sidebar-collapsed', JSON.stringify(isSidebarCollapsed))
+    }, [isSidebarCollapsed])
+
+    const handleToggleCollapse = () => {
+        setIsSidebarCollapsed(!isSidebarCollapsed)
+    }
 
     return (
         <div className="min-h-screen bg-background">
             {/* Sidebar */}
-            <Sidebar isOpen={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
+            <Sidebar 
+                isOpen={isSidebarOpen} 
+                onOpenChange={setIsSidebarOpen}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={handleToggleCollapse}
+            />
 
             {/* Main Content */}
-            <div className="lg:pl-64">
+            <div className={`transition-all duration-300 ease-in-out ${
+                isSidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'
+            }`}>
                 {/* Top Bar */}
-                <TopBar onMenuClick={() => setIsSidebarOpen(true)} />
+                <TopBar 
+                    onMenuClick={() => setIsSidebarOpen(true)}
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    onToggleCollapse={handleToggleCollapse}
+                />
 
                 {/* Content Area */}
                 <main className="min-h-[calc(100vh-4rem)] p-8">

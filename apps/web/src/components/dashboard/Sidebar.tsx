@@ -1,10 +1,11 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
     Home,
     Users,
@@ -16,6 +17,7 @@ import {
     Sparkles,
     Car,
     Menu,
+    ChevronRight,
 } from 'lucide-react'
 import vintusureLogo from '@/assets/vintusure-logo.ico'
 
@@ -30,75 +32,159 @@ const navigation = [
     { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-function SidebarContent() {
+interface SidebarContentProps {
+    isCollapsed?: boolean
+    onToggleCollapse?: () => void
+}
+
+function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarContentProps) {
     const location = useLocation()
     const { signOut } = useAuthContext()
 
     return (
-        <div className="flex flex-col h-full bg-card">
-            <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
-                <div className="flex items-center flex-shrink-0 px-4">
-                    <div className="flex items-center space-x-2">
-                        <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
-                        <span className="text-xl font-bold text-primary">VintuSure</span>
+        <TooltipProvider>
+            <div className="flex flex-col h-full bg-card border-r border-border">
+                <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
+                    {/* Header with logo */}
+                    <div className={cn(
+                        "flex items-center flex-shrink-0 transition-all duration-300",
+                        isCollapsed ? "px-2 justify-center" : "px-4"
+                    )}>
+                        <div className={cn(
+                            "flex items-center transition-all duration-300",
+                            isCollapsed ? "space-x-0" : "space-x-2"
+                        )}>
+                            <img 
+                                src={vintusureLogo} 
+                                alt="VintuSure Logo" 
+                                className="h-8 w-8 flex-shrink-0" 
+                            />
+                            {!isCollapsed && (
+                                <span className="text-xl font-bold text-primary whitespace-nowrap animate-fade-in">
+                                    VintuSure
+                                </span>
+                            )}
+                        </div>
                     </div>
-                </div>
-                <nav className="mt-5 flex-1 px-2 space-y-1">
-                    {navigation.map((item) => {
-                        const Icon = item.icon
-                        const isActive = location.pathname === item.href
-                        return (
-                            <Link
-                                key={item.name}
-                                to={item.href}
-                                className={cn(
-                                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                                    isActive
-                                        ? "bg-primary/10 text-primary border-r-2 border-primary"
-                                        : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                                )}
-                            >
-                                <Icon
+
+                    {/* Navigation */}
+                    <nav className={cn(
+                        "mt-5 flex-1 space-y-1 transition-all duration-300",
+                        isCollapsed ? "px-2" : "px-2"
+                    )}>
+                        {navigation.map((item) => {
+                            const Icon = item.icon
+                            const isActive = location.pathname === item.href
+                            
+                            const linkContent = (
+                                <Link
+                                    key={item.name}
+                                    to={item.href}
                                     className={cn(
-                                        "mr-3 h-5 w-5",
+                                        "group flex items-center text-sm font-medium rounded-md transition-all duration-200 relative",
+                                        isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2",
                                         isActive
-                                            ? "text-primary"
-                                            : "text-muted-foreground group-hover:text-primary"
+                                            ? "bg-primary/10 text-primary"
+                                            : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                                     )}
-                                />
-                                {item.name}
-                            </Link>
-                        )
-                    })}
-                </nav>
+                                >
+                                    <Icon
+                                        className={cn(
+                                            "h-5 w-5 flex-shrink-0 transition-all duration-200",
+                                            isCollapsed ? "mr-0" : "mr-3",
+                                            isActive
+                                                ? "text-primary"
+                                                : "text-muted-foreground group-hover:text-primary"
+                                        )}
+                                    />
+                                    {!isCollapsed && (
+                                        <span className="whitespace-nowrap animate-fade-in">
+                                            {item.name}
+                                        </span>
+                                    )}
+                                    
+                                    {/* Active indicator for collapsed state */}
+                                    {isCollapsed && isActive && (
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full" />
+                                    )}
+                                </Link>
+                            )
+
+                            // Wrap with tooltip when collapsed
+                            if (isCollapsed) {
+                                return (
+                                    <Tooltip key={item.name} delayDuration={300}>
+                                        <TooltipTrigger asChild>
+                                            {linkContent}
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" className="font-medium">
+                                            {item.name}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )
+                            }
+
+                            return linkContent
+                        })}
+                    </nav>
+                </div>
+                
+                {/* Sign out button */}
+                <div className={cn(
+                    "flex-shrink-0 flex border-t border-border transition-all duration-300",
+                    isCollapsed ? "p-2" : "p-4"
+                )}>
+                    {isCollapsed ? (
+                        <Tooltip delayDuration={300}>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={() => signOut()}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full h-10 p-0 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                                >
+                                    <LogOut className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="font-medium">
+                                Sign Out
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : (
+                        <Button
+                            onClick={() => signOut()}
+                            variant="ghost"
+                            className="flex-shrink-0 w-full justify-start group text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                        >
+                            <LogOut className="mr-3 h-5 w-5 group-hover:text-primary" />
+                            <span className="text-sm font-medium animate-fade-in">
+                                Sign Out
+                            </span>
+                        </Button>
+                    )}
+                </div>
             </div>
-            <div className="flex-shrink-0 flex border-t border-border p-4">
-                <Button
-                    onClick={() => signOut()}
-                    variant="ghost"
-                    className="flex-shrink-0 w-full justify-start group text-muted-foreground hover:text-primary hover:bg-primary/5"
-                >
-                    <LogOut className="mr-3 h-5 w-5 group-hover:text-primary" />
-                    <span className="text-sm font-medium">
-                        Sign Out
-                    </span>
-                </Button>
-            </div>
-        </div>
+        </TooltipProvider>
     )
 }
 
 interface SidebarProps {
-    isOpen?: boolean;
-    onOpenChange?: (open: boolean) => void;
+    isOpen?: boolean
+    onOpenChange?: (open: boolean) => void
+    isCollapsed?: boolean
+    onToggleCollapse?: () => void
 }
 
-export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
+export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onToggleCollapse }: SidebarProps) {
     const [internalIsOpen, setInternalIsOpen] = useState(false)
+    const [isHovered, setIsHovered] = useState(false)
 
     // Use external state if provided, otherwise use internal state
     const isSidebarOpen = isOpen !== undefined ? isOpen : internalIsOpen
     const setIsSidebarOpen = onOpenChange || setInternalIsOpen
+
+    // Show expanded content when hovered over collapsed sidebar
+    const showExpandedContent = !isCollapsed || isHovered
 
     return (
         <>
@@ -110,14 +196,64 @@ export default function Sidebar({ isOpen, onOpenChange }: SidebarProps) {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="p-0 w-64">
-                    <SidebarContent />
+                    <SidebarContent 
+                        isCollapsed={false}
+                    />
                 </SheetContent>
             </Sheet>
 
             {/* Desktop Sidebar */}
-            <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:z-40 lg:w-64 border-r border-border">
-                <SidebarContent />
+            <div 
+                className={cn(
+                    "hidden lg:block lg:fixed lg:inset-y-0 lg:z-50 transition-all duration-300 ease-in-out",
+                    isCollapsed ? "lg:w-16" : "lg:w-64"
+                )}
+            >
+                {/* Main sidebar container - shows when not collapsed OR when not hovered */}
+                <div 
+                    className={cn(
+                        "relative h-full transition-all duration-300 ease-in-out",
+                        isCollapsed ? "w-16" : "w-64",
+                        isCollapsed && isHovered ? "opacity-0 pointer-events-none" : "opacity-100"
+                    )}
+                    onMouseEnter={() => isCollapsed && setIsHovered(true)}
+                    onMouseLeave={() => isCollapsed && setIsHovered(false)}
+                >
+                    <SidebarContent 
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={onToggleCollapse}
+                    />
+                </div>
+
+                {/* Hover overlay sidebar - shows when collapsed and hovered */}
+                {isCollapsed && isHovered && (
+                    <div 
+                        className="absolute top-0 left-0 h-full w-64 z-50 shadow-xl animate-slide-in-right"
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                    >
+                        <SidebarContent 
+                            isCollapsed={false}
+                        />
+                    </div>
+                )}
             </div>
+
+            {/* Expand button for collapsed state */}
+            {isCollapsed && !isHovered && (
+                <div className="hidden lg:block lg:fixed lg:top-1/2 lg:left-14 lg:z-50 lg:-translate-y-1/2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onToggleCollapse}
+                        className="h-8 w-8 p-0 rounded-full bg-background border border-border shadow-md hover:bg-primary/10 transition-all duration-200 opacity-60 hover:opacity-100"
+                        title="Expand sidebar"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+
         </>
     )
 } 
