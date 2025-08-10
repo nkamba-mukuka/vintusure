@@ -26,24 +26,26 @@ const navigation = [
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Policies', href: '/policies', icon: FileText },
     { name: 'Claims', href: '/claims', icon: AlertCircle },
-    { name: 'Car Analyzer', href: '/car-analyzer', icon: Car },
-    { name: 'RAG Test', href: '/rag-test', icon: Brain },
-    { name: 'AI Generator', href: '/ai-generator', icon: Sparkles },
+    { name: 'VintuSure AI', href: '/vintusure-ai', icon: Brain },
     { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 interface SidebarContentProps {
     isCollapsed?: boolean
     onToggleCollapse?: () => void
+    isExpanded?: boolean
 }
 
-function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarContentProps) {
+function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = false }: SidebarContentProps) {
     const location = useLocation()
     const { signOut } = useAuthContext()
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-full bg-card border-r border-border">
+            <div className={cn(
+                "flex flex-col h-full bg-card border-r border-border",
+                isExpanded && "sidebar-backdrop"
+            )}>
                 <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
                     {/* Header with logo */}
                     <div className={cn(
@@ -60,7 +62,10 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarConten
                                 className="h-8 w-8 flex-shrink-0" 
                             />
                             {!isCollapsed && (
-                                <span className="text-xl font-bold text-primary whitespace-nowrap animate-fade-in">
+                                <span className={cn(
+                                    "text-xl font-bold text-primary whitespace-nowrap",
+                                    isExpanded ? "sidebar-content-fade-in" : "animate-fade-in"
+                                )}>
                                     VintuSure
                                 </span>
                             )}
@@ -72,7 +77,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarConten
                         "mt-5 flex-1 space-y-1 transition-all duration-300",
                         isCollapsed ? "px-2" : "px-2"
                     )}>
-                        {navigation.map((item) => {
+                        {navigation.map((item, index) => {
                             const Icon = item.icon
                             const isActive = location.pathname === item.href
                             
@@ -81,12 +86,15 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarConten
                                     key={item.name}
                                     to={item.href}
                                     className={cn(
-                                        "group flex items-center text-sm font-medium rounded-md transition-all duration-200 relative",
+                                        "group flex items-center text-sm font-medium rounded-md sidebar-item-hover relative",
                                         isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2",
                                         isActive
                                             ? "bg-primary/10 text-primary"
                                             : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                                     )}
+                                    style={{
+                                        animationDelay: isExpanded ? `${index * 50}ms` : '0ms'
+                                    }}
                                 >
                                     <Icon
                                         className={cn(
@@ -98,7 +106,10 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarConten
                                         )}
                                     />
                                     {!isCollapsed && (
-                                        <span className="whitespace-nowrap animate-fade-in">
+                                        <span className={cn(
+                                            "whitespace-nowrap",
+                                            isExpanded ? "sidebar-content-fade-in" : "animate-fade-in"
+                                        )}>
                                             {item.name}
                                         </span>
                                     )}
@@ -141,7 +152,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarConten
                                     onClick={() => signOut()}
                                     variant="ghost"
                                     size="sm"
-                                    className="w-full h-10 p-0 text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                                    className="w-full h-10 p-0 text-muted-foreground hover:text-primary hover:bg-primary/5 sidebar-item-hover"
                                 >
                                     <LogOut className="h-5 w-5" />
                                 </Button>
@@ -154,10 +165,13 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse }: SidebarConten
                         <Button
                             onClick={() => signOut()}
                             variant="ghost"
-                            className="flex-shrink-0 w-full justify-start group text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                            className="flex-shrink-0 w-full justify-start group text-muted-foreground hover:text-primary hover:bg-primary/5 sidebar-item-hover"
                         >
                             <LogOut className="mr-3 h-5 w-5 group-hover:text-primary" />
-                            <span className="text-sm font-medium animate-fade-in">
+                            <span className={cn(
+                                "text-sm font-medium",
+                                isExpanded ? "sidebar-content-fade-in" : "animate-fade-in"
+                            )}>
                                 Sign Out
                             </span>
                         </Button>
@@ -205,16 +219,15 @@ export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onT
             {/* Desktop Sidebar */}
             <div 
                 className={cn(
-                    "hidden lg:block lg:fixed lg:inset-y-0 lg:z-50 transition-all duration-300 ease-in-out",
+                    "hidden lg:block lg:fixed lg:inset-y-0 lg:z-50 sidebar-width-transition",
                     isCollapsed ? "lg:w-16" : "lg:w-64"
                 )}
             >
-                {/* Main sidebar container - shows when not collapsed OR when not hovered */}
+                {/* Main sidebar container - always visible */}
                 <div 
                     className={cn(
                         "relative h-full transition-all duration-300 ease-in-out",
-                        isCollapsed ? "w-16" : "w-64",
-                        isCollapsed && isHovered ? "opacity-0 pointer-events-none" : "opacity-100"
+                        isCollapsed ? "w-16" : "w-64"
                     )}
                     onMouseEnter={() => isCollapsed && setIsHovered(true)}
                     onMouseLeave={() => isCollapsed && setIsHovered(false)}
@@ -228,12 +241,13 @@ export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onT
                 {/* Hover overlay sidebar - shows when collapsed and hovered */}
                 {isCollapsed && isHovered && (
                     <div 
-                        className="absolute top-0 left-0 h-full w-64 z-50 shadow-xl animate-slide-in-right"
+                        className="absolute top-0 left-0 h-full w-64 z-50 sidebar-expand-enter-active"
                         onMouseEnter={() => setIsHovered(true)}
                         onMouseLeave={() => setIsHovered(false)}
                     >
                         <SidebarContent 
                             isCollapsed={false}
+                            isExpanded={true}
                         />
                     </div>
                 )}
@@ -246,7 +260,7 @@ export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onT
                         variant="ghost"
                         size="sm"
                         onClick={onToggleCollapse}
-                        className="h-8 w-8 p-0 rounded-full bg-background border border-border shadow-md hover:bg-primary/10 transition-all duration-200 opacity-60 hover:opacity-100"
+                        className="h-8 w-8 p-0 rounded-full bg-background border border-border shadow-md hover:bg-primary/10 sidebar-item-hover opacity-60 hover:opacity-100"
                         title="Expand sidebar"
                     >
                         <ChevronRight className="h-4 w-4" />

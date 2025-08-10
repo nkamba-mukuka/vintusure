@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import Sidebar from "@/components/dashboard/Sidebar"
 import TopBar from "@/components/dashboard/TopBar"
 
@@ -10,14 +10,34 @@ export default function DashboardLayout() {
         const saved = localStorage.getItem('sidebar-collapsed')
         return saved ? JSON.parse(saved) : false
     })
+    const [dashboardActiveTab, setDashboardActiveTab] = useState<'overview' | 'ai'>('overview')
+    const location = useLocation()
 
     // Save collapse state to localStorage
     useEffect(() => {
         localStorage.setItem('sidebar-collapsed', JSON.stringify(isSidebarCollapsed))
     }, [isSidebarCollapsed])
 
+    // Handle navigation state when coming from other pages
+    useEffect(() => {
+        if (location.pathname === '/dashboard' && location.state?.activeTab) {
+            setDashboardActiveTab(location.state.activeTab)
+        }
+    }, [location])
+
+    // Reset dashboard tab when leaving dashboard page
+    useEffect(() => {
+        if (location.pathname !== '/dashboard') {
+            setDashboardActiveTab('overview')
+        }
+    }, [location.pathname])
+
     const handleToggleCollapse = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed)
+    }
+
+    const handleDashboardTabChange = (tab: 'overview' | 'ai') => {
+        setDashboardActiveTab(tab)
     }
 
     return (
@@ -39,12 +59,14 @@ export default function DashboardLayout() {
                     onMenuClick={() => setIsSidebarOpen(true)}
                     isSidebarCollapsed={isSidebarCollapsed}
                     onToggleCollapse={handleToggleCollapse}
+                    activeTab={dashboardActiveTab}
+                    onTabChange={handleDashboardTabChange}
                 />
 
                 {/* Content Area */}
                 <main className="min-h-[calc(100vh-4rem)] p-8">
                     <div className="mx-auto max-w-7xl">
-                        <Outlet />
+                        <Outlet context={{ activeTab: dashboardActiveTab, setActiveTab: handleDashboardTabChange }} />
                     </div>
                 </main>
             </div>

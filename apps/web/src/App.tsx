@@ -41,6 +41,7 @@ const EditCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/E
 const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
 const AIGeneratorPage = React.lazy(() => import('@/routes/dashboard/AIGenerator'))
 const CarAnalyzerPage = React.lazy(() => import('@/routes/dashboard/CarAnalyzer'))
+const VintuSureAIPage = React.lazy(() => import('@/routes/dashboard/VintuSureAI'))
 
 // Memoized route components for better performance
 const ProtectedRoute = memo(() => {
@@ -338,6 +339,16 @@ export default function App() {
                                     <ErrorBoundary>
                                         <Suspense fallback={<LoadingState message="Loading car analyzer..." />}>
                                             <CarAnalyzerPage />
+                                        </Suspense>
+                                    </ErrorBoundary>
+                                } 
+                            />
+                            <Route 
+                                path="/vintusure-ai" 
+                                element={
+                                    <ErrorBoundary>
+                                        <Suspense fallback={<LoadingState message="Loading VintuSure AI..." />}>
+                                            <VintuSureAIPage />
                                         </Suspense>
                                     </ErrorBoundary>
                                 } 

@@ -10,11 +10,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EditIcon, TrashIcon, PlusIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useCustomerCRUD } from './customer';
+import { useCustomerCRUD } from '@/components/customers/customer';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import CustomerModalForm from '@/components/customers/CustomerModalForm';
 
 interface CustomerListProps {
     customers: Customer[];
@@ -36,6 +36,9 @@ export default function CustomerList({
     const { deleteCustomer, isLoading: isDeleting } = useCustomerCRUD();
     const { toast } = useToast();
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>(undefined);
+    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
     const handleDeleteCustomer = async (customerId: string, customerName: string) => {
         if (!confirm(`Are you sure you want to delete ${customerName}?`)) {
@@ -70,6 +73,27 @@ export default function CustomerList({
         }
     };
 
+    const handleCreateCustomer = () => {
+        setModalMode('create');
+        setEditingCustomer(undefined);
+        setIsModalOpen(true);
+    };
+
+    const handleEditCustomer = (customer: Customer) => {
+        setModalMode('edit');
+        setEditingCustomer(customer);
+        setIsModalOpen(true);
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setEditingCustomer(undefined);
+    };
+
+    const handleModalSuccess = () => {
+        onCustomerUpdate?.(); // Refresh the list
+    };
+
     if (isLoading) {
         return (
             <div className="w-full h-64 flex items-center justify-center">
@@ -83,17 +107,16 @@ export default function CustomerList({
             {/* Header with Create Button */}
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">Customers</h2>
-                <Link to="/customers/new">
-                    <Button className="flex items-center gap-2">
-                        <PlusIcon className="h-4 w-4" />
-                        Create Customer
-                    </Button>
-                </Link>
+                <Button onClick={handleCreateCustomer} className="flex items-center gap-2">
+                    <PlusIcon className="h-4 w-4" />
+                    Create Customer
+                </Button>
             </div>
 
             <Table>
                 <TableHeader>
                     <TableRow>
+                        <TableHead className="w-16">#</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>NRC/Passport</TableHead>
                         <TableHead>Contact</TableHead>
@@ -103,8 +126,11 @@ export default function CustomerList({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {customers.map((customer) => (
+                    {customers.map((customer, index) => (
                         <TableRow key={customer.id}>
+                            <TableCell className="font-medium text-gray-500">
+                                {index + 1}
+                            </TableCell>
                             <TableCell>
                                 {customer.firstName} {customer.lastName}
                             </TableCell>
@@ -124,11 +150,13 @@ export default function CustomerList({
                                 {format(new Date(customer.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
-                                <Link to={`/dashboard/customers/${customer.id}/edit`}>
-                                    <Button variant="outline" size="sm">
-                                        <EditIcon className="h-4 w-4" />
-                                    </Button>
-                                </Link>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleEditCustomer(customer)}
+                                >
+                                    <EditIcon className="h-4 w-4" />
+                                </Button>
                                 <Button 
                                     variant="outline" 
                                     size="sm" 
@@ -175,6 +203,15 @@ export default function CustomerList({
                     </Button>
                 </div>
             )}
+
+            {/* Customer Modal Form */}
+            <CustomerModalForm
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                customer={editingCustomer}
+                mode={modalMode}
+                onSuccess={handleModalSuccess}
+            />
         </div>
     );
 }

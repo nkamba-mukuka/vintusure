@@ -2,10 +2,12 @@
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { Trash2, Edit } from 'lucide-react'
+import { Trash2, Edit, Plus } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import type { PolicyFormData } from '@/lib/validations/policy'
 import LoadingState from '@/components/LoadingState'
+import { useState } from 'react'
+import PolicyModalForm from './PolicyModalForm'
 
 interface PolicyListProps {
     policies: (PolicyFormData & { id: string })[]
@@ -14,6 +16,7 @@ interface PolicyListProps {
     totalPages: number
     onPageChange: (page: number) => void
     onPolicyDelete?: (policyId: string) => Promise<void>
+    onPolicyUpdate?: () => void
 }
 
 export default function PolicyList({ 
@@ -22,9 +25,13 @@ export default function PolicyList({
     currentPage, 
     totalPages, 
     onPageChange,
-    onPolicyDelete 
+    onPolicyDelete,
+    onPolicyUpdate
 }: PolicyListProps) {
     const { toast } = useToast()
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [editingPolicy, setEditingPolicy] = useState<(PolicyFormData & { id: string }) | undefined>(undefined)
+    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
 
     const handleDelete = async (policyId: string, policyNumber: string) => {
         if (!window.confirm(`Are you sure you want to delete policy ${policyNumber}? This action cannot be undone.`)) {
@@ -47,24 +54,71 @@ export default function PolicyList({
         }
     }
 
+    const handleCreatePolicy = () => {
+        setModalMode('create')
+        setEditingPolicy(undefined)
+        setIsModalOpen(true)
+    }
+
+    const handleEditPolicy = (policy: PolicyFormData & { id: string }) => {
+        setModalMode('edit')
+        setEditingPolicy(policy)
+        setIsModalOpen(true)
+    }
+
+    const handleModalClose = () => {
+        setIsModalOpen(false)
+        setEditingPolicy(undefined)
+    }
+
+    const handleModalSuccess = () => {
+        onPolicyUpdate?.() // Refresh the list
+    }
+
     if (isLoading) {
         return <LoadingState />
     }
 
     if (policies.length === 0) {
         return (
-            <div className="text-center py-8">
-                <p className="text-gray-500">No policies found</p>
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-gray-900">Policies</h2>
+                    <Button onClick={handleCreatePolicy} className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create Policy
+                    </Button>
+                </div>
+                <div className="text-center py-8">
+                    <p className="text-gray-500">No policies found</p>
+                </div>
+                <PolicyModalForm
+                    isOpen={isModalOpen}
+                    onClose={handleModalClose}
+                    initialData={editingPolicy}
+                    onSuccess={handleModalSuccess}
+                />
             </div>
         )
     }
 
     return (
         <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Policies</h2>
+                <Button onClick={handleCreatePolicy} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Policy
+                </Button>
+            </div>
+
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                #
+                            </th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Policy Number
                             </th>
@@ -89,8 +143,11 @@ export default function PolicyList({
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {policies.map((policy) => (
+                        {policies.map((policy, index) => (
                             <tr key={policy.id}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                                    {index + 1}
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {policy.policyNumber}
                                 </td>
@@ -113,10 +170,12 @@ export default function PolicyList({
                                     <Button asChild variant="ghost" size="sm">
                                         <Link to={`/policies/${policy.id}`}>View</Link>
                                     </Button>
-                                    <Button asChild variant="ghost" size="sm">
-                                        <Link to={`/policies/${policy.id}/edit`}>
-                                            <Edit className="h-4 w-4" />
-                                        </Link>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => handleEditPolicy(policy)}
+                                    >
+                                        <Edit className="h-4 w-4" />
                                     </Button>
                                     {onPolicyDelete && (
                                         <Button 
@@ -154,6 +213,14 @@ export default function PolicyList({
                     </Button>
                 </div>
             )}
+
+            {/* Policy Modal Form */}
+            <PolicyModalForm
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                initialData={editingPolicy}
+                onSuccess={handleModalSuccess}
+            />
         </div>
     )
 } 

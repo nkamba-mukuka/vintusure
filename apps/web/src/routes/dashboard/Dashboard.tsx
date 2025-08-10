@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,21 +11,24 @@ import { customerService } from '@/lib/services/customerService';
 import { claimService } from '@/lib/services/claimService';
 
 import DocumentList from '@/components/documents/DocumentList';
+import VintuSureAIEmbed from '@/components/ai/VintuSureAIEmbed';
 import { 
   Users, 
   FileText, 
   Shield, 
   Upload, 
   AlertCircle,
-  UserCheck,
-  BarChart3,
-  Brain,
-  Car
+  Brain
 } from 'lucide-react';
+
+interface DashboardContext {
+  activeTab: 'overview' | 'ai';
+  setActiveTab: (tab: 'overview' | 'ai') => void;
+}
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
-  const [activeTab, setActiveTab] = useState<'overview' | 'ai'>('overview');
+  const { activeTab, setActiveTab } = useOutletContext<DashboardContext>();
 
   const [documents, setDocuments] = useState<any[]>([]);
 
@@ -110,53 +113,9 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Welcome Section */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.firstName || 'User'}!
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Here's what's happening with your insurance business today.
-          </p>
-        </div>
-        {user?.profileCompleted && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <UserCheck className="h-3 w-3" />
-            Profile Complete
-          </Badge>
-        )}
-      </div>
 
-      {/* Navigation Menu */}
-      <div className="flex justify-center">
-        <div className="flex space-x-1 bg-background border rounded-lg p-1 shadow-sm">
-          <Button 
-            variant={activeTab === 'overview' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('overview')}
-            className={`transition-all duration-200 px-6 py-2 ${
-              activeTab === 'overview' 
-                ? 'bg-primary text-primary-foreground shadow-sm' 
-                : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Overall Information
-          </Button>
-          <Button 
-            variant={activeTab === 'ai' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('ai')}
-            className={`transition-all duration-200 px-6 py-2 ${
-              activeTab === 'ai' 
-                ? 'bg-primary text-primary-foreground shadow-sm' 
-                : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-            }`}
-          >
-            <Brain className="h-4 w-4 mr-2" />
-            VintuSure AI
-          </Button>
-        </div>
-      </div>
+
+
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
@@ -331,103 +290,9 @@ export default function DashboardPage() {
 
       {/* VintuSure AI Tab Content */}
       {activeTab === 'ai' && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary" />
-                VintuSure AI Assistant
-              </CardTitle>
-              <CardDescription>
-                Access AI-powered tools for content generation, analysis, and insights
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* AI Content Generator */}
-                <Link to="/ai-generator">
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Brain className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">Content Generator</h3>
-                          <p className="text-sm text-muted-foreground">Generate insurance content with AI</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-
-                {/* Car Analyzer */}
-                <Link to="/car-analyzer">
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Car className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">Car Analyzer</h3>
-                          <p className="text-sm text-muted-foreground">Analyze vehicle damage with AI</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-
-                {/* RAG Test */}
-                <Link to="/rag-test">
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <FileText className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">RAG Assistant</h3>
-                          <p className="text-sm text-muted-foreground">Knowledge-based AI assistance</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Features</CardTitle>
-              <CardDescription>
-                Explore what VintuSure AI can help you with
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h4 className="font-medium text-lg">Content Generation</h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>• Generate policy descriptions</li>
-                    <li>• Create claim summaries</li>
-                    <li>• Draft customer communications</li>
-                    <li>• Generate marketing content</li>
-                  </ul>
-                </div>
-                <div className="space-y-4">
-                  <h4 className="font-medium text-lg">Analysis & Insights</h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>• Vehicle damage assessment</li>
-                    <li>• Risk analysis</li>
-                    <li>• Policy recommendations</li>
-                    <li>• Document analysis</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="h-full">
+          {/* Embedded VintuSure AI Interface */}
+          <VintuSureAIEmbed />
         </div>
       )}
 

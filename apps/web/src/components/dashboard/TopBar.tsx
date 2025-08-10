@@ -1,7 +1,7 @@
 
 import { useAuthContext } from '@/contexts/AuthContext';
-import { User, Menu, Settings, LogOut, PanelLeftClose } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { User, Menu, Settings, LogOut, PanelLeftClose, BarChart3, Brain } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -11,10 +11,15 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import vintusureLogo from '@/assets/vintusure-logo.ico';
 
 interface TopBarProps {
     onMenuClick?: () => void;
+    isSidebarCollapsed?: boolean;
+    onToggleCollapse?: () => void;
+    activeTab?: 'overview' | 'ai';
+    onTabChange?: (tab: 'overview' | 'ai') => void;
 }
 
 // Helper function to get user initials
@@ -28,8 +33,24 @@ const getUserInitials = (firstName?: string, lastName?: string, email?: string):
     return 'U';
 };
 
-export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollapse }: TopBarProps) {
+export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollapse, activeTab, onTabChange }: TopBarProps) {
     const { user, signOut } = useAuthContext();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Check if we're on the dashboard page
+    const isDashboardPage = location.pathname === '/dashboard';
+
+    // Handle navigation to dashboard tabs
+    const handleDashboardNavigation = (tab: 'overview' | 'ai') => {
+        if (isDashboardPage && onTabChange) {
+            // If already on dashboard, just change the tab
+            onTabChange(tab);
+        } else {
+            // If not on dashboard, navigate to dashboard with the tab
+            navigate('/dashboard', { state: { activeTab: tab } });
+        }
+    };
 
     return (
         <div className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-40">
@@ -62,6 +83,36 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                     <div className="flex items-center space-x-2 lg:hidden">
                         <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
                         <span className="text-xl font-bold text-primary">VintuSure</span>
+                    </div>
+
+                    {/* Dashboard Navigation - Available everywhere */}
+                    <div className="hidden lg:flex items-center space-x-1 bg-background border rounded-lg p-1 shadow-sm">
+                        <Button 
+                            variant={isDashboardPage && activeTab === 'overview' ? 'default' : 'ghost'}
+                            onClick={() => handleDashboardNavigation('overview')}
+                            className={cn(
+                                "transition-all duration-200 px-4 py-2 text-sm",
+                                isDashboardPage && activeTab === 'overview'
+                                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+                            )}
+                        >
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Overall Information
+                        </Button>
+                        <Button 
+                            variant={isDashboardPage && activeTab === 'ai' ? 'default' : 'ghost'}
+                            onClick={() => handleDashboardNavigation('ai')}
+                            className={cn(
+                                "transition-all duration-200 px-4 py-2 text-sm",
+                                isDashboardPage && activeTab === 'ai'
+                                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                                    : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+                            )}
+                        >
+                            <Brain className="h-4 w-4 mr-2" />
+                            VintuSure AI
+                        </Button>
                     </div>
                 </div>
 

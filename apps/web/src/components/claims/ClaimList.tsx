@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,9 +11,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { EyeIcon, EditIcon, FileIcon, Trash2Icon } from 'lucide-react';
+import { EyeIcon, EditIcon, FileIcon, Trash2Icon, PlusIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Claim } from '@/types/policy';
+import ClaimModalForm from './ClaimModalForm';
 
 interface ClaimListProps {
     claims: Claim[];
@@ -22,6 +23,7 @@ interface ClaimListProps {
     totalPages: number;
     onPageChange: (page: number) => void;
     onClaimDelete?: (claimId: string) => Promise<void>;
+    onClaimUpdate?: () => void;
 }
 
 export default function ClaimList({
@@ -31,8 +33,12 @@ export default function ClaimList({
     currentPage,
     totalPages,
     onClaimDelete,
+    onClaimUpdate,
 }: ClaimListProps) {
     const { toast } = useToast();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingClaim, setEditingClaim] = useState<Claim | undefined>(undefined);
+    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
     const handleDelete = async (claimId: string, claimNumber?: string) => {
         if (!window.confirm(`Are you sure you want to delete this claim? This action cannot be undone.`)) {
@@ -53,6 +59,27 @@ export default function ClaimList({
                 variant: 'destructive',
             });
         }
+    };
+
+    const handleCreateClaim = () => {
+        setModalMode('create');
+        setEditingClaim(undefined);
+        setIsModalOpen(true);
+    };
+
+    const handleEditClaim = (claim: Claim) => {
+        setModalMode('edit');
+        setEditingClaim(claim);
+        setIsModalOpen(true);
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setEditingClaim(undefined);
+    };
+
+    const handleModalSuccess = () => {
+        onClaimUpdate?.(); // Refresh the list
     };
 
     const getStatusBadgeVariant = (status: string) => {
@@ -85,18 +112,42 @@ export default function ClaimList({
 
     if (claims.length === 0) {
         return (
-            <div className="text-center py-8">
-                <p className="text-gray-500">No claims found.</p>
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-gray-900">Claims</h2>
+                    <Button onClick={handleCreateClaim} className="flex items-center gap-2">
+                        <PlusIcon className="h-4 w-4" />
+                        Create Claim
+                    </Button>
+                </div>
+                <div className="text-center py-8">
+                    <p className="text-gray-500">No claims found.</p>
+                </div>
+                <ClaimModalForm
+                    isOpen={isModalOpen}
+                    onClose={handleModalClose}
+                    initialData={editingClaim}
+                    onSuccess={handleModalSuccess}
+                />
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Claims</h2>
+                <Button onClick={handleCreateClaim} className="flex items-center gap-2">
+                    <PlusIcon className="h-4 w-4" />
+                    Create Claim
+                </Button>
+            </div>
+
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-16">#</TableHead>
                             <TableHead>Claim ID</TableHead>
                             <TableHead>Customer</TableHead>
                             <TableHead>Policy</TableHead>
@@ -108,8 +159,11 @@ export default function ClaimList({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {claims.map((claim) => (
+                        {claims.map((claim, index) => (
                             <TableRow key={claim.id}>
+                                <TableCell className="font-medium text-gray-500">
+                                    {index + 1}
+                                </TableCell>
                                 <TableCell className="font-medium">{claim.id}</TableCell>
                                 <TableCell>{claim.customerId}</TableCell>
                                 <TableCell>{claim.policyId}</TableCell>
@@ -143,11 +197,13 @@ export default function ClaimList({
                                         </Button>
                                     </Link>
                                     {claim.status === 'Submitted' && (
-                                        <Link to={`/claims/${claim.id}/edit`}>
-                                            <Button variant="outline" size="sm">
-                                                <EditIcon className="h-4 w-4" />
-                                            </Button>
-                                        </Link>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={() => handleEditClaim(claim)}
+                                        >
+                                            <EditIcon className="h-4 w-4" />
+                                        </Button>
                                     )}
                                     <Link to={`/claims/${claim.id}/documents`}>
                                         <Button variant="outline" size="sm">
@@ -197,6 +253,14 @@ export default function ClaimList({
                     </div>
                 </div>
             )}
+
+            {/* Claim Modal Form */}
+            <ClaimModalForm
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                initialData={editingClaim}
+                onSuccess={handleModalSuccess}
+            />
         </div>
     );
 } 
