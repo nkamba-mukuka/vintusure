@@ -47,7 +47,7 @@ const updateFirebaseConfig = () => {
   let content = fs.readFileSync(testFile, 'utf8');
   
   // Check if config is still placeholder
-  if (content.includes('AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')) {
+  if (content.includes('BXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')) {
     logWithTimestamp('⚠️  Firebase configuration needs to be updated');
     logWithTimestamp('📝 Please update the firebaseConfig object in test-indexing-rag-system.js');
     logWithTimestamp('🔗 Get your config from: https://console.firebase.google.com/project/_/settings/general/');
