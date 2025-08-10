@@ -85,7 +85,7 @@ const VintuSureAIEmbed: React.FC = () => {
       
       if (isTitlePattern || isSubheading) {
         return (
-          <h3 key={index} className="text-lg font-semibold text-indigo-600 mt-4 mb-2 first:mt-0">
+          <h3 key={index} className="text-lg font-semibold text-primary mt-4 mb-2 first:mt-0">
             {line.replace(/^##?\s|\*\*/g, '').trim()}
           </h3>
         );
@@ -93,7 +93,7 @@ const VintuSureAIEmbed: React.FC = () => {
       
       if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
         return (
-          <li key={index} className="ml-4 mb-1 text-gray-700">
+          <li key={index} className="ml-4 mb-1 text-foreground">
             {line.replace(/^[•\-*]\s*/, '')}
           </li>
         );
@@ -101,7 +101,7 @@ const VintuSureAIEmbed: React.FC = () => {
       
       if (line.trim()) {
         return (
-          <p key={index} className="mb-3 text-gray-700 leading-relaxed">
+          <p key={index} className="mb-3 text-foreground leading-relaxed">
             {line}
           </p>
         );
@@ -133,71 +133,71 @@ const VintuSureAIEmbed: React.FC = () => {
   ];
 
   return (
-    <div className="h-full bg-gray-50 rounded-lg relative">
+    <div className="h-full bg-background rounded-lg relative">
       <div className="h-full flex flex-col">
+        {/* Shared Icons Menu - Always Visible */}
+        <div className="w-full flex justify-end p-6 pb-2">
+          <div className="flex space-x-4">
+            <TooltipProvider>
+              {sidebarItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setActiveView(item.id as any)}
+                        className={`p-3 rounded-xl transition-all duration-200 hover:bg-primary/10 hover:text-primary ${
+                          activeView === item.id
+                            ? 'bg-primary/20 text-primary shadow-md'
+                            : 'text-muted-foreground hover:text-primary'
+                        }`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="mt-2">
+                      <div className="text-sm">
+                        <div className="font-medium text-foreground">{item.name}</div>
+                        <div className="text-muted-foreground">{item.description}</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </TooltipProvider>
+            
+            {/* Health Status */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleHealthCheck}
+                    className="p-3 rounded-xl hover:bg-muted transition-colors"
+                  >
+                    <Activity 
+                      className={`h-6 w-6 ${
+                        healthStatus === 'healthy' ? 'text-green-500' : 
+                        healthStatus === 'unhealthy' ? 'text-red-500' : 'text-muted-foreground'
+                      }`} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="mt-2">
+                  <div className="text-sm">
+                    <div className="font-medium text-foreground">System Health</div>
+                    <div className="text-muted-foreground">Status: {healthStatus}</div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col rounded-lg">
           {/* RAG Assistant View */}
           {activeView === 'rag' && (
-            <div className="flex-1 flex flex-col p-6">
-              {/* Icons Menu - Above Prompt Input */}
-              <div className="w-full flex justify-end mb-4">
-                <div className="flex space-x-4">
-                  <TooltipProvider>
-                    {sidebarItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <Tooltip key={item.id}>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => setActiveView(item.id as any)}
-                              className={`p-3 rounded-xl transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 ${
-                                activeView === item.id
-                                  ? 'bg-indigo-100 text-indigo-600 shadow-md'
-                                  : 'text-gray-600 hover:text-indigo-600'
-                              }`}
-                            >
-                              <Icon className="h-6 w-6" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="mt-2">
-                            <div className="text-sm">
-                              <div className="font-medium">{item.name}</div>
-                              <div className="text-gray-500">{item.description}</div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </TooltipProvider>
-                  
-                  {/* Health Status */}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={handleHealthCheck}
-                          className="p-3 rounded-xl hover:bg-gray-100 transition-colors"
-                        >
-                          <Activity 
-                            className={`h-6 w-6 ${
-                              healthStatus === 'healthy' ? 'text-green-500' : 
-                              healthStatus === 'unhealthy' ? 'text-red-500' : 'text-gray-400'
-                            }`} 
-                          />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="mt-2">
-                        <div className="text-sm">
-                          <div className="font-medium">System Health</div>
-                          <div className="text-gray-500">Status: {healthStatus}</div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
-
+            <div className="flex-1 flex flex-col px-6 pb-6">
               {/* Centered Prompt Input */}
               <div className="w-full flex justify-center mb-6">
                 <div className="w-[600px] flex items-center gap-4">
@@ -207,7 +207,7 @@ const VintuSureAIEmbed: React.FC = () => {
                     onChange={(e) => setQuery(e.target.value)}
                     rows={3}
                     disabled={isLoading}
-                    className="flex-1 resize-none border-2 border-indigo-200 rounded-[20px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+                    className="flex-1 resize-none border-2 border-primary/20 rounded-[20px] focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 bg-background text-foreground"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -218,10 +218,10 @@ const VintuSureAIEmbed: React.FC = () => {
                   <Button 
                     onClick={handleAskQuestion} 
                     disabled={isLoading || !query.trim()}
-                    className="h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 p-0 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
+                    className="h-12 w-12 rounded-full bg-primary hover:bg-primary/90 p-0 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     {isLoading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground"></div>
                     ) : (
                       <Send className="h-5 w-5" />
                     )}
@@ -231,20 +231,20 @@ const VintuSureAIEmbed: React.FC = () => {
 
               {/* Response Section */}
               <div className="flex-1 w-full max-w-5xl mx-auto mb-6 min-h-0">
-                <Card className="h-full">
+                <Card className="h-full purple-card-effect">
                   <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <MessageCircle className="h-5 w-5 text-indigo-600" />
+                    <CardTitle className="flex items-center gap-2 text-lg purple-header">
+                      <MessageCircle className="h-5 w-5 text-primary" />
                       AI Response
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex-1 min-h-0">
-                    <div className="h-full overflow-y-auto bg-gray-50 rounded-lg p-4">
+                    <div className="h-full overflow-y-auto bg-muted/30 rounded-lg p-4">
                       {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Generating response...</p>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                            <p className="text-muted-foreground">Generating response...</p>
                           </div>
                         </div>
                       ) : response ? (
@@ -261,16 +261,16 @@ const VintuSureAIEmbed: React.FC = () => {
                           </div>
                           
                           {response.success && response.answer ? (
-                            <div className="prose max-w-none">
+                            <div className="prose max-w-none dark:prose-invert">
                               {formatResponse(response.answer)}
                             </div>
                           ) : (
-                            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                              <p className="text-red-700 font-medium">
+                            <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                              <p className="text-destructive font-medium">
                                 {response.error || 'No response generated'}
                               </p>
                               {response.details && (
-                                <p className="text-sm text-red-600 mt-2">
+                                <p className="text-sm text-destructive/80 mt-2">
                                   Details: {response.details}
                                 </p>
                               )}
@@ -278,9 +278,9 @@ const VintuSureAIEmbed: React.FC = () => {
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-full text-gray-500">
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
                           <div className="text-center">
-                            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                             <p className="text-lg font-medium">Ready to assist you</p>
                             <p>Ask a question to get started</p>
                           </div>
@@ -295,8 +295,8 @@ const VintuSureAIEmbed: React.FC = () => {
               <div className="w-full max-w-5xl mx-auto">
                 <div className="space-y-4">
                   <div className="text-center">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Questions</h3>
-                    <p className="text-gray-600 text-sm">Try these example questions to test the system</p>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Quick Questions</h3>
+                    <p className="text-muted-foreground text-sm">Try these example questions to test the system</p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {[
@@ -310,7 +310,7 @@ const VintuSureAIEmbed: React.FC = () => {
                       <Button
                         key={index}
                         variant="outline"
-                        className="justify-start text-left h-auto p-4 text-sm hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-200"
+                        className="justify-start text-left h-auto p-4 text-sm hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                         onClick={() => setQuery(example)}
                         disabled={isLoading}
                       >
@@ -325,7 +325,7 @@ const VintuSureAIEmbed: React.FC = () => {
 
           {/* Content Generator View */}
           {activeView === 'content-generator' && (
-            <div className="flex-1 p-6 overflow-auto">
+            <div className="flex-1 px-6 pb-6 overflow-auto">
               <div className="max-w-5xl mx-auto">
                 <AIContentGenerator />
               </div>
@@ -334,7 +334,7 @@ const VintuSureAIEmbed: React.FC = () => {
 
           {/* Car Analyzer View */}
           {activeView === 'car-analyzer' && (
-            <div className="flex-1 p-6 overflow-auto">
+            <div className="flex-1 px-6 pb-6 overflow-auto">
               <div className="max-w-5xl mx-auto">
                 <CarPhotoAnalyzer
                   onAnalysisComplete={(result) => {

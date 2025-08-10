@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom"
 import { useAuthContext } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { Button } from "@/components/ui/button"
-import { Shield, Car, TrendingUp, User, Building2, Brain } from 'lucide-react'
+import { Shield, Car, TrendingUp, User, Building2, Brain, Sun, Moon } from 'lucide-react'
 import vintusureLogo from '@/assets/vintusure-logo.ico'
 import SEO, { createOrganizationSchema, createWebPageSchema, createSoftwareApplicationSchema } from '@/components/SEO'
+import { cn } from '@/lib/utils'
 
 export default function LandingPage() {
     const { user } = useAuthContext()
+    const { theme, toggleTheme } = useTheme()
 
     // Structured data for better SEO
     const organizationSchema = createOrganizationSchema()
@@ -77,6 +80,40 @@ export default function LandingPage() {
                                 </span>
                             </div>
                             <div className="flex gap-4" role="group" aria-label="User actions">
+                                {/* Theme Switcher */}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleTheme}
+                                    className="theme-switcher-button relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 p-0 hover:shadow-md hover:shadow-primary/25 group"
+                                    title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                                    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                                >
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                        {/* Sun Icon */}
+                                        <Sun 
+                                            className={cn(
+                                                "theme-switcher-icon h-5 w-5 absolute",
+                                                theme === 'light' 
+                                                    ? "active text-primary" 
+                                                    : "inactive text-muted-foreground"
+                                            )}
+                                        />
+                                        {/* Moon Icon */}
+                                        <Moon 
+                                            className={cn(
+                                                "theme-switcher-icon h-5 w-5 absolute",
+                                                theme === 'dark' 
+                                                    ? "active text-primary" 
+                                                    : "inactive text-muted-foreground"
+                                            )}
+                                        />
+                                    </div>
+                                    
+                                    {/* Hover effect ring */}
+                                    <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-primary/30 transition-all duration-200" />
+                                </Button>
+
                                 {user ? (
                                     <Button 
                                         variant="purple" 

@@ -43,7 +43,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
     return (
         <TooltipProvider>
             <div className={cn(
-                "flex flex-col h-full bg-card border-r border-border",
+                "flex flex-col h-full glass-morphism border-r border-purple-200/50",
                 isExpanded && "sidebar-backdrop"
             )}>
                 <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
@@ -52,10 +52,13 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
                         "flex items-center flex-shrink-0 transition-all duration-300",
                         isCollapsed ? "px-2 justify-center" : "px-4"
                     )}>
-                        <div className={cn(
-                            "flex items-center transition-all duration-300",
-                            isCollapsed ? "space-x-0" : "space-x-2"
-                        )}>
+                        <Link 
+                            to="/dashboard" 
+                            className={cn(
+                                "flex items-center transition-all duration-300 hover:opacity-80 cursor-pointer",
+                                isCollapsed ? "space-x-0" : "space-x-2"
+                            )}
+                        >
                             <img 
                                 src={vintusureLogo} 
                                 alt="VintuSure Logo" 
@@ -69,7 +72,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
                                     VintuSure
                                 </span>
                             )}
-                        </div>
+                        </Link>
                     </div>
 
                     {/* Navigation */}
@@ -89,8 +92,8 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
                                         "group flex items-center text-sm font-medium rounded-md sidebar-item-hover relative",
                                         isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2",
                                         isActive
-                                            ? "bg-primary/10 text-primary"
-                                            : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                                            ? "bg-primary/10 text-primary border border-primary/20"
+                                            : "text-muted-foreground hover:bg-primary/5 hover:text-primary hover:border hover:border-primary/10"
                                     )}
                                     style={{
                                         animationDelay: isExpanded ? `${index * 50}ms` : '0ms'
@@ -128,7 +131,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
                                         <TooltipTrigger asChild>
                                             {linkContent}
                                         </TooltipTrigger>
-                                        <TooltipContent side="right" className="font-medium">
+                                        <TooltipContent side="right" className="font-medium purple-modal purple-shadow">
                                             {item.name}
                                         </TooltipContent>
                                     </Tooltip>
@@ -142,7 +145,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
                 
                 {/* Sign out button */}
                 <div className={cn(
-                    "flex-shrink-0 flex border-t border-border transition-all duration-300",
+                    "flex-shrink-0 flex border-t border-purple-200/50 transition-all duration-300",
                     isCollapsed ? "p-2" : "p-4"
                 )}>
                     {isCollapsed ? (
@@ -157,7 +160,7 @@ function SidebarContent({ isCollapsed = false, onToggleCollapse, isExpanded = fa
                                     <LogOut className="h-5 w-5" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right" className="font-medium">
+                            <TooltipContent side="right" className="font-medium purple-modal purple-shadow">
                                 Sign Out
                             </TooltipContent>
                         </Tooltip>
@@ -209,7 +212,7 @@ export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onT
                         <Menu className="h-5 w-5" />
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-64">
+                <SheetContent side="left" className="p-0 w-64 glass-morphism">
                     <SidebarContent 
                         isCollapsed={false}
                     />
@@ -241,7 +244,7 @@ export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onT
                 {/* Hover overlay sidebar - shows when collapsed and hovered */}
                 {isCollapsed && isHovered && (
                     <div 
-                        className="absolute top-0 left-0 h-full w-64 z-50 sidebar-expand-enter-active"
+                        className="absolute top-0 left-0 h-full w-64 z-50 sidebar-expand-enter-active purple-shadow-xl"
                         onMouseEnter={() => setIsHovered(true)}
                         onMouseLeave={() => setIsHovered(false)}
                     >
@@ -260,7 +263,7 @@ export default function Sidebar({ isOpen, onOpenChange, isCollapsed = false, onT
                         variant="ghost"
                         size="sm"
                         onClick={onToggleCollapse}
-                        className="h-8 w-8 p-0 rounded-full bg-background border border-border shadow-md hover:bg-primary/10 sidebar-item-hover opacity-60 hover:opacity-100"
+                        className="h-8 w-8 p-0 rounded-full glass-morphism border border-purple-200/50 purple-shadow hover:bg-primary/10 sidebar-item-hover opacity-60 hover:opacity-100"
                         title="Expand sidebar"
                     >
                         <ChevronRight className="h-4 w-4" />

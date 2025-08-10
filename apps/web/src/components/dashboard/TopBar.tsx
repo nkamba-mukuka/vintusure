@@ -1,6 +1,7 @@
 
 import { useAuthContext } from '@/contexts/AuthContext';
-import { User, Menu, Settings, LogOut, PanelLeftClose, BarChart3, Brain } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { User, Menu, Settings, LogOut, PanelLeftClose, BarChart3, Brain, Sun, Moon } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     DropdownMenu,
@@ -35,6 +36,7 @@ const getUserInitials = (firstName?: string, lastName?: string, email?: string):
 
 export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollapse, activeTab, onTabChange }: TopBarProps) {
     const { user, signOut } = useAuthContext();
+    const { theme, toggleTheme } = useTheme();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -53,14 +55,14 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
     };
 
     return (
-        <div className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-40">
+        <div className="glass-morphism border-b border-purple-200/50 sticky top-0 z-40">
             <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center space-x-4">
                     {/* Mobile Menu Button */}
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="lg:hidden text-muted-foreground hover:text-primary hover:bg-primary/5"
+                        className="lg:hidden text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200"
                         onClick={onMenuClick}
                     >
                         <Menu className="h-5 w-5" />
@@ -86,14 +88,14 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                     </div>
 
                     {/* Dashboard Navigation - Available everywhere */}
-                    <div className="hidden lg:flex items-center space-x-1 bg-background border rounded-lg p-1 shadow-sm">
+                    <div className="hidden lg:flex items-center space-x-1 glass-morphism border border-purple-200/30 rounded-lg p-1 purple-shadow">
                         <Button 
                             variant={isDashboardPage && activeTab === 'overview' ? 'default' : 'ghost'}
                             onClick={() => handleDashboardNavigation('overview')}
                             className={cn(
                                 "transition-all duration-200 px-4 py-2 text-sm",
                                 isDashboardPage && activeTab === 'overview'
-                                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                                    ? 'btn-purple-gradient text-white shadow-sm' 
                                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                             )}
                         >
@@ -106,7 +108,7 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                             className={cn(
                                 "transition-all duration-200 px-4 py-2 text-sm",
                                 isDashboardPage && activeTab === 'ai'
-                                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                                    ? 'btn-purple-gradient text-white shadow-sm' 
                                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                             )}
                         >
@@ -116,28 +118,54 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
+                    {/* Theme Switcher */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleTheme}
+                        className="theme-switcher-button relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 p-0 hover:shadow-md hover:shadow-primary/25 group"
+                        title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                    >
+                        <div className="relative w-full h-full flex items-center justify-center">
+                            {/* Sun Icon */}
+                            <Sun 
+                                className={cn(
+                                    "theme-switcher-icon h-5 w-5 absolute",
+                                    theme === 'light' 
+                                        ? "active text-primary" 
+                                        : "inactive text-muted-foreground"
+                                )}
+                            />
+                            {/* Moon Icon */}
+                            <Moon 
+                                className={cn(
+                                    "theme-switcher-icon h-5 w-5 absolute",
+                                    theme === 'dark' 
+                                        ? "active text-primary" 
+                                        : "inactive text-muted-foreground"
+                                )}
+                            />
+                        </div>
+                        
+                        {/* Hover effect ring */}
+                        <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-primary/30 transition-all duration-200" />
+                    </Button>
+
+                    {/* User Profile */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
-                                className="relative h-10 w-10 rounded-full border-2 border-indigo-500 hover:border-indigo-600 transition-colors duration-200 p-0"
+                                className="relative h-10 w-10 rounded-full border-2 border-primary hover:border-primary/80 transition-all duration-200 p-0 hover:shadow-md hover:shadow-primary/25"
                             >
-                                {user?.profileImage ? (
-                                    <img
-                                        src={user.profileImage}
-                                        alt={`${user.firstName || ''} ${user.lastName || ''}`}
-                                        className="h-full w-full rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-sm font-medium text-primary">
-                                        {getUserInitials(user?.firstName, user?.lastName, user?.email)}
-                                    </span>
-                                )}
+                                <span className="text-sm font-medium text-primary bg-primary/10 rounded-full h-full w-full flex items-center justify-center">
+                                    {getUserInitials(user?.firstName, user?.lastName, user?.email)}
+                                </span>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel className="font-normal">
+                        <DropdownMenuContent align="end" className="w-56 purple-modal purple-shadow-lg">
+                            <DropdownMenuLabel className="font-normal purple-modal-header">
                                 <div className="flex flex-col space-y-1">
                                     <p className="text-sm font-medium text-primary">
                                         {user?.firstName && user?.lastName 
@@ -153,22 +181,22 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                                     </p>
                                 </div>
                             </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuSeparator className="purple-divider" />
+                            <DropdownMenuItem asChild className="hover:bg-purple-50 transition-colors duration-200">
                                 <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
-                                    <User className="h-4 w-4" />
+                                    <User className="h-4 w-4 text-primary" />
                                     Profile
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuItem asChild className="hover:bg-purple-50 transition-colors duration-200">
                                 <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-                                    <Settings className="h-4 w-4" />
+                                    <Settings className="h-4 w-4 text-primary" />
                                     Settings
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onSelect={() => signOut()}
-                                className="text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
+                                className="text-muted-foreground hover:text-primary hover:bg-purple-50 cursor-pointer transition-colors duration-200"
                             >
                                 <LogOut className="h-4 w-4 mr-2" />
                                 Sign out
