@@ -1,193 +1,126 @@
-import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@/test/test-utils'
 import { axe, toHaveNoViolations } from 'jest-axe'
-import { BrowserRouter } from 'react-router-dom'
-import { HelmetProvider } from 'react-helmet-async'
 import LandingPage from '../../components/landingpage/LandingPage'
 import ErrorBoundary from '../../components/ErrorBoundary'
 import LoadingState from '../../components/LoadingState'
 
-// Extend Jest matchers
 expect.extend(toHaveNoViolations)
 
-// Mock AuthContext
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuthContext: () => ({
-    user: null,
-    loading: false,
-    signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn(),
-  }),
-}))
-
-// Mock SEO component
-vi.mock('@/components/SEO', () => ({
-  default: () => null,
-  createOrganizationSchema: () => ({}),
-  createWebPageSchema: () => ({}),
-  createSoftwareApplicationSchema: () => ({}),
-}))
-
-// Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-  Shield: () => <div role="img" aria-label="Shield icon" />,
-  Car: () => <div role="img" aria-label="Car icon" />,
-  Brain: () => <div role="img" aria-label="Brain icon" />,
-  TrendingUp: () => <div role="img" aria-label="Trending up icon" />,
-  User: () => <div role="img" aria-label="User icon" />,
-  Building2: () => <div role="img" aria-label="Building icon" />,
-  AlertTriangle: () => <div role="img" aria-label="Alert triangle icon" />,
-  RefreshCw: () => <div role="img" aria-label="Refresh icon" />,
-  Home: () => <div role="img" aria-label="Home icon" />,
-  Bug: () => <div role="img" aria-label="Bug icon" />,
-  Loader2Icon: () => <div role="img" aria-label="Loading icon" />,
-}))
-
-const renderWithProviders = (component: React.ReactElement) => {
-  return render(
-    <HelmetProvider>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
-    </HelmetProvider>
-  )
+// Component that throws an error for testing
+const ThrowError = () => {
+  throw new Error('Test error')
 }
 
 describe('Accessibility Tests', () => {
   describe('LandingPage Accessibility', () => {
     it('should not have any accessibility violations', async () => {
-      const { container } = renderWithProviders(<LandingPage />)
+      const { container } = render(<LandingPage />)
       const results = await axe(container)
       expect(results).toHaveNoViolations()
     })
 
     it('has proper heading hierarchy', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Should have one h1
-      const h1Elements = screen.getAllByRole('heading', { level: 1 })
-      expect(h1Elements).toHaveLength(1)
-      expect(h1Elements[0]).toHaveTextContent('AI-Powered Insurance Intelligence')
-
-      // Should have proper h2 for features section
-      const h2Elements = screen.getAllByRole('heading', { level: 2 })
-      expect(h2Elements.length).toBeGreaterThan(0)
-
-      // Feature cards should have h3
-      const h3Elements = screen.getAllByRole('heading', { level: 3 })
-      expect(h3Elements).toHaveLength(4) // Four feature cards
+      // Check for main heading
+      const mainHeading = screen.getByRole('heading', { level: 1 })
+      expect(mainHeading).toBeInTheDocument()
+      expect(mainHeading).toHaveTextContent('AI-Powered Insurance Intelligence')
+      
+      // Check for section headings
+      const sectionHeadings = screen.getAllByRole('heading', { level: 2 })
+      expect(sectionHeadings.length).toBeGreaterThan(0)
     })
 
     it('has proper landmark regions', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Should have navigation landmark
-      expect(screen.getByRole('navigation')).toBeInTheDocument()
+      // Check for navigation landmark
+      const nav = screen.getByRole('navigation')
+      expect(nav).toBeInTheDocument()
       
-      // Should have main landmark
-      expect(screen.getByRole('main')).toBeInTheDocument()
+      // Check for main landmark
+      const main = screen.getByRole('main')
+      expect(main).toBeInTheDocument()
       
-      // Should have contentinfo (footer) landmark
-      expect(screen.getByRole('contentinfo')).toBeInTheDocument()
-      
-      // Should have region for features
-      expect(screen.getByRole('region')).toBeInTheDocument()
+      // Check for footer landmark
+      const footer = screen.getByRole('contentinfo')
+      expect(footer).toBeInTheDocument()
     })
 
     it('has accessible form controls', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // All buttons should be accessible
+      // Check for buttons with proper labels
       const buttons = screen.getAllByRole('button')
       buttons.forEach(button => {
-        expect(button).toBeInTheDocument()
-        // Should have accessible name (either text content or aria-label)
-        expect(button).toHaveAttribute('aria-label')
+        expect(button).toHaveAccessibleName()
       })
     })
 
     it('has proper skip links', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
       const skipLink = screen.getByText('Skip to main content')
+      expect(skipLink).toBeInTheDocument()
       expect(skipLink).toHaveAttribute('href', '#main-content')
-      
-      // Skip link should be focusable
-      expect(skipLink).toHaveClass('focus:not-sr-only')
     })
 
     it('has proper focus management', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Feature cards should be focusable
-      const featureCards = screen.getAllByRole('listitem')
-      featureCards.forEach(card => {
-        expect(card).toHaveAttribute('tabIndex', '0')
+      // Check that interactive elements are focusable
+      const buttons = screen.getAllByRole('button')
+      buttons.forEach(button => {
+        expect(button).not.toHaveAttribute('tabIndex', '-1')
       })
     })
 
     it('has accessible images', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Logo images should have proper alt text
-      const logos = screen.getAllByAltText(/VintuSure.*logo/i)
-      expect(logos.length).toBeGreaterThan(0)
-      
-      // Decorative icons should be hidden from screen readers
-      const decorativeIcons = document.querySelectorAll('[aria-hidden="true"]')
-      expect(decorativeIcons.length).toBeGreaterThan(0)
+      const images = screen.getAllByRole('img')
+      images.forEach(img => {
+        expect(img).toHaveAttribute('alt')
+      })
     })
   })
 
   describe('ErrorBoundary Accessibility', () => {
-    // Test component that throws an error
-    const ThrowError = () => {
-      throw new Error('Test error')
-    }
-
-    it('should not have accessibility violations in error state', async () => {
+    it('should not have accessibility violations', async () => {
       const { container } = render(
         <ErrorBoundary>
           <ThrowError />
         </ErrorBoundary>
       )
-      
       const results = await axe(container)
       expect(results).toHaveNoViolations()
     })
 
-    it('has accessible error messages', () => {
+    it('has proper error information for screen readers', () => {
       render(
         <ErrorBoundary>
           <ThrowError />
         </ErrorBoundary>
       )
       
-      // Should have proper heading
-      const heading = screen.getByRole('heading', { name: /something went wrong/i })
-      expect(heading).toBeInTheDocument()
-      
-      // Should have descriptive text
-      expect(screen.getByText(/we're sorry.*unexpected/i)).toBeInTheDocument()
-      
-      // Buttons should be accessible
-      const buttons = screen.getAllByRole('button')
-      buttons.forEach(button => {
-        expect(button).toBeInTheDocument()
-      })
+      expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument()
+      expect(screen.getByText(/Error ID:/)).toBeInTheDocument()
     })
 
-    it('has proper button labels', () => {
+    it('has accessible buttons', () => {
       render(
         <ErrorBoundary>
           <ThrowError />
         </ErrorBoundary>
       )
       
-      expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /go home/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /show details/i })).toBeInTheDocument()
+      const retryButton = screen.getByText('Try Again')
+      const homeButton = screen.getByText('Go Home')
+      
+      expect(retryButton).toHaveAccessibleName()
+      expect(homeButton).toHaveAccessibleName()
     })
   })
 
@@ -199,158 +132,144 @@ describe('Accessibility Tests', () => {
     })
 
     it('has proper loading indicators', () => {
-      render(<LoadingState message="Loading content" />)
+      render(<LoadingState />)
       
-      // Should have status role
-      const status = screen.getByRole('status')
-      expect(status).toBeInTheDocument()
-      expect(status).toHaveAttribute('aria-live', 'polite')
-      expect(status).toHaveAttribute('aria-label', 'Loading content')
+      const loadingElement = screen.getByRole('status')
+      expect(loadingElement).toBeInTheDocument()
+      expect(loadingElement).toHaveTextContent('Loading...')
     })
 
     it('hides decorative elements from screen readers', () => {
       render(<LoadingState />)
       
-      // Loading icon should be hidden from screen readers
-      const hiddenIcon = document.querySelector('[aria-hidden="true"]')
-      expect(hiddenIcon).toBeInTheDocument()
+      // Check for decorative elements that should be hidden
+      const decorativeElements = document.querySelectorAll('[aria-hidden="true"]')
+      expect(decorativeElements.length).toBeGreaterThan(0)
     })
 
     it('skeleton elements have proper labels', () => {
       render(<LoadingState variant="skeleton" />)
       
-      // Skeleton elements should have status role
       const skeletonElements = document.querySelectorAll('[role="status"]')
-      expect(skeletonElements.length).toBeGreaterThan(0)
+      skeletonElements.forEach(element => {
+        expect(element).toHaveAttribute('aria-label')
+      })
     })
   })
 
   describe('Color Contrast and Visual Accessibility', () => {
     it('uses sufficient color contrast ratios', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Primary text should use high contrast colors
-      const primaryHeading = screen.getByRole('heading', { level: 1 })
-      expect(primaryHeading).toHaveClass('text-primary')
-      
-      // Muted text should still be readable
-      const mutedText = document.querySelector('.text-muted-foreground')
-      expect(mutedText).toBeInTheDocument()
+      // Check that text elements have sufficient contrast
+      const textElements = screen.getAllByText(/./)
+      textElements.forEach(element => {
+        // This is a basic check - in a real test you'd use a color contrast library
+        expect(element).toBeInTheDocument()
+      })
     })
 
     it('supports reduced motion preferences', () => {
-      // Test that animations can be disabled
-      renderWithProviders(<LandingPage />)
+      render(<LoadingState />)
       
-      // Animation classes should be present but respect user preferences
-      const animatedElements = document.querySelectorAll('[class*="animate-"]')
-      expect(animatedElements.length).toBeGreaterThan(0)
+      // Check for animation classes that respect reduced motion
+      const loadingElement = screen.getByRole('status')
+      expect(loadingElement).toHaveClass('animate-')
     })
   })
 
   describe('Keyboard Navigation', () => {
     it('supports keyboard navigation for all interactive elements', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // All buttons should be keyboard accessible
-      const buttons = screen.getAllByRole('button')
-      buttons.forEach(button => {
-        expect(button).not.toHaveAttribute('tabIndex', '-1')
-      })
-      
-      // All links should be keyboard accessible
-      const links = screen.getAllByRole('link')
-      links.forEach(link => {
-        expect(link).not.toHaveAttribute('tabIndex', '-1')
+      const interactiveElements = screen.getAllByRole('button')
+      interactiveElements.forEach(element => {
+        expect(element).not.toHaveAttribute('tabIndex', '-1')
       })
     })
 
     it('has proper focus indicators', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Skip link should be visible on focus
-      const skipLink = screen.getByText('Skip to main content')
-      expect(skipLink).toHaveClass('focus:not-sr-only')
+      const buttons = screen.getAllByRole('button')
+      buttons.forEach(button => {
+        expect(button).toHaveClass('focus:')
+      })
     })
   })
 
   describe('Screen Reader Support', () => {
     it('provides meaningful text alternatives', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Feature list should be announced properly
-      const featuresList = screen.getByRole('list')
-      expect(featuresList).toHaveAttribute('aria-label', 'VintuSure platform features')
-      
-      // Navigation should be properly labeled
-      const navigation = screen.getByRole('navigation')
-      expect(navigation).toHaveAttribute('aria-label', 'Main navigation')
+      const images = screen.getAllByRole('img')
+      images.forEach(img => {
+        const alt = img.getAttribute('alt')
+        expect(alt).toBeTruthy()
+        expect(alt).not.toBe('')
+      })
     })
 
     it('uses proper ARIA attributes', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Check for proper ARIA labels
-      const labeledElements = document.querySelectorAll('[aria-label]')
-      expect(labeledElements.length).toBeGreaterThan(0)
-      
-      // Check for proper ARIA described by relationships
-      const describedElements = document.querySelectorAll('[aria-describedby]')
-      expect(describedElements.length).toBeGreaterThan(0)
+      // Check for proper ARIA labels and descriptions
+      const elementsWithAria = document.querySelectorAll('[aria-label], [aria-describedby]')
+      elementsWithAria.forEach(element => {
+        const ariaLabel = element.getAttribute('aria-label')
+        const ariaDescribedBy = element.getAttribute('aria-describedby')
+        expect(ariaLabel || ariaDescribedBy).toBeTruthy()
+      })
     })
   })
 
   describe('Mobile Accessibility', () => {
     it('has appropriate touch targets', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Buttons should be large enough for touch
       const buttons = screen.getAllByRole('button')
       buttons.forEach(button => {
-        // Should have padding for adequate touch target
-        const styles = window.getComputedStyle(button)
-        expect(styles.padding).toBeTruthy()
+        // Check for minimum touch target size (44px)
+        const rect = button.getBoundingClientRect()
+        expect(rect.width).toBeGreaterThanOrEqual(44)
+        expect(rect.height).toBeGreaterThanOrEqual(44)
       })
     })
 
     it('supports zoom and responsive design', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // Should have responsive classes
-      const responsiveElements = document.querySelectorAll('[class*="sm:"], [class*="lg:"]')
-      expect(responsiveElements.length).toBeGreaterThan(0)
+      // Check for responsive classes
+      const container = screen.getByRole('main')
+      expect(container).toHaveClass('sm:', 'lg:')
     })
   })
 
   describe('WCAG 2.1 AA Compliance', () => {
     it('meets WCAG guidelines for interactive elements', () => {
-      renderWithProviders(<LandingPage />)
+      render(<LandingPage />)
       
-      // All interactive elements should have accessible names
-      const interactiveElements = [
-        ...screen.getAllByRole('button'),
-        ...screen.getAllByRole('link'),
-      ]
-      
-      interactiveElements.forEach(element => {
-        const accessibleName = element.textContent || element.getAttribute('aria-label')
-        expect(accessibleName).toBeTruthy()
+      const buttons = screen.getAllByRole('button')
+      buttons.forEach(button => {
+        // Check for proper labeling
+        expect(button).toHaveAccessibleName()
+        
+        // Check for proper role
+        expect(button).toHaveAttribute('role', 'button')
       })
     })
 
     it('provides sufficient context for form controls', () => {
-      // Test when form controls are present
-      render(
-        <ErrorBoundary>
-          <div>
-            <label htmlFor="test-input">Test Input</label>
-            <input id="test-input" type="text" />
-          </div>
-        </ErrorBoundary>
-      )
+      render(<LandingPage />)
       
-      const input = screen.getByLabelText('Test Input')
-      expect(input).toBeInTheDocument()
+      // Check that form controls have proper labels
+      const formControls = document.querySelectorAll('input, select, textarea')
+      formControls.forEach(control => {
+        const label = control.getAttribute('aria-label') || 
+                     control.getAttribute('aria-labelledby') ||
+                     document.querySelector(`label[for="${control.id}"]`)
+        expect(label).toBeTruthy()
+      })
     })
   })
 })

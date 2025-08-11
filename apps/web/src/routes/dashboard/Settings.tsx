@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { userService } from '@/lib/services/userService';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
 import { 
   Settings as SettingsIcon,
   User,
-  Bell,
-  Shield,
   Palette,
   Globe,
   Database,
@@ -21,16 +21,20 @@ import {
   Eye,
   EyeOff,
   Save,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Trash2
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user } = useAuthContext();
+  const { user, updateUser, signOut } = useAuthContext();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Form states
   const [accountSettings, setAccountSettings] = useState({
@@ -40,40 +44,67 @@ export default function SettingsPage() {
     phone: user?.phone || '',
   });
 
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    policyUpdates: true,
-    claimUpdates: true,
-    systemAlerts: false,
-    marketingEmails: false,
-  });
-
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorAuth: false,
-    sessionTimeout: '30',
-    passwordExpiry: '90',
-    loginAlerts: true,
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   const [preferenceSettings, setPreferenceSettings] = useState({
-    theme: 'system',
     language: 'en',
     timezone: 'UTC',
     dateFormat: 'MM/DD/YYYY',
     currency: 'USD',
   });
 
+  // Load user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setAccountSettings({
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+      });
+
+      setPreferenceSettings({
+        language: user.preferences?.language || 'en',
+        timezone: user.preferences?.timezone || 'UTC',
+        dateFormat: user.preferences?.dateFormat || 'MM/DD/YYYY',
+        currency: user.preferences?.currency || 'USD',
+      });
+    }
+  }, [user]);
+
   const handleAccountUpdate = async () => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to update your account.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const userData = {
+        firstName: accountSettings.firstName,
+        lastName: accountSettings.lastName,
+        phone: accountSettings.phone,
+      };
+
+      await userService.updateUser(user.uid, userData);
+      
+      // Update the user context
+      updateUser(userData);
+
       toast({
         title: 'Account Updated',
         description: 'Your account settings have been successfully updated.',
       });
     } catch (error) {
+      console.error('Error updating account:', error);
       toast({
         title: 'Error',
         description: 'Failed to update account settings. Please try again.',
@@ -85,62 +116,69 @@ export default function SettingsPage() {
   };
 
   const handlePasswordChange = async () => {
+    if (!user?.email) {
+      toast({
+        title: 'Error',
+        description: 'Email is required for password change.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'New password and confirm password do not match.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'New password must be at least 6 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Re-authenticate user before password change
+      const credential = EmailAuthProvider.credential(user.email, passwordData.currentPassword);
+      await reauthenticateWithCredential(auth.currentUser!, credential);
+      
+      // Update password
+      await updatePassword(auth.currentUser!, passwordData.newPassword);
+      
       toast({
         title: 'Password Updated',
         description: 'Your password has been successfully changed.',
       });
+      
       // Reset password fields
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
       setShowPassword(false);
       setShowNewPassword(false);
       setShowConfirmPassword(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      let errorMessage = 'Failed to update password. Please try again.';
+      
+      if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Current password is incorrect.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'New password is too weak. Please choose a stronger password.';
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to update password. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNotificationUpdate = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: 'Notifications Updated',
-        description: 'Your notification settings have been successfully updated.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update notification settings. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSecurityUpdate = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: 'Security Updated',
-        description: 'Your security settings have been successfully updated.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update security settings. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -149,15 +187,35 @@ export default function SettingsPage() {
   };
 
   const handlePreferenceUpdate = async () => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to update preferences.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save preferences to user document
+      const userData = {
+        preferences: {
+          language: preferenceSettings.language,
+          timezone: preferenceSettings.timezone,
+          dateFormat: preferenceSettings.dateFormat,
+          currency: preferenceSettings.currency,
+        },
+      };
+
+      await userService.updateUser(user.uid, userData);
+      
       toast({
         title: 'Preferences Updated',
         description: 'Your preferences have been successfully updated.',
       });
     } catch (error) {
+      console.error('Error updating preferences:', error);
       toast({
         title: 'Error',
         description: 'Failed to update preferences. Please try again.',
@@ -168,13 +226,130 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDataExport = async () => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to export your data.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Prepare user data for export
+      const exportData = {
+        user: {
+          uid: user.uid,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          role: user.role,
+          department: user.department,
+          employeeId: user.employeeId,
+          insuranceCompany: user.insuranceCompany,
+          bio: user.bio,
+          address: user.address,
+          preferences: user.preferences,
+          profileCompleted: user.profileCompleted,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        exportDate: new Date().toISOString(),
+        exportVersion: '1.0',
+      };
+
+      // Create and download JSON file
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `vintusure-data-${user.uid}-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Data Exported',
+        description: 'Your data has been successfully exported and downloaded.',
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to export data. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAccountDeletion = async () => {
+    if (!user?.email) {
+      toast({
+        title: 'Error',
+        description: 'Email is required for account deletion.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (deleteConfirmText !== 'DELETE') {
+      toast({
+        title: 'Error',
+        description: 'Please type DELETE to confirm account deletion.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Delete user document from Firestore
+      await userService.deleteUser(user.uid);
+      
+      // Delete Firebase Auth user
+      await deleteUser(auth.currentUser!);
+      
+      toast({
+        title: 'Account Deleted',
+        description: 'Your account has been permanently deleted.',
+      });
+      
+      // Sign out and redirect
+      await signOut();
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      let errorMessage = 'Failed to delete account. Please try again.';
+      
+      if (error.code === 'auth/requires-recent-login') {
+        errorMessage = 'Please re-authenticate before deleting your account.';
+      }
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-1">Manage your account preferences and security</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your account preferences and security</p>
         </div>
         <Badge variant="secondary" className="flex items-center gap-1">
           <SettingsIcon className="h-3 w-3" />
@@ -221,9 +396,10 @@ export default function SettingsPage() {
                 id="email"
                 type="email"
                 value={accountSettings.email}
-                onChange={(e) => setAccountSettings(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="Enter your email"
+                disabled
+                className="bg-gray-50 dark:bg-gray-800"
               />
+              <p className="text-sm text-muted-foreground">Email cannot be changed</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
@@ -268,6 +444,8 @@ export default function SettingsPage() {
                 <Input
                   id="currentPassword"
                   type={showPassword ? 'text' : 'password'}
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
                   placeholder="Enter current password"
                 />
                 <Button
@@ -287,6 +465,8 @@ export default function SettingsPage() {
                 <Input
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                   placeholder="Enter new password"
                 />
                 <Button
@@ -306,6 +486,8 @@ export default function SettingsPage() {
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder="Confirm new password"
                 />
                 <Button
@@ -319,7 +501,11 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </div>
-            <Button onClick={handlePasswordChange} disabled={isLoading} className="w-full">
+            <Button 
+              onClick={handlePasswordChange} 
+              disabled={isLoading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword} 
+              className="w-full"
+            >
               {isLoading ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -329,177 +515,6 @@ export default function SettingsPage() {
                 <>
                   <Key className="h-4 w-4 mr-2" />
                   Change Password
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notification Settings
-            </CardTitle>
-            <CardDescription>
-              Manage how you receive notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.emailNotifications}
-                  onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, emailNotifications: checked }))}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive push notifications</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.pushNotifications}
-                  onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, pushNotifications: checked }))}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Policy Updates</Label>
-                  <p className="text-sm text-muted-foreground">Get notified about policy changes</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.policyUpdates}
-                  onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, policyUpdates: checked }))}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Claim Updates</Label>
-                  <p className="text-sm text-muted-foreground">Get notified about claim status</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.claimUpdates}
-                  onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, claimUpdates: checked }))}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>System Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Receive system maintenance alerts</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.systemAlerts}
-                  onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, systemAlerts: checked }))}
-                />
-              </div>
-            </div>
-            <Button onClick={handleNotificationUpdate} disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Bell className="h-4 w-4 mr-2" />
-                  Update Notifications
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your account security preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Two-Factor Authentication</Label>
-                  <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                </div>
-                <Switch
-                  checked={securitySettings.twoFactorAuth}
-                  onCheckedChange={(checked) => setSecuritySettings(prev => ({ ...prev, twoFactorAuth: checked }))}
-                />
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label>Session Timeout (minutes)</Label>
-                <Select
-                  value={securitySettings.sessionTimeout}
-                  onValueChange={(value) => setSecuritySettings(prev => ({ ...prev, sessionTimeout: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minutes</SelectItem>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="120">2 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label>Password Expiry (days)</Label>
-                <Select
-                  value={securitySettings.passwordExpiry}
-                  onValueChange={(value) => setSecuritySettings(prev => ({ ...prev, passwordExpiry: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 days</SelectItem>
-                    <SelectItem value="60">60 days</SelectItem>
-                    <SelectItem value="90">90 days</SelectItem>
-                    <SelectItem value="180">180 days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Login Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Get notified of new login attempts</p>
-                </div>
-                <Switch
-                  checked={securitySettings.loginAlerts}
-                  onCheckedChange={(checked) => setSecuritySettings(prev => ({ ...prev, loginAlerts: checked }))}
-                />
-              </div>
-            </div>
-            <Button onClick={handleSecurityUpdate} disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Update Security
                 </>
               )}
             </Button>
@@ -519,23 +534,6 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Theme</Label>
-                <Select
-                  value={preferenceSettings.theme}
-                  onValueChange={(value) => setPreferenceSettings(prev => ({ ...prev, theme: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Separator />
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select
@@ -636,31 +634,30 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Marketing Emails</Label>
-                  <p className="text-sm text-muted-foreground">Receive promotional emails</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.marketingEmails}
-                  onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, marketingEmails: checked }))}
-                />
-              </div>
-              <Separator />
               <div className="space-y-2">
                 <Label>Data Export</Label>
-                <p className="text-sm text-muted-foreground">Download a copy of your data</p>
-                <Button variant="outline" size="sm">
-                  <Database className="h-4 w-4 mr-2" />
-                  Export Data
+                <p className="text-sm text-muted-foreground">Download a copy of your data in JSON format</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDataExport}
+                  disabled={isLoading}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isLoading ? 'Exporting...' : 'Export Data'}
                 </Button>
               </div>
               <Separator />
               <div className="space-y-2">
                 <Label>Account Deletion</Label>
-                <p className="text-sm text-muted-foreground">Permanently delete your account and data</p>
-                <Button variant="destructive" size="sm">
-                  <Shield className="h-4 w-4 mr-2" />
+                <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data</p>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Delete Account
                 </Button>
               </div>
@@ -668,6 +665,57 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Account Deletion Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-destructive mb-4">Delete Account</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              This action cannot be undone. All your data will be permanently deleted.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="deleteConfirm">Type DELETE to confirm</Label>
+                <Input
+                  id="deleteConfirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteConfirmText('');
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleAccountDeletion}
+                  disabled={isLoading || deleteConfirmText !== 'DELETE'}
+                  className="flex-1"
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Account'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

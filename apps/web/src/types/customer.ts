@@ -21,8 +21,9 @@ export interface Customer {
     status: 'active' | 'inactive';
 }
 
-export interface CustomerFormData extends Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> {
+export interface CustomerFormData extends Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {
     id?: string;
+    agent_id?: string; // Make agent_id optional for forms
 }
 
 export interface CustomerFilters {

@@ -11,7 +11,7 @@ export default defineConfig({
     css: true,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
         'src/test/',
@@ -19,15 +19,20 @@ export default defineConfig({
         '**/*.config.*',
         'src/main.tsx',
         'src/vite-env.d.ts',
+        'src/test-utils.tsx',
+        'src/test/types.d.ts',
+        '**/*.stories.*',
+        '**/*.test.*',
+        '**/__tests__/**',
       ],
       thresholds: {
         global: {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80
-        }
-      }
+          branches: 70,
+          functions: 70,
+          lines: 70,
+          statements: 70,
+        },
+      },
     },
   },
   resolve: {

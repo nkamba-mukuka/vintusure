@@ -178,7 +178,10 @@ export default function PolicyModalForm({
                 });
             } else {
                 // Create new policy
-                await policyService.create(data);
+                if (!user?.uid) {
+                    throw new Error('User not authenticated');
+                }
+                await policyService.create(data, user.uid);
                 toast({
                     title: 'Policy Created',
                     description: 'Policy has been created successfully.',

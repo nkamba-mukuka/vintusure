@@ -4,6 +4,7 @@ import {
     getDoc,
     setDoc,
     updateDoc,
+    deleteDoc,
     serverTimestamp,
     Timestamp,
 } from 'firebase/firestore';
@@ -50,6 +51,11 @@ export const userService = {
             ...userData,
             updatedAt: serverTimestamp(),
         });
+    },
+
+    async deleteUser(uid: string): Promise<void> {
+        const docRef = doc(db, COLLECTION_NAME, uid);
+        await deleteDoc(docRef);
     },
 
     async createDefaultUser(uid: string, email: string): Promise<User> {

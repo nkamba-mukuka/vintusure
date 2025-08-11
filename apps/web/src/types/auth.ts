@@ -3,6 +3,13 @@ import { Timestamp } from 'firebase/firestore'
 
 export type UserRole = 'admin' | 'agent' | 'customer'
 
+export interface UserPreferences {
+  language?: string;
+  timezone?: string;
+  dateFormat?: string;
+  currency?: string;
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -21,6 +28,7 @@ export interface User {
     postalCode: string;
   };
   profileCompleted?: boolean;
+  preferences?: UserPreferences;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +51,7 @@ export interface CreateUserData {
     postalCode: string;
   };
   profileCompleted?: boolean;
+  preferences?: UserPreferences;
 }
 
 export interface AuthError {

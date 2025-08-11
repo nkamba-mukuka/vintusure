@@ -5,14 +5,18 @@ import { Textarea } from '../../components/ui/textarea';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { RAGService, QueryResponse } from '../../lib/services/ragService';
 import { useToast } from '../../hooks/use-toast';
+import { MessageCircle, Car, Brain } from 'lucide-react';
+import CarPhotoAnalyzer from '../../components/car/CarPhotoAnalyzer';
 
 const RAGTest: React.FC = () => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<QueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [healthStatus, setHealthStatus] = useState<string>('unknown');
+  const [activeTab, setActiveTab] = useState('rag');
   const { toast } = useToast();
 
   const handleAskQuestion = async () => {
@@ -76,9 +80,9 @@ const RAGTest: React.FC = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">RAG System Test</h1>
+          <h1 className="text-3xl font-bold">AI System Test</h1>
           <p className="text-muted-foreground">
-            Test the Retrieval-Augmented Generation system with your queries
+            Test the Retrieval-Augmented Generation system and Car Analysis tools
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -91,121 +95,175 @@ const RAGTest: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Input Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Ask a Question</CardTitle>
-            <CardDescription>
-              Enter your question and get an AI-generated response using RAG
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="query">Your Question</Label>
-              <Textarea
-                id="query"
-                placeholder="Ask about insurance policies, claims, or any related topic..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                rows={4}
-                disabled={isLoading}
-              />
-            </div>
-            
-            <Button 
-              onClick={handleAskQuestion} 
-              disabled={isLoading || !query.trim()}
-              className="w-full"
-            >
-              {isLoading ? 'Generating Response...' : 'Ask Question'}
-            </Button>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="rag" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            RAG Assistant
+          </TabsTrigger>
+          <TabsTrigger value="car-analyzer" className="flex items-center gap-2">
+            <Car className="h-4 w-4" />
+            Car Analyzer
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Response Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Response</CardTitle>
-            <CardDescription>
-              Generated response from the RAG system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : response ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Badge variant={response.success ? 'default' : 'destructive'}>
-                    {response.success ? 'Success' : 'Error'}
-                  </Badge>
-                  {response.success && (
-                    <Badge variant="secondary">
-                      {response.answer?.length || 0} characters
-                    </Badge>
-                  )}
+        <TabsContent value="rag" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Input Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  Ask a Question
+                </CardTitle>
+                <CardDescription>
+                  Enter your question and get an AI-generated response using RAG
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="query">Your Question</Label>
+                  <Textarea
+                    id="query"
+                    placeholder="Ask about insurance policies, claims, or any related topic..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    rows={4}
+                    disabled={isLoading}
+                  />
                 </div>
                 
-                {response.success && response.answer ? (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="whitespace-pre-wrap">{response.answer}</p>
+                <Button 
+                  onClick={handleAskQuestion} 
+                  disabled={isLoading || !query.trim()}
+                  className="w-full"
+                >
+                  {isLoading ? 'Generating Response...' : 'Ask Question'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Response Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  AI Response
+                </CardTitle>
+                <CardDescription>
+                  Generated response from the RAG system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
-                ) : (
-                  <div className="p-4 bg-destructive/10 rounded-lg">
-                    <p className="text-destructive">
-                      {response.error || 'No response generated'}
-                    </p>
-                    {response.details && (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Details: {response.details}
-                      </p>
+                ) : response ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={response.success ? 'default' : 'destructive'}>
+                        {response.success ? 'Success' : 'Error'}
+                      </Badge>
+                      {response.success && (
+                        <Badge variant="secondary">
+                          {response.answer?.length || 0} characters
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {response.success && response.answer ? (
+                      <div className="p-4 bg-muted rounded-lg">
+                        <p className="whitespace-pre-wrap">{response.answer}</p>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-destructive/10 rounded-lg">
+                        <p className="text-destructive">
+                          {response.error || 'No response generated'}
+                        </p>
+                        {response.details && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Details: {response.details}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
+                ) : (
+                  <div className="flex items-center justify-center h-32 text-muted-foreground">
+                    No response yet. Ask a question to get started.
+                  </div>
                 )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-32 text-muted-foreground">
-                No response yet. Ask a question to get started.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Example Queries */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Example Queries</CardTitle>
-          <CardDescription>
-            Try these example questions to test the RAG system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 md:grid-cols-2">
-            {[
-              "What is the process for filing an insurance claim?",
-              "How do I calculate premium rates for auto insurance?",
-              "What documents are required for policy renewal?",
-              "What are the different types of insurance coverage available?",
-              "How long does it take to process a claim?",
-              "What factors affect insurance premium calculations?"
-            ].map((example, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="justify-start text-left h-auto p-3"
-                onClick={() => setQuery(example)}
-                disabled={isLoading}
-              >
-                {example}
-              </Button>
-            ))}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Example Queries */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Example Queries</CardTitle>
+              <CardDescription>
+                Try these example questions to test the RAG system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2 md:grid-cols-2">
+                {[
+                  "What is the process for filing an insurance claim?",
+                  "How do I calculate premium rates for auto insurance?",
+                  "What documents are required for policy renewal?",
+                  "What are the different types of insurance coverage available?",
+                  "How long does it take to process a claim?",
+                  "What factors affect insurance premium calculations?"
+                ].map((example, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="justify-start text-left h-auto p-3"
+                    onClick={() => setQuery(example)}
+                    disabled={isLoading}
+                  >
+                    {example}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="car-analyzer" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Car className="h-5 w-5 text-primary" />
+                Car Photo Analysis
+              </CardTitle>
+              <CardDescription>
+                Upload a car photo for AI-powered analysis and insurance recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CarPhotoAnalyzer
+                onAnalysisComplete={(result) => {
+                  console.log('Analysis complete:', result);
+                  toast({
+                    title: 'Analysis Complete',
+                    description: 'Car photo analyzed successfully',
+                  });
+                }}
+                onAnalysisError={(error) => {
+                  console.error('Analysis error:', error);
+                  toast({
+                    title: 'Analysis Failed',
+                    description: error.message,
+                    variant: 'destructive',
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

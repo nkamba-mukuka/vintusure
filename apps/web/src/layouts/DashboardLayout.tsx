@@ -122,7 +122,7 @@ export default function DashboardLayout() {
                 />
 
                 {/* Content Area */}
-                <main className="min-h-[calc(100vh-4rem)] p-8 relative">
+                <main className="min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 relative">
                     <div className="mx-auto max-w-7xl">
                         <Outlet context={{ activeTab: dashboardActiveTab, setActiveTab: handleDashboardTabChange }} />
                     </div>

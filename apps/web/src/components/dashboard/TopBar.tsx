@@ -100,7 +100,7 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                             )}
                         >
                             <BarChart3 className="h-4 w-4 mr-2" />
-                            Overall Information
+                            {getUserInitials(user?.firstName, user?.lastName, user?.email)} Dashboard
                         </Button>
                         <Button 
                             variant={isDashboardPage && activeTab === 'ai' ? 'default' : 'ghost'}

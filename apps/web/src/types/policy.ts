@@ -39,8 +39,9 @@ export interface Policy {
     agent_id: string // ID of the agent who created the policy
 }
 
-export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'documents'> {
+export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {
     id?: string;
+    agent_id?: string; // Make agent_id optional for forms
 }
 
 export interface PolicyFilters {
@@ -63,7 +64,7 @@ export interface Claim {
     id: string;
     policyId: string;
     customerId: string;
-    incidentDate: string;
+    incidentDate: Date; // Changed from string to Date
     description: string;
     location: {
         latitude: number;

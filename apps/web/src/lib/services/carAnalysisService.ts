@@ -4,6 +4,7 @@ import { functions } from '@/lib/firebase/config';
 export interface CarDetails {
     make: string;
     model: string;
+    makeAndModel?: string;
     estimatedYear: number;
     bodyType: string;
     condition: string;
@@ -88,26 +89,40 @@ const ensureMinimumValue = (value: number, minimum: number): number => {
     return Math.max(value, minimum);
 };
 
-// Function to calculate default premium based on car value
-const calculateDefaultPremium = (carValue: number | null): number => {
-    if (!carValue) return MIN_PREMIUM;
-    // Basic premium calculation: 5% of car value with minimum of MIN_PREMIUM
-    const premium = carValue * 0.05;
-    return Math.max(premium, MIN_PREMIUM);
-};
-
-// Function to get average price from marketplace listings
-const getAveragePriceFromListings = (listings: MarketplaceListing[]): number | null => {
-    if (!listings || listings.length === 0) return null;
+// Helper function to calculate average price from marketplace listings
+function getAveragePriceFromListings(listings: MarketplaceListing[]): number | null {
+    if (!listings || listings.length === 0) {
+        return null;
+    }
 
     const validPrices = listings
         .map(listing => listing.price)
         .filter(price => price && price > 0);
 
-    if (validPrices.length === 0) return null;
+    if (validPrices.length === 0) {
+        return null;
+    }
 
-    return Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length);
-};
+    const average = validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length;
+    return Math.round(average);
+}
+
+// Helper function to calculate default premium based on car value
+function calculateDefaultPremium(carValue: number | null): number {
+    if (!carValue || carValue <= 0) {
+        return 5000; // Default premium for unknown value
+    }
+
+    // Premium calculation: 3-5% of car value for comprehensive coverage
+    const premiumRate = 0.04; // 4% average
+    const calculatedPremium = carValue * premiumRate;
+    
+    // Ensure minimum and maximum premiums
+    const minPremium = 3000;
+    const maxPremium = 50000;
+    
+    return Math.max(minPremium, Math.min(maxPremium, Math.round(calculatedPremium)));
+}
 
 export const carAnalysisService = {
     async analyzeCarPhoto(input: CarPhotoAnalysisInput): Promise<CarAnalysisResult> {
@@ -176,6 +191,19 @@ export const carAnalysisService = {
             // Ensure we have marketplace links
             if (!result.data.marketplaceRecommendations.marketplaces?.length) {
                 result.data.marketplaceRecommendations.marketplaces = DEFAULT_CAR_MARKETPLACES;
+            }
+
+            // Ensure car details have proper fallback values
+            if (result.data.carDetails) {
+                if (!result.data.carDetails.makeAndModel) {
+                    result.data.carDetails.makeAndModel = `${result.data.carDetails.make} ${result.data.carDetails.model}`.trim();
+                }
+                if (!result.data.carDetails.make || result.data.carDetails.make === 'Unknown') {
+                    result.data.carDetails.make = 'Vehicle';
+                }
+                if (!result.data.carDetails.model || result.data.carDetails.model === 'Unknown') {
+                    result.data.carDetails.model = 'Not Identified';
+                }
             }
 
             return result.data;

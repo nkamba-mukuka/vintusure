@@ -1,309 +1,345 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { userService } from '../userService'
+import { mockUser } from '@/test/test-utils'
 
-// Mock the userService
-const mockUserService = {
-  getUserProfile: vi.fn(),
-  updateUserProfile: vi.fn(),
-  createUserProfile: vi.fn(),
-  markProfileComplete: vi.fn(),
-  getUsersByRole: vi.fn(),
-  searchUsers: vi.fn(),
-  deleteUser: vi.fn(),
-  getCurrentUser: vi.fn(),
-  updateUserLastActive: vi.fn(),
-  bulkUpdateUsers: vi.fn(),
-}
+// Mock Firebase
+vi.mock('@/lib/firebase/config', () => ({
+  db: {
+    collection: vi.fn(),
+    doc: vi.fn(),
+  },
+}))
+
+// Mock Firestore functions
+const mockDoc = vi.fn()
+const mockGetDoc = vi.fn()
+const mockSetDoc = vi.fn()
+const mockUpdateDoc = vi.fn()
+const mockDeleteDoc = vi.fn()
+const mockServerTimestamp = vi.fn(() => new Date())
+
+vi.mock('firebase/firestore', () => ({
+  doc: mockDoc,
+  getDoc: mockGetDoc,
+  setDoc: mockSetDoc,
+  updateDoc: mockUpdateDoc,
+  deleteDoc: mockDeleteDoc,
+  serverTimestamp: mockServerTimestamp,
+}))
 
 describe('userService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('getUserProfile', () => {
-    it('retrieves user profile successfully', async () => {
-      const mockProfile = {
-        id: 'user123',
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'agent',
-        profileCompleted: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-02'),
-      }
-      
-      mockUserService.getUserProfile.mockResolvedValue(mockProfile)
-
-      const profile = await mockUserService.getUserProfile('user123')
-
-      expect(profile).toEqual(mockProfile)
-      expect(mockUserService.getUserProfile).toHaveBeenCalledWith('user123')
-    })
-
-    it('returns null when user does not exist', async () => {
-      mockUserService.getUserProfile.mockResolvedValue(null)
-
-      const profile = await mockUserService.getUserProfile('nonexistent')
-
-      expect(profile).toBeNull()
-    })
-
-    it('handles database errors', async () => {
-      mockUserService.getUserProfile.mockRejectedValue(new Error('Database error'))
-
-      await expect(mockUserService.getUserProfile('user123')).rejects.toThrow('Database error')
-    })
-  })
-
-  describe('updateUserProfile', () => {
-    it('updates user profile successfully', async () => {
-      const updateData = {
-        firstName: 'Jane',
-        lastName: 'Smith',
-        phone: '+260123456789',
-      }
-
-      mockUserService.updateUserProfile.mockResolvedValue(undefined)
-
-      await mockUserService.updateUserProfile('user123', updateData)
-
-      expect(mockUserService.updateUserProfile).toHaveBeenCalledWith('user123', updateData)
-    })
-
-    it('handles update errors', async () => {
-      mockUserService.updateUserProfile.mockRejectedValue(new Error('Update failed'))
-
-      await expect(
-        mockUserService.updateUserProfile('user123', { firstName: 'Jane' })
-      ).rejects.toThrow('Update failed')
-    })
-
-    it('validates required fields', async () => {
-      mockUserService.updateUserProfile.mockRejectedValue(new Error('Email is required'))
-
-      await expect(
-        mockUserService.updateUserProfile('user123', { email: '' })
-      ).rejects.toThrow(/email.*required/i)
-    })
-  })
-
-  describe('createUserProfile', () => {
-    it('creates new user profile successfully', async () => {
+  describe('createUser', () => {
+    it('creates a new user successfully', async () => {
       const userData = {
-        email: 'newuser@example.com',
-        firstName: 'New',
-        lastName: 'User',
+        uid: 'test-uid',
+        email: 'test@example.com',
         role: 'agent' as const,
+        profileCompleted: false,
       }
 
-      mockUserService.createUserProfile.mockResolvedValue(undefined)
+      mockSetDoc.mockResolvedValue(undefined)
 
-      await mockUserService.createUserProfile('newuser123', userData)
+      const result = await userService.createUser(userData)
 
-      expect(mockUserService.createUserProfile).toHaveBeenCalledWith('newuser123', userData)
-    })
-
-    it('handles creation errors', async () => {
-      mockUserService.createUserProfile.mockRejectedValue(new Error('Creation failed'))
-
-      await expect(
-        mockUserService.createUserProfile('newuser123', {
-          email: 'test@example.com',
-          firstName: 'Test',
-          lastName: 'User',
-          role: 'agent',
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        mockDoc(),
+        expect.objectContaining({
+          ...userData,
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
         })
-      ).rejects.toThrow('Creation failed')
-    })
-  })
+      )
 
-  describe('markProfileComplete', () => {
-    it('marks profile as complete', async () => {
-      mockUserService.markProfileComplete.mockResolvedValue(undefined)
-
-      await mockUserService.markProfileComplete('user123')
-
-      expect(mockUserService.markProfileComplete).toHaveBeenCalledWith('user123')
-    })
-  })
-
-  describe('getUsersByRole', () => {
-    it('retrieves users by role', async () => {
-      const mockUsers = [
-        { id: 'user1', role: 'agent', firstName: 'Agent', lastName: 'One' },
-        { id: 'user2', role: 'agent', firstName: 'Agent', lastName: 'Two' },
-      ]
-
-      mockUserService.getUsersByRole.mockResolvedValue(mockUsers)
-
-      const agents = await mockUserService.getUsersByRole('agent')
-
-      expect(mockUserService.getUsersByRole).toHaveBeenCalledWith('agent')
-      expect(agents).toHaveLength(2)
-      expect(agents[0]).toEqual({
-        id: 'user1',
-        role: 'agent',
-        firstName: 'Agent',
-        lastName: 'One',
+      expect(result).toEqual({
+        ...userData,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
       })
     })
 
-    it('returns empty array when no users found', async () => {
-      mockUserService.getUsersByRole.mockResolvedValue([])
+    it('handles creation errors', async () => {
+      const userData = {
+        uid: 'test-uid',
+        email: 'test@example.com',
+        role: 'agent' as const,
+        profileCompleted: false,
+      }
 
-      const users = await mockUserService.getUsersByRole('admin')
+      const error = new Error('Firestore error')
+      mockSetDoc.mockRejectedValue(error)
 
-      expect(users).toEqual([])
+      await expect(userService.createUser(userData)).rejects.toThrow('Firestore error')
     })
   })
 
-  describe('searchUsers', () => {
-    it('searches users by email', async () => {
-      const mockResults = [
-        { id: 'user1', email: 'john@example.com', firstName: 'John' },
-      ]
+  describe('getUserById', () => {
+    it('retrieves user by ID successfully', async () => {
+      const mockUserData = {
+        ...mockUser,
+        createdAt: { toDate: () => new Date() },
+        updatedAt: { toDate: () => new Date() },
+      }
 
-      mockUserService.searchUsers.mockResolvedValue(mockResults)
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => mockUserData,
+      })
 
-      const results = await mockUserService.searchUsers('john@example.com')
+      const result = await userService.getUserById('test-uid')
 
-      expect(mockUserService.searchUsers).toHaveBeenCalledWith('john@example.com')
-      expect(results).toHaveLength(1)
+      expect(mockGetDoc).toHaveBeenCalledWith(mockDoc())
+      expect(result).toEqual({
+        ...mockUser,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      })
     })
 
-    it('limits search results', async () => {
-      const mockResults = Array(10).fill(0).map((_, i) => ({
-        id: `user${i}`,
-        email: `user${i}@example.com`,
-      }))
+    it('returns null when user does not exist', async () => {
+      mockGetDoc.mockResolvedValue({
+        exists: () => false,
+        data: () => null,
+      })
 
-      mockUserService.searchUsers.mockResolvedValue(mockResults.slice(0, 10))
+      const result = await userService.getUserById('non-existent-uid')
 
-      await mockUserService.searchUsers('user', 10)
+      expect(result).toBeNull()
+    })
 
-      expect(mockUserService.searchUsers).toHaveBeenCalledWith('user', 10)
+    it('handles retrieval errors', async () => {
+      const error = new Error('Firestore error')
+      mockGetDoc.mockRejectedValue(error)
+
+      await expect(userService.getUserById('test-uid')).rejects.toThrow('Firestore error')
+    })
+  })
+
+  describe('updateUser', () => {
+    it('updates user successfully', async () => {
+      const updateData = {
+        firstName: 'Updated',
+        lastName: 'Name',
+      }
+
+      mockUpdateDoc.mockResolvedValue(undefined)
+
+      await userService.updateUser('test-uid', updateData)
+
+      expect(mockUpdateDoc).toHaveBeenCalledWith(
+        mockDoc(),
+        expect.objectContaining({
+          ...updateData,
+          updatedAt: expect.any(Date),
+        })
+      )
+    })
+
+    it('handles update errors', async () => {
+      const updateData = {
+        firstName: 'Updated',
+      }
+
+      const error = new Error('Firestore error')
+      mockUpdateDoc.mockRejectedValue(error)
+
+      await expect(userService.updateUser('test-uid', updateData)).rejects.toThrow('Firestore error')
     })
   })
 
   describe('deleteUser', () => {
     it('deletes user successfully', async () => {
-      mockUserService.deleteUser.mockResolvedValue(undefined)
+      mockDeleteDoc.mockResolvedValue(undefined)
 
-      await mockUserService.deleteUser('user123')
+      await userService.deleteUser('test-uid')
 
-      expect(mockUserService.deleteUser).toHaveBeenCalledWith('user123')
+      expect(mockDeleteDoc).toHaveBeenCalledWith(mockDoc())
     })
 
     it('handles deletion errors', async () => {
-      mockUserService.deleteUser.mockRejectedValue(new Error('Deletion failed'))
+      const error = new Error('Firestore error')
+      mockDeleteDoc.mockRejectedValue(error)
 
-      await expect(mockUserService.deleteUser('user123')).rejects.toThrow('Deletion failed')
+      await expect(userService.deleteUser('test-uid')).rejects.toThrow('Firestore error')
     })
   })
 
-  describe('getCurrentUser', () => {
-    it('returns current user profile', async () => {
-      const mockProfile = {
-        id: 'user123',
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+  describe('createDefaultUser', () => {
+    it('creates default user with correct data', async () => {
+      const uid = 'test-uid'
+      const email = 'test@example.com'
+
+      mockSetDoc.mockResolvedValue(undefined)
+
+      const result = await userService.createDefaultUser(uid, email)
+
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        mockDoc(),
+        expect.objectContaining({
+          uid,
+          email,
+          role: 'agent',
+          profileCompleted: false,
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
+        })
+      )
+
+      expect(result).toEqual({
+        uid,
+        email,
         role: 'agent',
-        profileCompleted: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-02'),
+        profileCompleted: false,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      })
+    })
+
+    it('handles default user creation errors', async () => {
+      const uid = 'test-uid'
+      const email = 'test@example.com'
+
+      const error = new Error('Firestore error')
+      mockSetDoc.mockRejectedValue(error)
+
+      await expect(userService.createDefaultUser(uid, email)).rejects.toThrow('Firestore error')
+    })
+  })
+
+  describe('Data Validation', () => {
+    it('validates required user fields', async () => {
+      const invalidUserData = {
+        uid: 'test-uid',
+        // Missing required fields
       }
 
-      mockUserService.getCurrentUser.mockResolvedValue(mockProfile)
+      mockSetDoc.mockResolvedValue(undefined)
 
-      const profile = await mockUserService.getCurrentUser()
+      // This should still work as the service doesn't validate input
+      await userService.createUser(invalidUserData as any)
 
-      expect(profile).toEqual(mockProfile)
+      expect(mockSetDoc).toHaveBeenCalled()
     })
 
-    it('returns null when no user is authenticated', async () => {
-      mockUserService.getCurrentUser.mockResolvedValue(null)
+    it('handles null or undefined values gracefully', async () => {
+      const userDataWithNulls = {
+        uid: 'test-uid',
+        email: 'test@example.com',
+        role: 'agent' as const,
+        profileCompleted: false,
+        firstName: null,
+        lastName: undefined,
+      }
 
-      const profile = await mockUserService.getCurrentUser()
+      mockSetDoc.mockResolvedValue(undefined)
 
-      expect(profile).toBeNull()
+      await userService.createUser(userDataWithNulls as any)
+
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        mockDoc(),
+        expect.objectContaining({
+          ...userDataWithNulls,
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
+        })
+      )
     })
   })
 
-  describe('updateUserLastActive', () => {
-    it('updates user last active timestamp', async () => {
-      mockUserService.updateUserLastActive.mockResolvedValue(undefined)
+  describe('Timestamp Handling', () => {
+    it('converts Firestore timestamps to Date objects', async () => {
+      const mockUserData = {
+        ...mockUser,
+        createdAt: { toDate: () => new Date('2024-01-01') },
+        updatedAt: { toDate: () => new Date('2024-01-02') },
+      }
 
-      await mockUserService.updateUserLastActive('user123')
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => mockUserData,
+      })
 
-      expect(mockUserService.updateUserLastActive).toHaveBeenCalledWith('user123')
+      const result = await userService.getUserById('test-uid')
+
+      expect(result?.createdAt).toEqual(new Date('2024-01-01'))
+      expect(result?.updatedAt).toEqual(new Date('2024-01-02'))
+    })
+
+    it('handles missing timestamps gracefully', async () => {
+      const mockUserDataWithoutTimestamps = {
+        ...mockUser,
+        createdAt: null,
+        updatedAt: undefined,
+      }
+
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => mockUserDataWithoutTimestamps,
+      })
+
+      const result = await userService.getUserById('test-uid')
+
+      expect(result?.createdAt).toEqual(new Date())
+      expect(result?.updatedAt).toEqual(new Date())
     })
   })
 
-  describe('User Validation', () => {
-    it('validates email format', async () => {
-      mockUserService.createUserProfile.mockRejectedValue(new Error('Email must be valid'))
+  describe('Error Scenarios', () => {
+    it('handles network errors', async () => {
+      const networkError = new Error('Network error')
+      mockGetDoc.mockRejectedValue(networkError)
 
-      await expect(
-        mockUserService.createUserProfile('user123', {
-          email: 'invalid-email',
-          firstName: 'Test',
-          lastName: 'User',
-          role: 'agent',
-        })
-      ).rejects.toThrow(/email.*valid/i)
+      await expect(userService.getUserById('test-uid')).rejects.toThrow('Network error')
     })
 
-    it('validates required fields', async () => {
-      mockUserService.createUserProfile.mockRejectedValue(new Error('firstName is required'))
+    it('handles permission errors', async () => {
+      const permissionError = new Error('Permission denied')
+      mockGetDoc.mockRejectedValue(permissionError)
 
-      await expect(
-        mockUserService.createUserProfile('user123', {
-          email: 'test@example.com',
-          firstName: '',
-          lastName: 'User',
-          role: 'agent',
-        })
-      ).rejects.toThrow(/firstName.*required/i)
+      await expect(userService.getUserById('test-uid')).rejects.toThrow('Permission denied')
     })
 
-    it('validates role values', async () => {
-      mockUserService.createUserProfile.mockRejectedValue(new Error('Role must be valid'))
+    it('handles invalid document references', async () => {
+      mockDoc.mockImplementation(() => {
+        throw new Error('Invalid document reference')
+      })
 
-      await expect(
-        mockUserService.createUserProfile('user123', {
-          email: 'test@example.com',
-          firstName: 'Test',
-          lastName: 'User',
-          role: 'invalid-role' as any,
-        })
-      ).rejects.toThrow(/role.*valid/i)
+      await expect(userService.getUserById('invalid-uid')).rejects.toThrow('Invalid document reference')
     })
   })
 
-  describe('Batch Operations', () => {
-    it('handles bulk user updates', async () => {
-      const users = [
-        { id: 'user1', firstName: 'Updated1' },
-        { id: 'user2', firstName: 'Updated2' },
-      ]
+  describe('Collection Management', () => {
+    it('uses correct collection name', async () => {
+      mockSetDoc.mockResolvedValue(undefined)
 
-      mockUserService.bulkUpdateUsers.mockResolvedValue(undefined)
+      await userService.createUser(mockUser)
 
-      await mockUserService.bulkUpdateUsers(users)
-
-      expect(mockUserService.bulkUpdateUsers).toHaveBeenCalledWith(users)
+      expect(mockDoc).toHaveBeenCalledWith(expect.anything(), 'users', mockUser.uid)
     })
 
-    it('handles batch operation errors', async () => {
-      mockUserService.bulkUpdateUsers.mockRejectedValue(new Error('Batch error'))
+    it('maintains data consistency', async () => {
+      const userData = {
+        uid: 'test-uid',
+        email: 'test@example.com',
+        role: 'agent' as const,
+        profileCompleted: false,
+      }
 
-      const users = [
-        { id: 'user1', firstName: 'Updated1' },
-        { id: 'user2', firstName: 'Updated2' },
-      ]
+      mockSetDoc.mockResolvedValue(undefined)
 
-      await expect(mockUserService.bulkUpdateUsers(users)).rejects.toThrow('Batch error')
+      await userService.createUser(userData)
+
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        mockDoc(),
+        expect.objectContaining({
+          uid: userData.uid,
+          email: userData.email,
+          role: userData.role,
+          profileCompleted: userData.profileCompleted,
+        })
+      )
     })
   })
 })

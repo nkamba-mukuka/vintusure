@@ -1,194 +1,148 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
-import LoadingState, { Skeleton, SkeletonCard, SkeletonTable } from '../LoadingState'
+import { LoadingState } from '../LoadingState'
 
-describe('LoadingState', () => {
-  describe('default spinner variant', () => {
-    it('renders loading spinner with default message', () => {
+describe('LoadingState Component', () => {
+  describe('Rendering', () => {
+    it('renders with default props', () => {
       render(<LoadingState />)
       
-      expect(screen.getByText('Loading...')).toBeInTheDocument()
-      expect(screen.getByLabelText('Loading...')).toBeInTheDocument()
+      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByText(/loading/i)).toBeInTheDocument()
     })
 
     it('renders with custom message', () => {
       render(<LoadingState message="Custom loading message" />)
       
       expect(screen.getByText('Custom loading message')).toBeInTheDocument()
-      expect(screen.getByLabelText('Custom loading message')).toBeInTheDocument()
     })
 
-    it('applies custom className', () => {
-      render(<LoadingState className="custom-class" />)
+    it('renders with custom size', () => {
+      render(<LoadingState size="lg" />)
       
-      const container = screen.getByLabelText('Loading...').closest('div')
-      expect(container).toHaveClass('custom-class')
+      const spinner = screen.getByRole('status')
+      expect(spinner).toHaveClass('w-8', 'h-8')
     })
 
-    it('renders different sizes correctly', () => {
+    it('renders with different sizes', () => {
       const { rerender } = render(<LoadingState size="sm" />)
-      expect(screen.getByLabelText('Loading...').closest('div')).toHaveClass('min-h-[100px]')
-      
+      expect(screen.getByRole('status')).toHaveClass('w-4', 'h-4')
+
       rerender(<LoadingState size="md" />)
-      expect(screen.getByLabelText('Loading...').closest('div')).toHaveClass('min-h-[200px]')
-      
+      expect(screen.getByRole('status')).toHaveClass('w-6', 'h-6')
+
       rerender(<LoadingState size="lg" />)
-      expect(screen.getByLabelText('Loading...').closest('div')).toHaveClass('min-h-[300px]')
+      expect(screen.getByRole('status')).toHaveClass('w-8', 'h-8')
+    })
+
+    it('renders with custom className', () => {
+      render(<LoadingState className="custom-loading" />)
+      
+      const container = screen.getByRole('status').parentElement
+      expect(container).toHaveClass('custom-loading')
     })
   })
 
-  describe('skeleton variant', () => {
-    it('renders skeleton card when variant is skeleton', () => {
-      render(<LoadingState variant="skeleton" />)
-      
-      // Should render SkeletonCard instead of spinner
-      const skeletonElements = document.querySelectorAll('.shimmer')
-      expect(skeletonElements.length).toBeGreaterThan(0)
-    })
-  })
-
-  describe('pulse variant', () => {
-    it('renders pulse animation when variant is pulse', () => {
-      render(<LoadingState variant="pulse" message="Pulsing..." />)
-      
-      expect(screen.getByText('Pulsing...')).toBeInTheDocument()
-      const pulseElement = document.querySelector('.pulse-primary')
-      expect(pulseElement).toBeInTheDocument()
-    })
-
-    it('respects size prop for pulse variant', () => {
-      const { rerender } = render(<LoadingState variant="pulse" size="sm" />)
-      const pulseElement = document.querySelector('.pulse-primary')
-      expect(pulseElement).toHaveClass('h-4', 'w-4')
-      
-      rerender(<LoadingState variant="pulse" size="lg" />)
-      const largePulseElement = document.querySelector('.pulse-primary')
-      expect(largePulseElement).toHaveClass('h-12', 'w-12')
-    })
-  })
-
-  describe('accessibility', () => {
-    it('has proper ARIA attributes for screen readers', () => {
-      render(<LoadingState message="Loading content" />)
-      
-      const loadingElement = screen.getByRole('status')
-      expect(loadingElement).toBeInTheDocument()
-      expect(loadingElement).toHaveAttribute('aria-live', 'polite')
-      expect(loadingElement).toHaveAttribute('aria-label', 'Loading content')
-    })
-
-    it('has aria-hidden for decorative elements', () => {
+  describe('Accessibility', () => {
+    it('has proper ARIA attributes', () => {
       render(<LoadingState />)
       
-      const iconElement = document.querySelector('svg[aria-hidden="true"]')
-      expect(iconElement).toBeInTheDocument()
+      const spinner = screen.getByRole('status')
+      expect(spinner).toHaveAttribute('aria-live', 'polite')
+      expect(spinner).toHaveAttribute('aria-label', 'Loading')
+    })
+
+    it('supports custom aria-label', () => {
+      render(<LoadingState aria-label="Custom loading label" />)
+      
+      const spinner = screen.getByRole('status')
+      expect(spinner).toHaveAttribute('aria-label', 'Custom loading label')
+    })
+
+    it('announces loading state to screen readers', () => {
+      render(<LoadingState message="Please wait while we load your data" />)
+      
+      expect(screen.getByText('Please wait while we load your data')).toBeInTheDocument()
     })
   })
-})
 
-describe('Skeleton', () => {
-  it('renders skeleton placeholder with proper attributes', () => {
-    render(<Skeleton />)
-    
-    const skeleton = screen.getByLabelText('Loading content')
-    expect(skeleton).toBeInTheDocument()
-    expect(skeleton).toHaveAttribute('role', 'status')
+  describe('Variants', () => {
+    it('renders inline variant', () => {
+      render(<LoadingState variant="inline" />)
+      
+      const container = screen.getByRole('status').parentElement
+      expect(container).toHaveClass('inline-flex')
+    })
+
+    it('renders fullscreen variant', () => {
+      render(<LoadingState variant="fullscreen" />)
+      
+      const container = screen.getByRole('status').parentElement
+      expect(container).toHaveClass('fixed', 'inset-0')
+    })
+
+    it('renders overlay variant', () => {
+      render(<LoadingState variant="overlay" />)
+      
+      const container = screen.getByRole('status').parentElement
+      expect(container).toHaveClass('absolute', 'inset-0')
+    })
   })
 
-  it('applies custom className', () => {
-    render(<Skeleton className="custom-skeleton" />)
-    
-    const skeleton = screen.getByLabelText('Loading content')
-    expect(skeleton).toHaveClass('custom-skeleton')
-    expect(skeleton).toHaveClass('shimmer')
+  describe('Content', () => {
+    it('renders without message when message is empty', () => {
+      render(<LoadingState message="" />)
+      
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument()
+      expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it('renders with children content', () => {
+      render(
+        <LoadingState>
+          <div>Additional content</div>
+        </LoadingState>
+      )
+      
+      expect(screen.getByText('Additional content')).toBeInTheDocument()
+    })
   })
 
-  it('has shimmer animation class', () => {
-    render(<Skeleton />)
-    
-    const skeleton = screen.getByLabelText('Loading content')
-    expect(skeleton).toHaveClass('shimmer')
-  })
-})
+  describe('Styling', () => {
+    it('applies correct spinner animation classes', () => {
+      render(<LoadingState />)
+      
+      const spinner = screen.getByRole('status')
+      expect(spinner).toHaveClass('animate-spin')
+    })
 
-describe('SkeletonCard', () => {
-  it('renders card skeleton structure', () => {
-    render(<SkeletonCard />)
-    
-    // Should render multiple skeleton elements
-    const skeletonElements = document.querySelectorAll('.shimmer')
-    expect(skeletonElements.length).toBeGreaterThan(3) // Multiple skeleton lines + buttons
-  })
-
-  it('has fade-in animation', () => {
-    render(<SkeletonCard />)
-    
-    const cardContainer = document.querySelector('.animate-fade-in')
-    expect(cardContainer).toBeInTheDocument()
+    it('applies correct color classes', () => {
+      render(<LoadingState />)
+      
+      const spinner = screen.getByRole('status')
+      expect(spinner).toHaveClass('text-primary')
+    })
   })
 
-  it('renders proper structure with different sized skeletons', () => {
-    render(<SkeletonCard />)
-    
-    // Check for different skeleton sizes
-    expect(document.querySelector('.h-4.w-2\\/3')).toBeInTheDocument()
-    expect(document.querySelector('.h-4.w-full')).toBeInTheDocument()
-    expect(document.querySelector('.h-4.w-1\\/2')).toBeInTheDocument()
-  })
-})
+  describe('Integration', () => {
+    it('works within other components', () => {
+      render(
+        <div>
+          <LoadingState message="Loading component" />
+          <div>Other content</div>
+        </div>
+      )
+      
+      expect(screen.getByText('Loading component')).toBeInTheDocument()
+      expect(screen.getByText('Other content')).toBeInTheDocument()
+    })
 
-describe('SkeletonTable', () => {
-  it('renders table skeleton structure', () => {
-    render(<SkeletonTable />)
-    
-    // Should render header and multiple rows
-    const skeletonElements = document.querySelectorAll('.shimmer')
-    expect(skeletonElements.length).toBeGreaterThan(10) // Header + 5 rows with multiple elements each
-  })
+    it('handles conditional rendering', () => {
+      const { rerender } = render(<LoadingState message="Loading" />)
+      expect(screen.getByText('Loading')).toBeInTheDocument()
 
-  it('has proper table structure', () => {
-    render(<SkeletonTable />)
-    
-    // Check for table-like structure
-    expect(document.querySelector('.border-b')).toBeInTheDocument() // Header border
-    expect(document.querySelector('.space-y-3')).toBeInTheDocument() // Row spacing
-  })
-
-  it('renders 5 skeleton rows by default', () => {
-    render(<SkeletonTable />)
-    
-    // Count the number of row containers
-    const rows = document.querySelectorAll('.flex.items-center.space-x-4')
-    expect(rows).toHaveLength(5)
-  })
-
-  it('includes avatar placeholders in rows', () => {
-    render(<SkeletonTable />)
-    
-    // Check for circular avatar placeholders
-    const avatars = document.querySelectorAll('.rounded-full')
-    expect(avatars.length).toBeGreaterThan(0)
-  })
-})
-
-describe('Loading State Integration', () => {
-  it('works with different variants seamlessly', () => {
-    const { rerender } = render(<LoadingState variant="spinner" />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-    
-    rerender(<LoadingState variant="skeleton" />)
-    expect(document.querySelectorAll('.shimmer').length).toBeGreaterThan(0)
-    
-    rerender(<LoadingState variant="pulse" />)
-    expect(document.querySelector('.pulse-primary')).toBeInTheDocument()
-  })
-
-  it('maintains accessibility across all variants', () => {
-    const { rerender } = render(<LoadingState variant="spinner" />)
-    expect(screen.getByRole('status')).toBeInTheDocument()
-    
-    rerender(<LoadingState variant="pulse" />)
-    // Pulse variant should still be accessible
-    expect(document.querySelector('[role="status"]')).toBeInTheDocument()
+      rerender(<div>Content loaded</div>)
+      expect(screen.queryByText('Loading')).not.toBeInTheDocument()
+      expect(screen.getByText('Content loaded')).toBeInTheDocument()
+    })
   })
 })

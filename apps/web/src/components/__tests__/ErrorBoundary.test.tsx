@@ -1,213 +1,154 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { useState } from 'react'
-import ErrorBoundary, { withErrorBoundary, useErrorHandler } from '../ErrorBoundary'
+import { render, screen } from '@testing-library/react'
+import { ErrorBoundary } from '../ErrorBoundary'
 
-// Mock console.error to avoid cluttering test output
-const originalError = console.error
-beforeEach(() => {
-  console.error = vi.fn()
-})
-
-afterEach(() => {
-  console.error = originalError
-})
-
-// Test component that throws an error
-const ThrowError = ({ shouldThrow = false }: { shouldThrow?: boolean }) => {
+// Mock component that throws an error
+const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
   if (shouldThrow) {
     throw new Error('Test error')
   }
-  return <div>Component works</div>
+  return <div>No error</div>
 }
 
-// Component that can be triggered to throw
-const ConditionalThrow = () => {
-  const [shouldThrow, setShouldThrow] = useState(false)
-  
-  if (shouldThrow) {
-    throw new Error('Conditional test error')
-  }
-  
-  return (
-    <button onClick={() => setShouldThrow(true)}>
-      Trigger Error
-    </button>
-  )
-}
-
-describe('ErrorBoundary', () => {
-  it('renders children when there is no error', () => {
-    render(
-      <ErrorBoundary>
-        <div>Test content</div>
-      </ErrorBoundary>
-    )
-    
-    expect(screen.getByText('Test content')).toBeInTheDocument()
+describe('ErrorBoundary Component', () => {
+  beforeEach(() => {
+    // Suppress console.error for tests
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
-  it('renders error UI when there is an error', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument()
-    expect(screen.getByText(/We're sorry, but something unexpected happened/)).toBeInTheDocument()
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it('displays error information', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    expect(screen.getByText(/Oops! Something went wrong/)).toBeInTheDocument()
-  })
-
-  it('shows retry button', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument()
-    
-    const retryButton = screen.getByText(/try again/i)
-    expect(retryButton).toBeInTheDocument()
-  })
-
-  it('shows go home button', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    const homeButton = screen.getByText('Go Home')
-    expect(homeButton).toBeInTheDocument()
-  })
-
-  it('can toggle error details visibility', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    // Check for details element
-    const details = screen.getByText(/error details/i)
-    expect(details).toBeInTheDocument()
-  })
-
-  it('calls custom error handler when provided', () => {
-    const mockErrorHandler = vi.fn()
-    
-    render(
-      <ErrorBoundary onError={mockErrorHandler}>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    expect(mockErrorHandler).toHaveBeenCalled()
-  })
-
-  it('renders custom fallback when provided', () => {
-    const customFallback = <div>Custom error message</div>
-    
-    render(
-      <ErrorBoundary fallback={customFallback}>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    expect(screen.getByText('Custom error message')).toBeInTheDocument()
-    expect(screen.queryByText('Oops! Something went wrong')).not.toBeInTheDocument()
-  })
-
-  it('resets on props change when resetOnPropsChange is true', () => {
-    const { rerender } = render(
-      <ErrorBoundary resetOnPropsChange={true} resetKeys={['key1']}>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    )
-    
-    expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument()
-    
-    // Change the reset key
-    rerender(
-      <ErrorBoundary resetOnPropsChange={true} resetKeys={['key2']}>
-        <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
-    )
-    
-    // Should reset and show content
-    expect(screen.queryByText('Oops! Something went wrong')).not.toBeInTheDocument()
-  })
-
-  describe('withErrorBoundary HOC', () => {
-    it('wraps component with error boundary', () => {
-      const TestComponent = () => <div>HOC Test</div>
-      const WrappedComponent = withErrorBoundary(TestComponent)
-      
-      render(<WrappedComponent />)
-      
-      expect(screen.getByText('HOC Test')).toBeInTheDocument()
-    })
-
-    it('handles errors in wrapped component', () => {
-      const WrappedComponent = withErrorBoundary(ThrowError)
-      
-      render(<WrappedComponent shouldThrow={true} />)
-      
-      expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument()
-    })
-  })
-
-  describe('useErrorHandler hook', () => {
-    it('provides error handler function', () => {
-      const TestComponent = () => {
-        const handleError = useErrorHandler()
-        expect(typeof handleError).toBe('function')
-        return <div>Hook component</div>
-      }
-      
+  describe('Normal Rendering', () => {
+    it('renders children when no error occurs', () => {
       render(
         <ErrorBoundary>
-          <TestComponent />
+          <ThrowError shouldThrow={false} />
         </ErrorBoundary>
       )
-      
-      expect(screen.getByText('Hook component')).toBeInTheDocument()
+
+      expect(screen.getByText('No error')).toBeInTheDocument()
+    })
+
+    it('renders with custom fallback UI', () => {
+      const CustomFallback = () => <div>Custom error message</div>
+
+      render(
+        <ErrorBoundary fallback={<CustomFallback />}>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText('Custom error message')).toBeInTheDocument()
     })
   })
 
-  describe('accessibility', () => {
-    it('has proper ARIA attributes', () => {
+  describe('Error Handling', () => {
+    it('renders fallback UI when error occurs', () => {
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} />
         </ErrorBoundary>
       )
-      
-      // Check for accessible elements
-      expect(screen.getByText('Try Again')).toHaveAttribute('type', 'button')
-      expect(screen.getByText('Go Home')).toHaveAttribute('type', 'button')
+
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+      expect(screen.getByText(/please try refreshing the page/i)).toBeInTheDocument()
     })
 
-    it('provides proper error information for screen readers', () => {
+    it('renders error details in development mode', () => {
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = 'development'
+
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow={true} />
         </ErrorBoundary>
       )
-      
-      // Should have descriptive text for screen readers
-      expect(screen.getByText(/We're sorry, but something unexpected happened/)).toBeInTheDocument()
+
+      expect(screen.getByText(/test error/i)).toBeInTheDocument()
+
+      process.env.NODE_ENV = originalEnv
+    })
+
+    it('does not render error details in production mode', () => {
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = 'production'
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(screen.queryByText(/test error/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+
+      process.env.NODE_ENV = originalEnv
+    })
+  })
+
+  describe('Error Recovery', () => {
+    it('allows recovery after error', () => {
+      const { rerender } = render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+
+      // Re-render without error
+      rerender(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={false} />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText('No error')).toBeInTheDocument()
+    })
+  })
+
+  describe('Accessibility', () => {
+    it('has proper ARIA attributes for error state', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      const errorContainer = screen.getByRole('alert')
+      expect(errorContainer).toBeInTheDocument()
+      expect(errorContainer).toHaveAttribute('aria-live', 'assertive')
+    })
+
+    it('provides error information to screen readers', () => {
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+      expect(screen.getByText(/please try refreshing the page/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('Error Logging', () => {
+    it('logs errors to console in development', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = 'development'
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      )
+
+      expect(consoleSpy).toHaveBeenCalled()
+
+      process.env.NODE_ENV = originalEnv
+      consoleSpy.mockRestore()
     })
   })
 })

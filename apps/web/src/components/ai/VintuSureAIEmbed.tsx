@@ -120,9 +120,9 @@ const VintuSureAIEmbed: React.FC = () => {
     },
     {
       id: 'content-generator',
-      name: 'Content Generator',
+      name: 'Document Upload',
       icon: Sparkles,
-      description: 'Generate insurance content with AI',
+      description: 'Upload documents for RAG system indexing',
     },
     {
       id: 'car-analyzer',
@@ -135,8 +135,8 @@ const VintuSureAIEmbed: React.FC = () => {
   return (
     <div className="h-full bg-background rounded-lg relative">
       <div className="h-full flex flex-col">
-        {/* Shared Icons Menu - Always Visible */}
-        <div className="w-full flex justify-end p-6 pb-2">
+        {/* Icon Menu */}
+        <div className="w-full flex justify-center p-4 pb-2">
           <div className="flex space-x-4">
             <TooltipProvider>
               {sidebarItems.map((item) => {

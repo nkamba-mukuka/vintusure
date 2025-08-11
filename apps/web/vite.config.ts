@@ -17,6 +17,28 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist',
-        sourcemap: true
+        sourcemap: false, // Disable sourcemaps for production
+        minify: 'terser',
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom'],
+                    firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions'],
+                    ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-toast'],
+                    router: ['react-router-dom'],
+                    form: ['react-hook-form', '@hookform/resolvers', 'zod']
+                }
+            }
+        },
+        terserOptions: {
+            compress: {
+                drop_console: true,
+                drop_debugger: true
+            }
+        }
+    },
+    preview: {
+        port: 4173,
+        host: true
     }
 }) 

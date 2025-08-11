@@ -21,7 +21,7 @@ const defaultSEO = {
   title: 'VintuSure - AI-Powered Insurance Intelligence Platform',
   description: 'VintuSure is an AI-powered platform that provides advanced RAG (Retrieval-Augmented Generation) services to insurance companies, enhancing knowledge management and customer support capabilities.',
   keywords: 'AI insurance, insurance technology, RAG, artificial intelligence, customer support, knowledge management, insurance platform, insurtech, Zambia insurance',
-  image: '/images/vintusure-og-image.png',
+  image: '/images/vintusure-logo-192.png',
   url: 'https://vintusure.web.app',
   type: 'website' as const,
   author: 'VintuSure Team',
@@ -117,10 +117,11 @@ export default function SEO({
       <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
       {/* Favicon and Icons */}
-      <link rel="icon" type="image/x-icon" href="/vintusure-logo.ico" />
+      <link rel="icon" type="image/x-icon" href="/images/vintusure-icon.ico" />
       <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
       <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
       <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png" />
+      <link rel="icon" type="image/png" sizes="192x192" href="/images/vintusure-logo-192.png" />
       <link rel="manifest" href="/manifest.json" />
 
       {/* Structured Data */}
@@ -182,7 +183,7 @@ export const createWebPageSchema = (pageTitle: string, pageDescription: string, 
     "name": "VintuSure",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://vintusure.web.app/images/vintusure-logo.png"
+      "url": "https://vintusure.web.app/images/vintusure-logo-192.png"
     }
   }
 });

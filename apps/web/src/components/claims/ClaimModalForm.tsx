@@ -172,7 +172,10 @@ export default function ClaimModalForm({
                 });
             } else {
                 // Create new claim
-                await claimService.create(data);
+                if (!user?.uid) {
+                    throw new Error('User not authenticated');
+                }
+                await claimService.create(data, user.uid);
                 toast({
                     title: 'Claim Created',
                     description: 'Claim has been created successfully.',

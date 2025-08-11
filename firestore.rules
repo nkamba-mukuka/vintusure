@@ -59,7 +59,7 @@ service cloud.firestore {
             (!('role' in request.resource.data) || request.resource.data.role in ['admin', 'agent', 'customer']);
     }
 
-    // Users collection - only admins can manage users
+    // Users collection - users can manage their own accounts
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && 
@@ -67,7 +67,7 @@ service cloud.firestore {
         isValidUserData();
       allow update: if isOwner(userId) || isAdmin() &&
         isValidUserUpdateData();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // Customers collection - user-specific access

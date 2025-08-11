@@ -371,7 +371,7 @@ const Explore: React.FC = () => {
                                         {/* Analysis Results */}
                                         {carAnalysis && (
                                             <div className="space-y-4 max-h-96 overflow-y-auto">
-                                                <div className="bg-gray-50 rounded-lg p-4">
+                                                <div className="bg-muted rounded-lg p-4">
                                                     <h3 className="font-semibold mb-3">Car Details</h3>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
@@ -398,7 +398,7 @@ const Explore: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-blue-50 rounded-lg p-4">
+                                                <div className="bg-primary/5 rounded-lg p-4">
                                                     <h3 className="font-semibold mb-3">Insurance Recommendation</h3>
                                                     <div className="space-y-2">
                                                         <div>
@@ -418,7 +418,7 @@ const Explore: React.FC = () => {
                                                 </div>
 
                                                 {carAnalysis.marketplaceRecommendations && (
-                                                    <div className="bg-gray-50 rounded-lg p-4">
+                                                    <div className="bg-muted rounded-lg p-4">
                                                         <h3 className="font-semibold mb-3">Where to Buy</h3>
                                                         {carAnalysis.marketplaceRecommendations.similarListings?.length > 0 && (
                                                             <div className="mb-4">
@@ -456,7 +456,7 @@ const Explore: React.FC = () => {
                                                                         href={marketplace.url}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="flex items-center justify-between p-2 bg-white rounded-md hover:bg-gray-50 transition-colors"
+                                                                        className="flex items-center justify-between p-2 bg-card rounded-md hover:bg-muted transition-colors"
                                                                     >
                                                                         <div>
                                                                             <p className="text-sm font-medium">{marketplace.name}</p>

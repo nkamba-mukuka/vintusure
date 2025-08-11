@@ -121,9 +121,9 @@ const VintuSureAI: React.FC = () => {
     },
     {
       id: 'content-generator',
-      name: 'Content Generator',
+      name: 'Document Upload',
       icon: Sparkles,
-      description: 'Generate insurance content with AI',
+      description: 'Upload documents for RAG system indexing',
     },
     {
       id: 'car-analyzer',
@@ -137,8 +137,8 @@ const VintuSureAI: React.FC = () => {
     <div className="flex h-screen bg-background">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
-        {/* Shared Icons Menu - Always Visible */}
-        <div className="w-full flex justify-center p-6 pb-2">
+        {/* Icon Menu */}
+        <div className="w-full flex justify-center p-4 pb-2">
           <div className="flex space-x-4">
             <TooltipProvider>
               {sidebarItems.map((item) => {

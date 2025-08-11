@@ -184,9 +184,17 @@
 
   /* Enhanced Card hover effects with purple theme */
   .hover-card-effect {
-    @apply transition-all duration-300 ease-out hover:shadow-lg hover:shadow-purple-100 
+    @apply transition-all duration-300 ease-out hover:shadow-lg hover:shadow-primary/10 
            hover:scale-[1.02] hover:border-primary/20 hover:bg-gradient-to-br 
-           hover:from-card hover:to-purple-50/30;
+           hover:from-card hover:to-primary/5;
+  }
+
+  /* Dark mode override for hover card effect */
+  .dark .hover-card-effect {
+    @apply hover:shadow-lg hover:shadow-primary/20 
+           hover:scale-[1.02] hover:border-primary/30 
+           hover:bg-gradient-to-br hover:from-card 
+           hover:to-primary/10;
   }
 
   /* Enhanced purple card effect */
@@ -205,7 +213,7 @@
   .btn-secondary {
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 
            transition-all duration-200 active:scale-95 
-           hover:shadow-md hover:shadow-purple-100;
+           hover:shadow-md hover:shadow-primary/10;
   }
 
   /* Enhanced purple button variants */
@@ -229,9 +237,16 @@
 
   /* Enhanced purple input styling */
   .input-purple {
-    @apply border-2 border-purple-200 bg-white text-foreground 
+    @apply border-2 border-purple-200 bg-background text-foreground 
            focus:ring-2 focus:ring-primary/20 focus:border-primary 
-           transition-all duration-200 hover:border-purple-300;
+           transition-all duration-200 hover:border-primary/40;
+  }
+
+  /* Dark mode override for input-purple */
+  .dark .input-purple {
+    @apply border-2 border-border bg-background text-foreground 
+           focus:ring-2 focus:ring-primary/20 focus:border-primary 
+           transition-all duration-200 hover:border-primary/40;
   }
 
   /* Page transition animations */

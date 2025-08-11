@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Claim, ClaimStatus } from '@/types/policy';
+import { Claim } from '@/types/policy';
 import { claimService } from '@/lib/services/claimService';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,7 @@ const statusColors = {
     'UnderReview': 'secondary',
     'Approved': 'outline',
     'Rejected': 'destructive',
+    'Paid': 'outline',
 } as const;
 
 export default function ClaimReview({ claim, onUpdate }: ClaimReviewProps) {
@@ -62,7 +63,7 @@ export default function ClaimReview({ claim, onUpdate }: ClaimReviewProps) {
     const form = useForm<ReviewFormData>({
         resolver: zodResolver(reviewFormSchema),
         defaultValues: {
-            status: claim.status === 'Submitted' ? 'UnderReview' : claim.status,
+            status: claim.status === 'Submitted' ? 'UnderReview' : (claim.status === 'Paid' ? 'Approved' : claim.status),
             approvedAmount: claim.approvedAmount,
             reviewNotes: claim.reviewNotes || '',
         },

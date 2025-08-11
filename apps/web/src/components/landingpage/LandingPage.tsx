@@ -2,14 +2,16 @@ import { Link } from "react-router-dom"
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { Button } from "@/components/ui/button"
-import { Shield, Car, TrendingUp, User, Building2, Brain, Sun, Moon } from 'lucide-react'
+import { Shield, Car, TrendingUp, User, Building2, Brain, Sun, Moon, Menu, X } from 'lucide-react'
 import vintusureLogo from '@/assets/vintusure-logo.ico'
 import SEO, { createOrganizationSchema, createWebPageSchema, createSoftwareApplicationSchema } from '@/components/SEO'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 export default function LandingPage() {
     const { user } = useAuthContext()
     const { theme, toggleTheme } = useTheme()
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     // Structured data for better SEO
     const organizationSchema = createOrganizationSchema()
@@ -38,7 +40,7 @@ export default function LandingPage() {
                 image="/images/vintusure-hero-image.png"
             />
             {/* Hero Section */}
-            <div className="relative isolate px-6 pt-14 lg:px-8">
+            <div className="relative isolate px-4 sm:px-6 lg:px-8 pt-14">
                 <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
                     <div
                         className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary to-purple-200 opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
@@ -73,13 +75,15 @@ export default function LandingPage() {
                                     role="img"
                                 />
                                 <span 
-                                    className="text-2xl font-bold text-primary"
+                                    className="text-xl sm:text-2xl font-bold text-primary"
                                     aria-label="VintuSure brand name"
                                 >
                                     VintuSure
                                 </span>
                             </div>
-                            <div className="flex gap-4" role="group" aria-label="User actions">
+
+                            {/* Desktop Navigation */}
+                            <div className="hidden md:flex gap-4" role="group" aria-label="User actions">
                                 {/* Theme Switcher */}
                                 <Button
                                     variant="ghost"
@@ -141,26 +145,102 @@ export default function LandingPage() {
                                     </>
                                 )}
                             </div>
+
+                            {/* Mobile Menu Button */}
+                            <div className="md:hidden flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleTheme}
+                                    className="theme-switcher-button relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 p-0"
+                                    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                                >
+                                    <Sun 
+                                        className={cn(
+                                            "h-5 w-5",
+                                            theme === 'light' 
+                                                ? "text-primary" 
+                                                : "text-muted-foreground"
+                                        )}
+                                    />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    className="h-10 w-10"
+                                    aria-label="Toggle mobile menu"
+                                >
+                                    {isMobileMenuOpen ? (
+                                        <X className="h-5 w-5" />
+                                    ) : (
+                                        <Menu className="h-5 w-5" />
+                                    )}
+                                </Button>
+                            </div>
                         </div>
+
+                        {/* Mobile Menu */}
+                        {isMobileMenuOpen && (
+                            <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-sm">
+                                <div className="px-4 py-4 space-y-4">
+                                    {user ? (
+                                        <Button 
+                                            variant="purple" 
+                                            asChild
+                                            className="w-full"
+                                            aria-label="Go to user dashboard"
+                                        >
+                                            <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                                                Dashboard
+                                            </Link>
+                                        </Button>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <Button 
+                                                variant="ghost" 
+                                                asChild
+                                                className="w-full"
+                                                aria-label="Sign in to your account"
+                                            >
+                                                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                                    Sign In
+                                                </Link>
+                                            </Button>
+                                            <Button 
+                                                variant="purple" 
+                                                asChild
+                                                className="w-full"
+                                                aria-label="Create a new account"
+                                            >
+                                                <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                                                    Sign Up
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </nav>
 
                 {/* Main Content */}
                 <main 
                     id="main-content"
-                    className="mx-auto max-w-7xl py-32 sm:py-48 lg:py-56"
+                    className="mx-auto max-w-7xl py-24 sm:py-32 lg:py-48"
                     role="main"
                 >
-                    <div className="text-center">
+                    <div className="text-center px-4 sm:px-6 lg:px-8">
                         <h1 
-                            className="text-4xl font-bold tracking-tight text-primary sm:text-6xl animate-fade-in"
+                            className="text-3xl sm:text-4xl lg:text-6xl font-bold tracking-tight text-primary animate-fade-in"
                             role="heading"
                             aria-level={1}
                         >
                             AI-Powered Insurance Intelligence
                         </h1>
                         <p 
-                            className="mt-6 text-lg leading-8 text-muted-foreground animate-slide-in-from-bottom"
+                            className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-muted-foreground animate-slide-in-from-bottom max-w-3xl mx-auto"
                             role="text"
                             aria-describedby="hero-description"
                         >
@@ -168,7 +248,7 @@ export default function LandingPage() {
                             services to insurance companies, enhancing their knowledge management and customer support capabilities.
                         </p>
                         <div 
-                            className="mt-10 flex items-center justify-center gap-x-6 animate-bounce-in"
+                            className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 animate-bounce-in"
                             role="group"
                             aria-label="Get started options"
                         >
@@ -177,10 +257,10 @@ export default function LandingPage() {
                                     variant="purple" 
                                     size="lg" 
                                     asChild 
-                                    className="btn-primary group"
+                                    className="btn-primary group w-full sm:w-auto"
                                     aria-label="Access your VintuSure dashboard"
                                 >
-                                    <Link to="/dashboard" className="flex items-center gap-2">
+                                    <Link to="/dashboard" className="flex items-center justify-center gap-2">
                                         <Building2 
                                             className="h-5 w-5 transition-transform group-hover:scale-110" 
                                             aria-hidden="true" 
@@ -194,10 +274,10 @@ export default function LandingPage() {
                                         variant="purple" 
                                         size="lg" 
                                         asChild 
-                                        className="btn-primary group"
+                                        className="btn-primary group w-full sm:w-auto"
                                         aria-label="Sign in as an insurance agent"
                                     >
-                                        <Link to="/login" className="flex items-center gap-2">
+                                        <Link to="/login" className="flex items-center justify-center gap-2">
                                             <Building2 
                                                 className="h-5 w-5 transition-transform group-hover:scale-110" 
                                                 aria-hidden="true" 
@@ -209,10 +289,10 @@ export default function LandingPage() {
                                         variant="outline" 
                                         size="lg" 
                                         asChild 
-                                        className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                                        className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 w-full sm:w-auto"
                                         aria-label="Explore VintuSure as a customer"
                                     >
-                                        <Link to="/explore" className="flex items-center gap-2">
+                                        <Link to="/explore" className="flex items-center justify-center gap-2">
                                             <User 
                                                 className="h-5 w-5 transition-transform group-hover:scale-110" 
                                                 aria-hidden="true" 
@@ -228,26 +308,26 @@ export default function LandingPage() {
 
                 {/* Features Section */}
                 <section 
-                    className="mx-auto max-w-7xl px-6 lg:px-8 py-24"
+                    className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24"
                     role="region"
                     aria-labelledby="features-heading"
                 >
                     <h2 
                         id="features-heading"
-                        className="text-3xl font-bold text-center mb-12 text-primary"
+                        className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-primary"
                         role="heading"
                         aria-level={2}
                     >
                         Why Choose VintuSure for Your Insurance Business?
                     </h2>
                     <div 
-                        className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8"
                         role="list"
                         aria-label="VintuSure platform features"
                     >
                         {/* Feature 1 */}
                         <div 
-                            className="rounded-xl border bg-card p-6 hover-card-effect animate-slide-in-stagger"
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
                             role="listitem"
                             tabIndex={0}
                             aria-describedby="feature-1-desc"
@@ -257,10 +337,10 @@ export default function LandingPage() {
                                     className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
                                     aria-hidden="true"
                                 >
-                                    <Shield className="h-12 w-12 text-primary" />
+                                    <Shield className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
                                 <h3 
-                                    className="text-xl font-semibold text-primary mb-3"
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
                                     role="heading"
                                     aria-level={3}
                                 >
@@ -268,7 +348,7 @@ export default function LandingPage() {
                                 </h3>
                                 <p 
                                     id="feature-1-desc"
-                                    className="text-muted-foreground leading-relaxed"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
                                 >
                                     State-of-the-art Retrieval-Augmented Generation for intelligent document processing and knowledge retrieval.
                                 </p>
@@ -277,7 +357,7 @@ export default function LandingPage() {
 
                         {/* Feature 2 */}
                         <div 
-                            className="rounded-xl border bg-card p-6 hover-card-effect animate-slide-in-stagger"
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
                             role="listitem"
                             tabIndex={0}
                             aria-describedby="feature-2-desc"
@@ -287,10 +367,10 @@ export default function LandingPage() {
                                     className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
                                     aria-hidden="true"
                                 >
-                                    <Car className="h-12 w-12 text-primary" />
+                                    <Car className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
                                 <h3 
-                                    className="text-xl font-semibold text-primary mb-3"
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
                                     role="heading"
                                     aria-level={3}
                                 >
@@ -298,7 +378,7 @@ export default function LandingPage() {
                                 </h3>
                                 <p 
                                     id="feature-2-desc"
-                                    className="text-muted-foreground leading-relaxed"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
                                 >
                                     Comprehensive platform supporting various insurance types and company needs.
                                 </p>
@@ -307,7 +387,7 @@ export default function LandingPage() {
 
                         {/* Feature 3 */}
                         <div 
-                            className="rounded-xl border bg-card p-6 hover-card-effect animate-slide-in-stagger"
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
                             role="listitem"
                             tabIndex={0}
                             aria-describedby="feature-3-desc"
@@ -317,10 +397,10 @@ export default function LandingPage() {
                                     className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
                                     aria-hidden="true"
                                 >
-                                    <Brain className="h-12 w-12 text-primary" />
+                                    <Brain className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
                                 <h3 
-                                    className="text-xl font-semibold text-primary mb-3"
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
                                     role="heading"
                                     aria-level={3}
                                 >
@@ -328,7 +408,7 @@ export default function LandingPage() {
                                 </h3>
                                 <p 
                                     id="feature-3-desc"
-                                    className="text-muted-foreground leading-relaxed"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
                                 >
                                     Intelligent AI assistance for enhanced customer service and operational efficiency.
                                 </p>
@@ -337,7 +417,7 @@ export default function LandingPage() {
 
                         {/* Feature 4 */}
                         <div 
-                            className="rounded-xl border bg-card p-6 hover-card-effect animate-slide-in-stagger"
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
                             role="listitem"
                             tabIndex={0}
                             aria-describedby="feature-4-desc"
@@ -347,10 +427,10 @@ export default function LandingPage() {
                                     className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
                                     aria-hidden="true"
                                 >
-                                    <TrendingUp className="h-12 w-12 text-primary" />
+                                    <TrendingUp className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
                                 <h3 
-                                    className="text-xl font-semibold text-primary mb-3"
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
                                     role="heading"
                                     aria-level={3}
                                 >
@@ -358,7 +438,7 @@ export default function LandingPage() {
                                 </h3>
                                 <p 
                                     id="feature-4-desc"
-                                    className="text-muted-foreground leading-relaxed"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
                                 >
                                     Flexible and scalable platform that grows with your insurance business needs.
                                 </p>
@@ -369,14 +449,14 @@ export default function LandingPage() {
 
                 {/* Footer */}
                 <footer 
-                    className="border-t border-border bg-background/80 backdrop-blur-sm py-8"
+                    className="border-t border-border bg-background/80 backdrop-blur-sm py-8 sm:py-12"
                     role="contentinfo"
                     aria-label="Site footer"
                 >
-                    <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                        <div className="flex flex-col md:flex-row items-center justify-between">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
                             <div 
-                                className="flex items-center space-x-2 mb-4 md:mb-0"
+                                className="flex items-center space-x-2"
                                 role="group"
                                 aria-label="VintuSure branding"
                             >
@@ -387,14 +467,14 @@ export default function LandingPage() {
                                     role="img"
                                 />
                                 <span 
-                                    className="text-lg font-semibold text-primary"
+                                    className="text-base sm:text-lg font-semibold text-primary"
                                     aria-label="VintuSure company name"
                                 >
                                     VintuSure
                                 </span>
                             </div>
                             <div 
-                                className="text-sm text-muted-foreground"
+                                className="text-sm text-muted-foreground text-center sm:text-left"
                                 role="text"
                                 aria-label="Copyright information"
                             >

@@ -14,7 +14,7 @@ const defaultSEO = {
   title: 'VintuSure - AI-Powered Insurance Intelligence Platform',
   description: 'VintuSure is an AI-powered platform that provides advanced RAG (Retrieval-Augmented Generation) services to insurance companies, enhancing knowledge management and customer support capabilities.',
   keywords: 'AI insurance, insurance technology, RAG, artificial intelligence, customer support, knowledge management, insurance platform, insurtech, Zambia insurance',
-  image: '/images/vintusure-og-image.png',
+  image: '/images/vintusure-logo-192.png',
   url: 'https://vintusure.web.app',
 };
 

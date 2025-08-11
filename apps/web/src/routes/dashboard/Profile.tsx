@@ -1,234 +1,171 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { User, UserRole } from '@/types/auth';
-import { 
-  User as UserIcon, 
-  Mail, 
-  Phone, 
-  Building, 
-  CreditCard, 
-  MapPin, 
-  Edit,
-  Shield,
-  Calendar,
-  FileText
-} from 'lucide-react';
-import ProfileEditModal from '@/components/auth/ProfileEditModal';
+import { useState } from 'react'
+import { useAuthContext } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Edit, UserIcon } from 'lucide-react'
+import ProfileEditModal from '@/components/auth/ProfileEditModal'
 
 export default function ProfilePage() {
-  const { user } = useAuthContext();
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { user } = useAuthContext()
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'destructive'
+      case 'agent':
+        return 'default'
+      case 'customer':
+        return 'secondary'
+      default:
+        return 'outline'
+    }
+  }
 
   if (!user) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Loading profile...</p>
       </div>
-    );
+    )
   }
 
-  const getRoleBadgeVariant = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive';
-      case 'agent':
-        return 'default';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const formatDate = (date: Date | string) => {
-    if (typeof date === 'string') {
-      return new Date(date).toLocaleDateString();
-    }
-    return date.toLocaleDateString();
-  };
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-          <p className="text-gray-600 mt-1">Manage your account information</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage your account information</p>
         </div>
-        <Button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2">
+        <Button onClick={() => setIsEditModalOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
           <Edit className="h-4 w-4" />
           Edit Profile
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Profile Overview */}
         <div className="lg:col-span-1">
           <Card>
             <CardHeader className="text-center">
-              <div className="mx-auto w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <UserIcon className="h-12 w-12 text-primary" />
+              <div className="mx-auto w-20 h-20 sm:w-24 sm:h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <UserIcon className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
               </div>
-              <CardTitle className="text-xl">
+              <CardTitle className="text-lg sm:text-xl">
                 {user.firstName} {user.lastName}
               </CardTitle>
-              <CardDescription>{user.email}</CardDescription>
-              <Badge variant={getRoleBadgeVariant(user.role)} className="mt-2">
+              <CardDescription className="text-sm sm:text-base">{user.email}</CardDescription>
+              <Badge variant={getRoleBadgeVariant(user.role)} className="mt-2 text-xs sm:text-sm">
                 {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  {user.phone || 'No phone number'}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Building className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  {user.insuranceCompany || 'No company specified'}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  {user.employeeId || 'No employee ID'}
-                </span>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Member since</p>
+                <p className="font-medium text-sm sm:text-base">
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Detailed Information */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Professional Information */}
+        {/* Profile Details */}
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          {/* Personal Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Professional Information
-              </CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Personal Information</CardTitle>
+              <CardDescription>Your basic profile details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Role</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </p>
+                  <label className="text-sm font-medium text-muted-foreground">First Name</label>
+                  <p className="text-sm sm:text-base font-medium mt-1">{user.firstName || 'Not provided'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Department</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {user.department || 'Not specified'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Employee ID</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {user.employeeId || 'Not specified'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Insurance Company</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {user.insuranceCompany || 'Not specified'}
-                  </p>
+                  <label className="text-sm font-medium text-muted-foreground">Last Name</label>
+                  <p className="text-sm sm:text-base font-medium mt-1">{user.lastName || 'Not provided'}</p>
                 </div>
               </div>
-              
-              {user.bio && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Bio</label>
-                  <p className="text-sm text-gray-900 mt-1">{user.bio}</p>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Email Address</label>
+                <p className="text-sm sm:text-base font-medium mt-1">{user.email}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+                <p className="text-sm sm:text-base font-medium mt-1">{user.phone || 'Not provided'}</p>
+              </div>
             </CardContent>
           </Card>
-
-          {/* Address Information */}
-          {user.address && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Address Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Street Address</label>
-                  <p className="text-sm text-gray-900 mt-1">{user.address.street}</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">City</label>
-                    <p className="text-sm text-gray-900 mt-1">{user.address.city}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Province</label>
-                    <p className="text-sm text-gray-900 mt-1">{user.address.province}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Postal Code</label>
-                    <p className="text-sm text-gray-900 mt-1">{user.address.postalCode}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Account Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Account Information
-              </CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Account Information</CardTitle>
+              <CardDescription>Your account settings and preferences</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Email</label>
-                  <p className="text-sm text-gray-900 mt-1">{user.email}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Account Role</label>
+                  <p className="text-sm sm:text-base font-medium mt-1 capitalize">{user.role}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Account Created</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {formatDate(user.createdAt)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Last Updated</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {formatDate(user.updatedAt)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Profile Status</label>
-                  <div className="mt-1">
-                    <Badge variant={user.profileCompleted ? 'default' : 'secondary'}>
+                  <label className="text-sm font-medium text-muted-foreground">Account Status</label>
+                  <p className="text-sm sm:text-base font-medium mt-1">
+                    <Badge variant={user.profileCompleted ? 'default' : 'secondary'} className="text-xs">
                       {user.profileCompleted ? 'Complete' : 'Incomplete'}
                     </Badge>
-                  </div>
+                  </p>
                 </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
+                <p className="text-sm sm:text-base font-medium mt-1">
+                  {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : 'N/A'}
+                </p>
               </div>
             </CardContent>
           </Card>
+
+          {/* Additional Information */}
+          {user.company && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Company Information</CardTitle>
+                <CardDescription>Your business details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Company Name</label>
+                    <p className="text-sm sm:text-base font-medium mt-1">{user.company}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Position</label>
+                    <p className="text-sm sm:text-base font-medium mt-1">{user.position || 'Not specified'}</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Company Address</label>
+                  <p className="text-sm sm:text-base font-medium mt-1">{user.address || 'Not provided'}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Profile Edit Modal */}
       <ProfileEditModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         user={user}
       />
     </div>
-  );
+  )
 }
