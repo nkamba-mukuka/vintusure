@@ -10,12 +10,12 @@ import { customerService } from '@/lib/services/customerService';
 import { claimService } from '@/lib/services/claimService';
 
 import VintuSureAIEmbed from '@/components/ai/VintuSureAIEmbed';
-import { 
-  Users, 
-  FileText, 
-  Shield, 
+import {
+  Users,
+  FileText,
+  Shield,
   AlertCircle,
-  Brain
+  Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +72,7 @@ export default function DashboardPage() {
       icon: FileText,
       link: '/claims/new',
     },
+
   ];
 
   return (
@@ -196,7 +197,7 @@ export default function DashboardPage() {
                       <div key={policy.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{policy.policyNumber}</p>
-                          <p className="text-xs text-muted-foreground truncate">{policy.customerName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{policy.type}</p>
                         </div>
                         <Badge variant="secondary" className="text-xs">
                           {policy.status}

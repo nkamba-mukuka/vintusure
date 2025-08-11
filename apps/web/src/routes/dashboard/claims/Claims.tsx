@@ -12,10 +12,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { 
-    Plus, 
-    Search, 
-    MessageCircle, 
+import {
+    Plus,
+    Search,
+    MessageCircle,
     FileText,
     AlertCircle,
     CheckCircle,
@@ -43,11 +43,10 @@ export default function ClaimsPage() {
     // User-specific claims data
     const { data: claimsData, isLoading: claimsLoading, error: claimsError } = useQuery({
         queryKey: ['claims', user?.uid, searchTerm, statusFilter, currentPage],
-        queryFn: () => claimService.list({ 
+        queryFn: () => claimService.list({
             userId: user?.uid,
-            searchTerm: searchTerm || undefined,
-            status: statusFilter as any || undefined
-        }, 10),
+            limit: 10,
+        }),
         enabled: !!user?.uid,
         retry: 1
     })
@@ -76,7 +75,7 @@ export default function ClaimsPage() {
         try {
             const result = await RAGService.askQuestion(aiQuery, user?.uid)
             setAiResponse(result)
-            
+
             if (result.success) {
                 toast({
                     title: 'Success',
@@ -279,7 +278,7 @@ export default function ClaimsPage() {
                                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No claims found</h3>
                                 <p className="text-gray-600 mb-6">
-                                    {searchTerm || statusFilter 
+                                    {searchTerm || statusFilter
                                         ? 'Try adjusting your filters to see more results.'
                                         : 'Get started by creating your first claim.'
                                     }

@@ -1,46 +1,56 @@
-import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import ClaimForm from '@/components/claims/ClaimForm';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { claimService } from '@/lib/services/claimService';
-import LoadingState from '@/components/LoadingState';
+import ClaimForm from '@/components/claims/ClaimForm';
+import { Claim } from '@/types/claim';
 
-export default function EditClaimPage() {
+export default function EditClaim() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const { toast } = useToast();
+    const [claim, setClaim] = useState<Claim | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const { data: claim, isLoading } = useQuery({
-        queryKey: ['claim', id],
-        queryFn: () => claimService.getById(id!),
-        enabled: !!id,
-    });
+    useEffect(() => {
+        const loadClaim = async () => {
+            if (!id) return;
+
+            try {
+                const claimData = await claimService.get(id);
+                setClaim(claimData);
+            } catch (error) {
+                console.error('Error loading claim:', error);
+                toast({
+                    title: 'Error',
+                    description: 'Failed to load claim',
+                    variant: 'destructive',
+                });
+                navigate('/claims');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadClaim();
+    }, [id, navigate, toast]);
 
     if (isLoading) {
-        return <LoadingState />;
+        return <div>Loading...</div>;
     }
 
-    if (!claim || !id) {
-        return (
-            <div className="py-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Claim Not Found</h1>
-                    <p className="mt-2 text-gray-600">
-                        The claim you're looking for doesn't exist or you don't have permission to view it.
-                    </p>
-                </div>
-            </div>
-        );
+    if (!claim) {
+        return <div>Claim not found</div>;
     }
 
     return (
-        <div className="py-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 className="text-3xl font-bold text-gray-900">Edit Claim</h1>
-                <p className="mt-2 text-gray-600">
-                    Update claim information
-                </p>
-                <div className="mt-8">
-                    <ClaimForm initialData={claim} />
-                </div>
-            </div>
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Edit Claim</h2>
+            <ClaimForm
+                initialData={claim}
+                onCancel={() => navigate('/claims')}
+                onSuccess={() => navigate('/claims')}
+            />
         </div>
     );
 }

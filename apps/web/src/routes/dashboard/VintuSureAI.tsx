@@ -6,20 +6,103 @@ import { Badge } from '../../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { RAGService, QueryResponse } from '../../lib/services/ragService';
 import { useToast } from '../../hooks/use-toast';
-import { Brain, Car, Sparkles, Activity, MessageCircle, Send } from 'lucide-react';
+import { Brain, Car, Sparkles, MessageCircle, Send, Users, FileText, ClipboardList } from 'lucide-react';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 import AIContentGenerator from '../../components/ai/AIContentGenerator';
 import CarPhotoAnalyzer from '../../components/car/CarPhotoAnalyzer';
+
+type QueryType = 'general' | 'customers' | 'policies' | 'claims' | 'documents';
+
+interface QueryPattern {
+  type: QueryType;
+  patterns: RegExp[];
+  examples: string[];
+}
+
+const queryPatterns: QueryPattern[] = [
+  {
+    type: 'policies',
+    patterns: [
+      /policy.*(?:active|status|expired)/i,
+      /(?:active|expired).*policy/i,
+      /policy.*number/i,
+      /coverage.*(?:details|information)/i,
+      /(?:renew|cancel).*policy/i
+    ],
+    examples: [
+      "Is John Doe's policy active?",
+      "What's the status of policy POL-123?",
+      "Show coverage details for vehicle ABC123"
+    ]
+  },
+  {
+    type: 'customers',
+    patterns: [
+      /customer.*(?:details|information|profile)/i,
+      /(?:find|show|get).*customer/i,
+      /customer.*history/i,
+      /contact.*(?:details|information)/i
+    ],
+    examples: [
+      "Show customer details for John Doe",
+      "Find customers in Lusaka",
+      "Get customer contact information"
+    ]
+  },
+  {
+    type: 'claims',
+    patterns: [
+      /claim.*(?:status|progress|update)/i,
+      /(?:file|submit|process).*claim/i,
+      /claim.*number/i,
+      /accident.*(?:report|details)/i
+    ],
+    examples: [
+      "What's the status of claim CLM-123?",
+      "Show recent claims for John Doe",
+      "Find claims filed last month"
+    ]
+  },
+  {
+    type: 'documents',
+    patterns: [
+      /document.*(?:upload|status|type)/i,
+      /(?:find|show|get).*document/i,
+      /(?:policy|claim).*document/i,
+      /(?:upload|download).*(?:file|document)/i
+    ],
+    examples: [
+      "Show policy documents for POL-123",
+      "Find documents uploaded last week",
+      "Get claim supporting documents"
+    ]
+  }
+];
 
 const VintuSureAI: React.FC = () => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<QueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [healthStatus, setHealthStatus] = useState<string>('unknown');
   const [activeView, setActiveView] = useState<'rag' | 'content-generator' | 'car-analyzer'>('rag');
+  const [queryType, setQueryType] = useState<'general' | 'customers' | 'policies' | 'claims' | 'documents'>('general');
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
-  const handleAskQuestion = async () => {
+  // Function to determine query type based on content
+  const detectQueryType = (query: string): 'general' | 'customers' | 'policies' | 'claims' | 'documents' => {
+    const lowerQuery = query.toLowerCase();
+
+    for (const pattern of queryPatterns) {
+      if (pattern.patterns.some(p => p.test(lowerQuery))) {
+        return pattern.type;
+      }
+    }
+
+    return 'general';
+  };
+
+  const handleQuery = async () => {
     if (!query.trim()) {
       toast({
         title: 'Error',
@@ -31,13 +114,34 @@ const VintuSureAI: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const result = await RAGService.askQuestion(query);
+      // Detect query type if not explicitly set
+      const effectiveQueryType = queryType === 'general' ? detectQueryType(query) : queryType;
+      let result: QueryResponse;
+
+      // Use appropriate RAG function based on query type
+      switch (effectiveQueryType) {
+        case 'policies':
+          result = await RAGService.queryPoliciesData(query, user?.uid);
+          break;
+        case 'customers':
+          result = await RAGService.queryCustomerData(query, user?.uid);
+          break;
+        case 'claims':
+          result = await RAGService.queryClaimsData(query, user?.uid);
+          break;
+        case 'documents':
+          result = await RAGService.queryDocumentsData(query, user?.uid);
+          break;
+        default:
+          result = await RAGService.askQuestion(query, user?.uid);
+      }
+
       setResponse(result);
-      
+
       if (result.success) {
         toast({
           title: 'Success',
-          description: 'Response generated successfully',
+          description: `Found ${result.similarItemsCount || 0} relevant ${effectiveQueryType} matches`,
         });
       } else {
         toast({
@@ -47,10 +151,10 @@ const VintuSureAI: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error asking question:', error);
+      console.error('Error processing query:', error);
       toast({
         title: 'Error',
-        description: 'Failed to communicate with RAG service',
+        description: 'Failed to communicate with AI service',
         variant: 'destructive',
       });
     } finally {
@@ -58,302 +162,128 @@ const VintuSureAI: React.FC = () => {
     }
   };
 
-  const handleHealthCheck = async () => {
-    try {
-      const health = await RAGService.healthCheck();
-      setHealthStatus(health.status);
-      toast({
-        title: 'Health Check',
-        description: `Service is ${health.status}`,
-      });
-    } catch (error) {
-      setHealthStatus('unhealthy');
-      toast({
-        title: 'Health Check Failed',
-        description: 'Service is not responding',
-        variant: 'destructive',
-      });
-    }
+  // Render example queries based on current type
+  const renderExamples = () => {
+    const currentPattern = queryPatterns.find(p => p.type === queryType) || queryPatterns[0];
+    return (
+      <div className="mt-4">
+        <p className="text-sm text-muted-foreground mb-2">Example queries:</p>
+        <div className="flex flex-wrap gap-2">
+          {currentPattern.examples.map((example, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              size="sm"
+              onClick={() => setQuery(example)}
+              className="text-xs"
+            >
+              {example}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  const formatResponse = (text: string) => {
-    // Split by common title patterns and format them
-    const lines = text.split('\n');
-    return lines.map((line, index) => {
-      // Check if line looks like a title (starts with capital letters, ends with colon, or is all caps)
-      const isTitlePattern = /^[A-Z][^.!?]*:$|^[A-Z\s]+$|^\d+\.\s*[A-Z]/.test(line.trim());
-      const isSubheading = /^##?\s/.test(line.trim()) || /^\*\*.*\*\*$/.test(line.trim());
-      
-      if (isTitlePattern || isSubheading) {
-        return (
-          <h3 key={index} className="text-lg font-semibold text-primary mt-4 mb-2 first:mt-0">
-            {line.replace(/^##?\s|\*\*/g, '').trim()}
-          </h3>
-        );
-      }
-      
-      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
-        return (
-          <li key={index} className="ml-4 mb-1 text-foreground">
-            {line.replace(/^[•\-*]\s*/, '')}
-          </li>
-        );
-      }
-      
-      if (line.trim()) {
-        return (
-          <p key={index} className="mb-3 text-foreground leading-relaxed">
-            {line}
-          </p>
-        );
-      }
-      
-      return <br key={index} />;
-    });
-  };
-
-  const sidebarItems = [
-    {
-      id: 'rag',
-      name: 'RAG Assistant',
-      icon: MessageCircle,
-      description: 'Ask questions and get AI-powered answers',
-    },
-    {
-      id: 'content-generator',
-      name: 'Document Upload',
-      icon: Sparkles,
-      description: 'Upload documents for RAG system indexing',
-    },
-    {
-      id: 'car-analyzer',
-      name: 'Car Analyzer', 
-      icon: Car,
-      description: 'Analyze car photos for insurance assessment',
-    },
+  const queryTypeButtons = [
+    { type: 'general', icon: Brain, label: 'General' },
+    { type: 'customers', icon: Users, label: 'Customers' },
+    { type: 'claims', icon: ClipboardList, label: 'Claims' },
+    { type: 'policies', icon: FileText, label: 'Policies' },
+    { type: 'documents', icon: FileText, label: 'Documents' },
   ];
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Icon Menu */}
-        <div className="w-full flex justify-center p-4 pb-2">
-          <div className="flex space-x-4">
-            <TooltipProvider>
-              {sidebarItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Tooltip key={item.id}>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-6 w-6 text-primary" />
+            VintuSure AI Assistant
+          </CardTitle>
+          <CardDescription>
+            Ask questions about insurance, policies, claims, or get help with specific tasks
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Query Type Selection */}
+            <div className="flex flex-wrap gap-2">
+              {queryTypeButtons.map(({ type, icon: Icon, label }) => (
+                <TooltipProvider key={type}>
+                  <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setActiveView(item.id as any)}
-                        className={`p-3 rounded-xl transition-all duration-200 hover:bg-primary/10 hover:text-primary ${
-                          activeView === item.id
-                            ? 'bg-primary/20 text-primary shadow-md'
-                            : 'text-muted-foreground hover:text-primary'
-                        }`}
+                      <Button
+                        variant={queryType === type ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setQueryType(type as QueryType)}
+                        className="flex items-center gap-2"
                       >
-                        <Icon className="h-6 w-6" />
-                      </button>
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="mt-2">
-                      <div className="text-sm">
-                        <div className="font-medium text-foreground">{item.name}</div>
-                        <div className="text-muted-foreground">{item.description}</div>
-                      </div>
+                    <TooltipContent>
+                      <p>Switch to {label.toLowerCase()} queries</p>
                     </TooltipContent>
                   </Tooltip>
-                );
-              })}
-            </TooltipProvider>
-            
-            {/* Health Status */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleHealthCheck}
-                    className="p-3 rounded-xl hover:bg-muted transition-colors"
-                  >
-                    <Activity 
-                      className={`h-6 w-6 ${
-                        healthStatus === 'healthy' ? 'text-green-500' : 
-                        healthStatus === 'unhealthy' ? 'text-red-500' : 'text-muted-foreground'
-                      }`} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="mt-2">
-                  <div className="text-sm">
-                    <div className="font-medium text-foreground">System Health</div>
-                    <div className="text-muted-foreground">Status: {healthStatus}</div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
+                </TooltipProvider>
+              ))}
+            </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col rounded-lg">
-          {/* RAG Assistant View */}
-          {activeView === 'rag' && (
-            <div className="flex-1 flex flex-col px-6 pb-6">
-              {/* Centered Prompt Input */}
-              <div className="w-full max-w-4xl mx-auto mb-6">
-                <div className="flex items-center gap-4">
-                  <Textarea
-                    placeholder="Ask about insurance policies, claims, or any related topic..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    rows={3}
-                    disabled={isLoading}
-                    className="flex-1 resize-none border-2 border-primary/20 rounded-[20px] focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 bg-background text-foreground"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAskQuestion();
-                      }
-                    }}
-                  />
-                  <Button 
-                    onClick={handleAskQuestion} 
-                    disabled={isLoading || !query.trim()}
-                    className="h-12 w-12 rounded-full bg-primary hover:bg-primary/90 p-0 flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    {isLoading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground"></div>
-                    ) : (
-                      <Send className="h-5 w-5" />
-                    )}
-                  </Button>
-                </div>
+            {/* Query Input */}
+            <div className="space-y-2">
+              <Textarea
+                placeholder={`Ask a ${queryType} question...`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleQuery}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    'Processing...'
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Send Query
+                    </>
+                  )}
+                </Button>
               </div>
+            </div>
 
-              {/* Response Section */}
-              <div className="flex-1 w-full max-w-6xl mx-auto mb-6">
-                <Card className="h-full purple-card-effect">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 purple-header">
-                      <MessageCircle className="h-5 w-5 text-primary" />
-                      AI Response
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground">
-                      Generated response from the VintuSure knowledge base
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <div className="h-96 overflow-y-auto bg-muted/30 rounded-lg p-4">
-                      {isLoading ? (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                            <p className="text-muted-foreground">Generating response...</p>
-                          </div>
-                        </div>
-                      ) : response ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Badge variant={response.success ? 'default' : 'destructive'}>
-                              {response.success ? 'Success' : 'Error'}
-                            </Badge>
-                            {response.success && (
-                              <Badge variant="secondary">
-                                {response.answer?.length || 0} characters
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          {response.success && response.answer ? (
-                            <div className="prose max-w-none dark:prose-invert">
-                              {formatResponse(response.answer)}
-                            </div>
-                          ) : (
-                            <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                              <p className="text-destructive font-medium">
-                                {response.error || 'No response generated'}
-                              </p>
-                              {response.details && (
-                                <p className="text-sm text-destructive/80 mt-2">
-                                  Details: {response.details}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                          <div className="text-center">
-                            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-                            <p className="text-lg font-medium">Ready to assist you</p>
-                            <p>Ask a question to get started</p>
-                          </div>
-                        </div>
-                      )}
+            {/* Response Display */}
+            {response && (
+              <div className="mt-4 space-y-2">
+                <div className="rounded-lg border p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageCircle className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Response:</span>
+                  </div>
+                  <p className="whitespace-pre-wrap">{response.answer}</p>
+                  {response.sources && response.sources.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold mb-2">Sources:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {response.sources.map((source, index) => (
+                          <Badge key={index} variant="secondary">
+                            {source}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Example Queries */}
-              <div className="w-full max-w-6xl mx-auto">
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Quick Questions</h3>
-                    <p className="text-muted-foreground text-sm">Try these example questions to test the system</p>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {[
-                      "What is the process for filing an insurance claim?",
-                      "How do I calculate premium rates for auto insurance?",
-                      "What documents are required for policy renewal?",
-                      "What are the different types of insurance coverage?",
-                      "How long does it take to process a claim?",
-                      "What factors affect insurance premium calculations?"
-                    ].map((example, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="justify-start text-left h-auto p-4 text-sm hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
-                        onClick={() => setQuery(example)}
-                        disabled={isLoading}
-                      >
-                        {example}
-                      </Button>
-                    ))}
-                  </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Content Generator View */}
-          {activeView === 'content-generator' && (
-            <div className="flex-1 px-6 pb-6">
-              <div className="max-w-4xl mx-auto">
-                <AIContentGenerator />
-              </div>
-            </div>
-          )}
-
-          {/* Car Analyzer View */}
-          {activeView === 'car-analyzer' && (
-            <div className="flex-1 px-6 pb-6">
-              <div className="max-w-4xl mx-auto">
-                <CarPhotoAnalyzer
-                  onAnalysisComplete={(result) => {
-                    console.log('Analysis complete:', result);
-                  }}
-                  onAnalysisError={(error) => {
-                    console.error('Analysis error:', error);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

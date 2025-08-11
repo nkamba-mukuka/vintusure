@@ -1,130 +1,103 @@
 import { db } from '@/lib/firebase/config';
-import {
-    collection,
-    query,
-    where,
-    orderBy,
-    limit,
-    startAfter,
-    getDocs,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    deleteDoc,
-    serverTimestamp,
-    getCountFromServer,
-    addDoc,
-    Timestamp,
-} from 'firebase/firestore';
-import type { Customer, CustomerFormData, CustomerFilters } from '@/types/customer';
-
-const COLLECTION_NAME = 'customers';
-const PAGE_SIZE = 10;
-
-function convertTimestampsToDate(data: any): any {
-    if (data instanceof Timestamp) {
-        return data.toDate();
-    }
-    if (Array.isArray(data)) {
-        return data.map(convertTimestampsToDate);
-    }
-    if (data && typeof data === 'object') {
-        return Object.keys(data).reduce((result, key) => {
-            result[key] = convertTimestampsToDate(data[key]);
-            return result;
-        }, {} as any);
-    }
-    return data;
-}
+import { doc, collection, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
+import { Customer } from '@/types/customer';
 
 export const customerService = {
-    async list(filters: CustomerFilters = {}) {
-        const { searchTerm, sortBy = 'firstName', sortOrder = 'asc', userId } = filters;
-        const customersRef = collection(db, COLLECTION_NAME);
-
-        let q = query(customersRef, orderBy(sortBy, sortOrder), limit(PAGE_SIZE));
-
-        // Always filter by user for user-specific data access
-        if (userId) {
-            q = query(q, where('createdBy', '==', userId));
-        }
-
-        if (searchTerm) {
-            q = query(q, where('searchableText', '>=', searchTerm.toLowerCase()));
-        }
-
-        const [snapshot, countSnapshot] = await Promise.all([
-            getDocs(q),
-            getCountFromServer(customersRef)
-        ]);
-
-        const customers = snapshot.docs.map(doc => {
-            const data = convertTimestampsToDate(doc.data());
-            return {
-                id: doc.id,
-                ...data,
-            } as Customer;
-        });
-
-        return {
-            customers,
-            total: countSnapshot.data().count,
-            lastDoc: snapshot.docs[snapshot.docs.length - 1]
-        };
-    },
-
     async create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'>, userId: string): Promise<Customer> {
         const customerData = {
             ...data,
-            createdBy: userId, // Add the authenticated user's ID
-            agent_id: userId, // Add agent_id field for tracking which agent created the customer
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: userId,
+            agent_id: userId,
         };
 
-        const docRef = await addDoc(collection(db, COLLECTION_NAME), customerData);
-
+        const docRef = await addDoc(collection(db, 'customers'), customerData);
         return {
             ...customerData,
             id: docRef.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
         } as Customer;
     },
 
-    async update(id: string, data: Partial<CustomerFormData>): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        await updateDoc(docRef, {
-            ...data,
-            updatedAt: serverTimestamp(),
-        });
-    },
-
-    async delete(id: string): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        await deleteDoc(docRef);
-    },
-
-    async getById(id: string): Promise<Customer | null> {
-        const docRef = doc(db, COLLECTION_NAME, id);
+    async get(id: string): Promise<Customer> {
+        const docRef = doc(db, 'customers', id);
         const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists()) {
-            return null;
+            throw new Error('Customer not found');
         }
 
         return {
+            ...docSnap.data(),
             id: docSnap.id,
-            ...convertTimestampsToDate(docSnap.data()),
         } as Customer;
     },
 
-    async setStatus(id: string, status: Customer['status']): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        await updateDoc(docRef, {
-            status,
-            updatedAt: serverTimestamp(),
-        });
+    // Alias for get to maintain compatibility
+    async getById(id: string): Promise<Customer> {
+        return this.get(id);
+    },
+
+    async list(params?: {
+        userId?: string;
+        lastDoc?: DocumentSnapshot;
+        limit?: number;
+    }): Promise<{ customers: Customer[]; total: number; lastDoc?: DocumentSnapshot }> {
+        const queryConstraints = [];
+
+        if (params?.userId) {
+            queryConstraints.push(where('agent_id', '==', params.userId));
+        }
+
+        queryConstraints.push(orderBy('createdAt', 'desc'));
+
+        if (params?.limit) {
+            queryConstraints.push(limit(params.limit));
+        }
+
+        if (params?.lastDoc) {
+            queryConstraints.push(startAfter(params.lastDoc));
+        }
+
+        const q = query(collection(db, 'customers'), ...queryConstraints);
+        const querySnapshot = await getDocs(q);
+
+        // Get total count
+        const totalQuery = query(collection(db, 'customers'),
+            params?.userId ? where('agent_id', '==', params.userId) : where('agent_id', '!=', null)
+        );
+        const totalSnapshot = await getDocs(totalQuery);
+
+        const customers = querySnapshot.docs.map(doc => ({
+            ...doc.data(),
+            id: doc.id,
+        })) as Customer[];
+
+        return {
+            customers,
+            total: totalSnapshot.size,
+            lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1],
+        };
+    },
+
+    async update(id: string, data: Partial<Customer>): Promise<Customer> {
+        const docRef = doc(db, 'customers', id);
+        const updateData = {
+            ...data,
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateDoc(docRef, updateData);
+
+        const updatedDoc = await getDoc(docRef);
+        return {
+            ...updatedDoc.data(),
+            id: updatedDoc.id,
+        } as Customer;
+    },
+
+    async delete(id: string): Promise<void> {
+        const docRef = doc(db, 'customers', id);
+        await deleteDoc(docRef);
     },
 }; 

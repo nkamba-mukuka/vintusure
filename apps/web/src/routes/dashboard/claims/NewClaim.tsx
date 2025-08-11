@@ -1,18 +1,16 @@
-import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import ClaimForm from '@/components/claims/ClaimForm';
 
-export default function NewClaimPage() {
+export default function NewClaim() {
+    const navigate = useNavigate();
+
     return (
-        <div className="py-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 className="text-3xl font-bold text-gray-900">New Claim</h1>
-                <p className="mt-2 text-gray-600">
-                    Submit a new insurance claim
-                </p>
-                <div className="mt-8">
-                    <ClaimForm />
-                </div>
-            </div>
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold">New Claim</h2>
+            <ClaimForm
+                onCancel={() => navigate('/claims')}
+                onSuccess={() => navigate('/claims')}
+            />
         </div>
     );
 }
