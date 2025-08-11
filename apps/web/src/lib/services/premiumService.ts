@@ -47,11 +47,14 @@ export const premiumService = {
     },
 
     // Helper function to format currency
-    formatCurrency(amount: number, currency: string = 'ZMW'): string {
-        return amount.toLocaleString('en-ZM', {
+    formatCurrency: (amount: number | null): string => {
+        if (amount === null) return 'Not Found';
+        return new Intl.NumberFormat('en-ZM', {
             style: 'currency',
-            currency,
-        });
+            currency: 'ZMW',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
     },
 
     // Helper function to calculate percentage

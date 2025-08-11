@@ -1,160 +1,499 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from "react-router-dom"
 import { useAuthContext } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
-import { Shield, Car, Users, FileText, TrendingUp, User, Building2 } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
+import { Button } from "@/components/ui/button"
+import { Shield, Car, TrendingUp, User, Building2, Brain, Sun, Moon, Menu, X } from 'lucide-react'
 import vintusureLogo from '@/assets/vintusure-logo.ico'
+import SEO, { createOrganizationSchema, createWebPageSchema, createSoftwareApplicationSchema } from '@/components/SEO'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 export default function LandingPage() {
     const { user } = useAuthContext()
+    const { theme, toggleTheme } = useTheme()
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+    // Structured data for better SEO
+    const organizationSchema = createOrganizationSchema()
+    const webPageSchema = createWebPageSchema(
+        "VintuSure - AI-Powered Insurance Intelligence Platform",
+        "Advanced RAG technology for insurance companies in Zambia. Enhance your knowledge management and customer support with AI-powered solutions.",
+        "/"
+    )
+    const softwareApplicationSchema = createSoftwareApplicationSchema()
+
+    // Combine all structured data
+    const combinedStructuredData = {
+        "@context": "https://schema.org",
+        "@graph": [organizationSchema, webPageSchema, softwareApplicationSchema]
+    }
 
     return (
-        <div className="min-h-screen relative overflow-hidden">
-            {/* Apple-style liquid glass background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-                {/* Animated background elements */}
-                <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute top-1/2 right-0 w-96 h-96 bg-gradient-to-r from-indigo-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-                <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
-            </div>
+        <div className="min-h-screen bg-background">
+            <SEO
+                title="AI-Powered Insurance Intelligence Platform"
+                description="VintuSure provides advanced RAG (Retrieval-Augmented Generation) services to insurance companies in Zambia, enhancing knowledge management and customer support capabilities with cutting-edge AI technology."
+                keywords="AI insurance platform, insurance technology Zambia, RAG insurance, artificial intelligence insurance, customer support automation, insurance knowledge management, insurtech Zambia, insurance AI assistant, document processing insurance, insurance chatbot"
+                url="/"
+                type="website"
+                structuredData={combinedStructuredData}
+                image="/images/vintusure-hero-image.png"
+            />
+            {/* Hero Section */}
+            <div className="relative isolate px-4 sm:px-6 lg:px-8 pt-14">
+                <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
+                    <div
+                        className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary to-purple-200 opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
+                        style={{
+                            clipPath:
+                                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+                        }}
+                    />
+                </div>
 
-            {/* Content */}
-            <div className="relative z-10 min-h-screen flex flex-col">
                 {/* Navigation */}
-                <nav className="flex items-center justify-between p-6 lg:px-8">
-                    <div className="flex items-center space-x-2">
-                        <img src={vintusureLogo} alt="VintuSure Logo" className="h-8 w-8" />
-                        <span className="text-2xl font-bold text-gray-800">VintuSure</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                        {user ? (
-                            <Link to="/dashboard">
-                                <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700">
-                                    Dashboard
+                <nav 
+                    className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border"
+                    role="navigation"
+                    aria-label="Main navigation"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex h-16 items-center justify-between">
+                            {/* Skip to main content link for screen readers */}
+                            <a 
+                                href="#main-content"
+                                className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary text-primary-foreground px-4 py-2 rounded-md z-50"
+                            >
+                                Skip to main content
+                            </a>
+                            
+                            <div className="flex items-center space-x-2">
+                                <img 
+                                    src={vintusureLogo} 
+                                    alt="VintuSure company logo" 
+                                    className="h-8 w-8"
+                                    role="img"
+                                />
+                                <span 
+                                    className="text-xl sm:text-2xl font-bold text-primary"
+                                    aria-label="VintuSure brand name"
+                                >
+                                    VintuSure
+                                </span>
+                            </div>
+
+                            {/* Desktop Navigation */}
+                            <div className="hidden md:flex gap-4" role="group" aria-label="User actions">
+                                {/* Theme Switcher */}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleTheme}
+                                    className="theme-switcher-button relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 p-0 hover:shadow-md hover:shadow-primary/25 group"
+                                    title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                                    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                                >
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                        {/* Sun Icon */}
+                                        <Sun 
+                                            className={cn(
+                                                "theme-switcher-icon h-5 w-5 absolute",
+                                                theme === 'light' 
+                                                    ? "active text-primary" 
+                                                    : "inactive text-muted-foreground"
+                                            )}
+                                        />
+                                        {/* Moon Icon */}
+                                        <Moon 
+                                            className={cn(
+                                                "theme-switcher-icon h-5 w-5 absolute",
+                                                theme === 'dark' 
+                                                    ? "active text-primary" 
+                                                    : "inactive text-muted-foreground"
+                                            )}
+                                        />
+                                    </div>
+                                    
+                                    {/* Hover effect ring */}
+                                    <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-primary/30 transition-all duration-200" />
                                 </Button>
-                            </Link>
-                        ) : (
-                            <>
-                                <Link to="/login">
-                                    <Button variant="ghost" className="bg-gray-800 text-white hover:bg-gray-700">
-                                        Sign In
+
+                                {user ? (
+                                    <Button 
+                                        variant="purple" 
+                                        asChild
+                                        aria-label="Go to user dashboard"
+                                    >
+                                        <Link to="/dashboard">Dashboard</Link>
                                     </Button>
-                                </Link>
-                                <Link to="/signup">
-                                    <Button variant="default" className="bg-gray-800 text-white hover:bg-gray-700">
-                                        Sign Up
-                                    </Button>
-                                </Link>
-                            </>
+                                ) : (
+                                    <>
+                                        <Button 
+                                            variant="ghost" 
+                                            asChild
+                                            aria-label="Sign in to your account"
+                                        >
+                                            <Link to="/login">Sign In</Link>
+                                        </Button>
+                                        <Button 
+                                            variant="purple" 
+                                            asChild
+                                            aria-label="Create a new account"
+                                        >
+                                            <Link to="/signup">Sign Up</Link>
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <div className="md:hidden flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleTheme}
+                                    className="theme-switcher-button relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 p-0"
+                                    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                                >
+                                    <Sun 
+                                        className={cn(
+                                            "h-5 w-5",
+                                            theme === 'light' 
+                                                ? "text-primary" 
+                                                : "text-muted-foreground"
+                                        )}
+                                    />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    className="h-10 w-10"
+                                    aria-label="Toggle mobile menu"
+                                >
+                                    {isMobileMenuOpen ? (
+                                        <X className="h-5 w-5" />
+                                    ) : (
+                                        <Menu className="h-5 w-5" />
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Menu */}
+                        {isMobileMenuOpen && (
+                            <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-sm">
+                                <div className="px-4 py-4 space-y-4">
+                                    {user ? (
+                                        <Button 
+                                            variant="purple" 
+                                            asChild
+                                            className="w-full"
+                                            aria-label="Go to user dashboard"
+                                        >
+                                            <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                                                Dashboard
+                                            </Link>
+                                        </Button>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <Button 
+                                                variant="ghost" 
+                                                asChild
+                                                className="w-full"
+                                                aria-label="Sign in to your account"
+                                            >
+                                                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                                    Sign In
+                                                </Link>
+                                            </Button>
+                                            <Button 
+                                                variant="purple" 
+                                                asChild
+                                                className="w-full"
+                                                aria-label="Create a new account"
+                                            >
+                                                <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                                                    Sign Up
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         )}
                     </div>
                 </nav>
 
-                {/* Hero Section */}
-                <div className="flex-1 flex items-center justify-center px-6 lg:px-8">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                {/* Main Content */}
+                <main 
+                    id="main-content"
+                    className="mx-auto max-w-7xl py-24 sm:py-32 lg:py-48"
+                    role="main"
+                >
+                    <div className="text-center px-4 sm:px-6 lg:px-8">
+                        <h1 
+                            className="text-3xl sm:text-4xl lg:text-6xl font-bold tracking-tight text-primary animate-fade-in"
+                            role="heading"
+                            aria-level={1}
+                        >
                             AI-Powered Insurance Intelligence
                         </h1>
-                        <p className="text-xl md:text-2xl mb-12 text-gray-700 max-w-2xl mx-auto">
-                            VintuSure is an AI-powered online platform that provides advanced RAG (Retrieval-Augmented Generation) 
+                        <p 
+                            className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-muted-foreground animate-slide-in-from-bottom max-w-3xl mx-auto"
+                            role="text"
+                            aria-describedby="hero-description"
+                        >
+                            VintuSure is an AI-powered online platform that provides advanced RAG (Retrieval-Augmented Generation)
                             services to insurance companies, enhancing their knowledge management and customer support capabilities.
                         </p>
-                        
-                        {/* Main Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-                            {/* I'm an Agent Button */}
+                        <div 
+                            className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 animate-bounce-in"
+                            role="group"
+                            aria-label="Get started options"
+                        >
                             {user ? (
-                                <Link to="/dashboard">
-                                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3">
-                                        <Building2 className="h-6 w-6" />
+                                <Button 
+                                    variant="purple" 
+                                    size="lg" 
+                                    asChild 
+                                    className="btn-primary group w-full sm:w-auto"
+                                    aria-label="Access your VintuSure dashboard"
+                                >
+                                    <Link to="/dashboard" className="flex items-center justify-center gap-2">
+                                        <Building2 
+                                            className="h-5 w-5 transition-transform group-hover:scale-110" 
+                                            aria-hidden="true" 
+                                        />
                                         Go to Dashboard
-                                    </Button>
-                                </Link>
-                            ) : (
-                                <Link to="/login">
-                                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3">
-                                        <Building2 className="h-6 w-6" />
-                                        I'm an Agent
-                                    </Button>
-                                </Link>
-                            )}
-                            
-                            {/* I'm a Customer Button */}
-                            <Link to="/explore">
-                                <Button size="lg" variant="outline" className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 bg-white/80 backdrop-blur-sm">
-                                    <User className="h-6 w-6" />
-                                    I'm a Customer
+                                    </Link>
                                 </Button>
-                            </Link>
+                            ) : (
+                                <>
+                                    <Button 
+                                        variant="purple" 
+                                        size="lg" 
+                                        asChild 
+                                        className="btn-primary group w-full sm:w-auto"
+                                        aria-label="Sign in as an insurance agent"
+                                    >
+                                        <Link to="/login" className="flex items-center justify-center gap-2">
+                                            <Building2 
+                                                className="h-5 w-5 transition-transform group-hover:scale-110" 
+                                                aria-hidden="true" 
+                                            />
+                                            I'm an Agent
+                                        </Link>
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        size="lg" 
+                                        asChild 
+                                        className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200 w-full sm:w-auto"
+                                        aria-label="Explore VintuSure as a customer"
+                                    >
+                                        <Link to="/explore" className="flex items-center justify-center gap-2">
+                                            <User 
+                                                className="h-5 w-5 transition-transform group-hover:scale-110" 
+                                                aria-hidden="true" 
+                                            />
+                                            I'm a Customer
+                                        </Link>
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
-                </div>
+                </main>
 
                 {/* Features Section */}
-                <div className="py-16 px-6 lg:px-8">
-                    <div className="max-w-6xl mx-auto">
-                        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                            Why Choose VintuSure for Your Insurance Business?
-                        </h2>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                            <div className="text-center">
-                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300">
-                                    <Shield className="h-12 w-12 mx-auto mb-4 text-gray-800" />
-                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">Advanced RAG Technology</h3>
-                                    <p className="text-gray-700">
-                                        State-of-the-art Retrieval-Augmented Generation for intelligent document processing and knowledge retrieval.
-                                    </p>
+                <section 
+                    className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24"
+                    role="region"
+                    aria-labelledby="features-heading"
+                >
+                    <h2 
+                        id="features-heading"
+                        className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-primary"
+                        role="heading"
+                        aria-level={2}
+                    >
+                        Why Choose VintuSure for Your Insurance Business?
+                    </h2>
+                    <div 
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8"
+                        role="list"
+                        aria-label="VintuSure platform features"
+                    >
+                        {/* Feature 1 */}
+                        <div 
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
+                            role="listitem"
+                            tabIndex={0}
+                            aria-describedby="feature-1-desc"
+                        >
+                            <div className="flex flex-col items-center text-center">
+                                <div 
+                                    className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
+                                    aria-hidden="true"
+                                >
+                                    <Shield className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
+                                <h3 
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
+                                    role="heading"
+                                    aria-level={3}
+                                >
+                                    Advanced RAG Technology
+                                </h3>
+                                <p 
+                                    id="feature-1-desc"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
+                                >
+                                    State-of-the-art Retrieval-Augmented Generation for intelligent document processing and knowledge retrieval.
+                                </p>
                             </div>
-                            
-                            <div className="text-center">
-                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300">
-                                    <Car className="h-12 w-12 mx-auto mb-4 text-gray-800" />
-                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">Multi-Insurance Support</h3>
-                                    <p className="text-gray-700">
-                                        Comprehensive platform supporting various insurance types and company needs.
-                                    </p>
+                        </div>
+
+                        {/* Feature 2 */}
+                        <div 
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
+                            role="listitem"
+                            tabIndex={0}
+                            aria-describedby="feature-2-desc"
+                        >
+                            <div className="flex flex-col items-center text-center">
+                                <div 
+                                    className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
+                                    aria-hidden="true"
+                                >
+                                    <Car className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
+                                <h3 
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
+                                    role="heading"
+                                    aria-level={3}
+                                >
+                                    Multi-Insurance Support
+                                </h3>
+                                <p 
+                                    id="feature-2-desc"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
+                                >
+                                    Comprehensive platform supporting various insurance types and company needs.
+                                </p>
                             </div>
-                            
-                            <div className="text-center">
-                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300">
-                                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-800" />
-                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">AI-Powered Assistance</h3>
-                                    <p className="text-gray-700">
-                                        Intelligent AI assistance for enhanced customer service and operational efficiency.
-                                    </p>
+                        </div>
+
+                        {/* Feature 3 */}
+                        <div 
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
+                            role="listitem"
+                            tabIndex={0}
+                            aria-describedby="feature-3-desc"
+                        >
+                            <div className="flex flex-col items-center text-center">
+                                <div 
+                                    className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
+                                    aria-hidden="true"
+                                >
+                                    <Brain className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
+                                <h3 
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
+                                    role="heading"
+                                    aria-level={3}
+                                >
+                                    AI-Powered Assistance
+                                </h3>
+                                <p 
+                                    id="feature-3-desc"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
+                                >
+                                    Intelligent AI assistance for enhanced customer service and operational efficiency.
+                                </p>
                             </div>
-                            
-                            <div className="text-center">
-                                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 h-full shadow-lg hover:shadow-xl transition-all duration-300">
-                                    <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-800" />
-                                    <h3 className="text-xl font-semibold mb-2 text-gray-800">Scalable Solutions</h3>
-                                    <p className="text-gray-700">
-                                        Flexible and scalable platform that grows with your insurance business needs.
-                                    </p>
+                        </div>
+
+                        {/* Feature 4 */}
+                        <div 
+                            className="rounded-xl border bg-card p-4 sm:p-6 hover-card-effect animate-slide-in-stagger"
+                            role="listitem"
+                            tabIndex={0}
+                            aria-describedby="feature-4-desc"
+                        >
+                            <div className="flex flex-col items-center text-center">
+                                <div 
+                                    className="bg-gradient-to-br from-primary/10 to-purple-100 p-3 rounded-full mb-4 transition-transform duration-300 hover:scale-110"
+                                    aria-hidden="true"
+                                >
+                                    <TrendingUp className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
                                 </div>
+                                <h3 
+                                    className="text-lg sm:text-xl font-semibold text-primary mb-3"
+                                    role="heading"
+                                    aria-level={3}
+                                >
+                                    Scalable Solutions
+                                </h3>
+                                <p 
+                                    id="feature-4-desc"
+                                    className="text-sm sm:text-base text-muted-foreground leading-relaxed"
+                                >
+                                    Flexible and scalable platform that grows with your insurance business needs.
+                                </p>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 {/* Footer */}
-                <footer className="py-8 px-6 lg:px-8 border-t border-gray-300 bg-white/80 backdrop-blur-sm">
-                    <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between">
-                        <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                            <img src={vintusureLogo} alt="VintuSure Logo" className="h-6 w-6" />
-                            <span className="text-lg font-semibold text-gray-800">VintuSure</span>
-                        </div>
-                        <div className="text-gray-600 text-sm">
-                            © 2024 VintuSure. All rights reserved.
+                <footer 
+                    className="border-t border-border bg-background/80 backdrop-blur-sm py-8 sm:py-12"
+                    role="contentinfo"
+                    aria-label="Site footer"
+                >
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+                            <div 
+                                className="flex items-center space-x-2"
+                                role="group"
+                                aria-label="VintuSure branding"
+                            >
+                                <img 
+                                    src={vintusureLogo} 
+                                    alt="VintuSure company logo" 
+                                    className="h-6 w-6"
+                                    role="img"
+                                />
+                                <span 
+                                    className="text-base sm:text-lg font-semibold text-primary"
+                                    aria-label="VintuSure company name"
+                                >
+                                    VintuSure
+                                </span>
+                            </div>
+                            <div 
+                                className="text-sm text-muted-foreground text-center sm:text-left"
+                                role="text"
+                                aria-label="Copyright information"
+                            >
+                                © 2024 VintuSure. All rights reserved.
+                            </div>
                         </div>
                     </div>
                 </footer>
+
+                {/* Decorative element */}
+                <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
+                    <div
+                        className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-primary to-purple-200 opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
+                        style={{
+                            clipPath:
+                                'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
+                        }}
+                    />
+                </div>
             </div>
         </div>
     )

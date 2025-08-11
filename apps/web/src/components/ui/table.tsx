@@ -108,6 +108,68 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = "TableCaption"
 
+// Mobile responsive table wrapper
+const ResponsiveTable = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    children: React.ReactNode
+  }
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "w-full overflow-hidden rounded-md border",
+      className
+    )}
+    {...props}
+  >
+    <div className="overflow-x-auto">
+      {children}
+    </div>
+  </div>
+))
+ResponsiveTable.displayName = "ResponsiveTable"
+
+// Mobile card view for table data
+const MobileCardView = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    children: React.ReactNode
+  }
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "grid grid-cols-1 gap-4 sm:hidden",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </div>
+))
+MobileCardView.displayName = "MobileCardView"
+
+// Mobile card item for table rows
+const MobileCardItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    children: React.ReactNode
+  }
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-lg border bg-card p-4 space-y-2",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </div>
+))
+MobileCardItem.displayName = "MobileCardItem"
+
 export {
   Table,
   TableHeader,
@@ -117,4 +179,7 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  ResponsiveTable,
+  MobileCardView,
+  MobileCardItem,
 }

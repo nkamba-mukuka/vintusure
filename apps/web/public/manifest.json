@@ -1,0 +1,110 @@
+{
+  "name": "VintuSure - AI-Powered Insurance Intelligence",
+  "short_name": "VintuSure",
+  "description": "AI-powered platform providing advanced RAG services to insurance companies, enhancing knowledge management and customer support capabilities.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf9fc",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "/images/vintusure-icon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/vintusure-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "apple-touch-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Access your VintuSure dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/images/vintusure-logo-192.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "New Policy",
+      "short_name": "New Policy",
+      "description": "Create a new insurance policy",
+      "url": "/policies/new",
+      "icons": [
+        {
+          "src": "/images/vintusure-logo-192.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "AI Assistant",
+      "short_name": "AI Assistant",
+      "description": "Access VintuSure AI assistant",
+      "url": "/rag-test",
+      "icons": [
+        {
+          "src": "/images/vintusure-logo-192.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "VintuSure Dashboard on Desktop"
+    },
+    {
+      "src": "/images/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "VintuSure Mobile Interface"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

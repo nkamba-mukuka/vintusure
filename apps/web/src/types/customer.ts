@@ -17,11 +17,13 @@ export interface Customer {
     createdAt: Date;
     updatedAt: Date;
     createdBy: string; // Reference to user who created the customer
+    agent_id: string; // ID of the agent who created the customer
     status: 'active' | 'inactive';
 }
 
-export interface CustomerFormData extends Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> {
+export interface CustomerFormData extends Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {
     id?: string;
+    agent_id?: string; // Make agent_id optional for forms
 }
 
 export interface CustomerFilters {
