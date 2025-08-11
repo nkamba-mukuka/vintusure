@@ -25,18 +25,7 @@ export default function CarPhotoAnalyzer({
     const [analysisResult, setAnalysisResult] = useState<CarAnalysisResult | null>(null);
     const [analysisProgress, setAnalysisProgress] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
-
-    const onDrop = useCallback(
-        async (acceptedFiles: File[]) => {
-            const file = acceptedFiles[0];
-            if (!file) return;
-
-            await processCarPhoto(file);
-        },
-        [onAnalysisComplete, onAnalysisError, toast]
-    );
 
     const processCarPhoto = async (file: File) => {
         if (!file) return;
@@ -116,6 +105,16 @@ export default function CarPhotoAnalyzer({
         return () => URL.revokeObjectURL(preview);
     };
 
+    const onDrop = useCallback(
+        async (acceptedFiles: File[]) => {
+            const file = acceptedFiles[0];
+            if (!file) return;
+
+            await processCarPhoto(file);
+        },
+        [onAnalysisComplete, onAnalysisError, toast]
+    );
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
@@ -133,19 +132,6 @@ export default function CarPhotoAnalyzer({
         setAnalysisResult(null);
         setAnalysisProgress(0);
     };
-
-    const handleBrowseClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleCarPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            await processCarPhoto(file);
-        }
-    };
-
-
 
     return (
         <div className="space-y-6">
@@ -166,13 +152,6 @@ export default function CarPhotoAnalyzer({
                         )}
                     >
                         <input {...getInputProps()} />
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleCarPhotoUpload}
-                            accept="image/*"
-                            className="hidden"
-                        />
                         <div className="space-y-4">
                             <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
                                 <Image className="h-8 w-8 text-blue-600" />
@@ -189,7 +168,6 @@ export default function CarPhotoAnalyzer({
                                 </p>
                             </div>
                             <Button
-                                onClick={handleBrowseClick}
                                 disabled={isAnalyzing}
                                 className="w-full sm:w-auto"
                             >
