@@ -8,6 +8,7 @@ import { customerService } from '@/lib/services/customerService';
 import { policyService } from '@/lib/services/policyService';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
     Form,
@@ -34,8 +35,7 @@ import {
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2Icon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import PremiumCalculator from '@/components/premium/PremiumCalculator';
-import { PremiumBreakdown } from '@/lib/services/premiumService';
+
 import {
     Card,
     CardContent,
@@ -51,13 +51,15 @@ interface PolicyFormProps {
 export default function PolicyForm({ initialData, customerId }: PolicyFormProps) {
     const router = useNavigate();
     const { toast } = useToast();
+    const { user } = useAuthContext();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [premiumBreakdown, setPremiumBreakdown] = useState<PremiumBreakdown | null>(null);
 
-    // Fetch customers for the customer select
+
+    // Fetch customers for the customer select - only current user's customers
     const { data: customers } = useQuery({
-        queryKey: ['customers'],
-        queryFn: () => customerService.list(),
+        queryKey: ['customers', user?.uid],
+        queryFn: () => customerService.list({ userId: user?.uid }),
+        enabled: !!user?.uid,
     });
 
     const form = useForm<PolicyFormData>({
@@ -91,8 +93,16 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
     const onSubmit = async (data: PolicyFormData) => {
         try {
             setIsSubmitting(true);
-            // Get the current user's ID from your auth context
-            const userId = 'TODO: Get from auth context'; // Replace with actual user ID
+            
+            // Check if user is authenticated
+            if (!user?.uid) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'You must be logged in to create or update policies.',
+                    variant: 'destructive',
+                });
+                return;
+            }
 
             if (initialData?.id) {
                 await policyService.update(initialData.id, data);
@@ -101,11 +111,13 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                     description: 'The policy has been updated successfully.',
                 });
             } else {
+                // Remove policyNumber from data since it's undefined for new policies
+                const { policyNumber, ...policyData } = data;
                 await policyService.create({
-                    ...data,
+                    ...policyData,
                     status: 'pending',
                     policyNumber: `POL-${Date.now()}`,
-                }, userId);
+                }, user.uid);
                 toast({
                     title: 'Policy created',
                     description: 'The policy has been created successfully.',
@@ -125,11 +137,7 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
         }
     };
 
-    const handlePremiumCalculation = (breakdown: PremiumBreakdown) => {
-        setPremiumBreakdown(breakdown);
-        form.setValue('premium.amount', breakdown.total);
-        form.setValue('premium.currency', 'ZMW');
-    };
+
 
     return (
         <div className="space-y-8">
@@ -148,11 +156,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                     value={field.value}
                                 >
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                             <SelectValue placeholder="Select a customer" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white border-gray-300">
                                         {customers?.customers.map((customer) => (
                                             <SelectItem key={customer.id} value={customer.id}>
                                                 {customer.firstName} {customer.lastName}
@@ -174,11 +182,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                 <FormLabel>Policy Type</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                             <SelectValue placeholder="Select policy type" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white border-gray-300">
                                         <SelectItem value="comprehensive">Comprehensive</SelectItem>
                                         <SelectItem value="third_party">Third Party</SelectItem>
                                     </SelectContent>
@@ -287,7 +295,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                 <Input
                                                     {...field}
                                                     type="number"
-                                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                        field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -302,11 +314,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                             <FormLabel>Usage</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                                         <SelectValue placeholder="Select usage type" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white border-gray-300">
                                                     <SelectItem value="private">Private</SelectItem>
                                                     <SelectItem value="commercial">Commercial</SelectItem>
                                                 </SelectContent>
@@ -319,25 +331,15 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                         </CardContent>
                     </Card>
 
-                    {/* Premium Calculation Section */}
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold">Premium Calculation</h2>
-                        <PremiumCalculator
-                            onCalculate={handlePremiumCalculation}
-                            defaultValues={{
-                                vehicleValue: form.watch('vehicle.value'),
-                                vehicleType: 'car',
-                                usage: form.watch('vehicle.usage'),
-                                coverageType: form.watch('type'),
-                                vehicleAge: new Date().getFullYear() - form.watch('vehicle.year'),
-                            }}
-                        />
-                    </div>
+
 
                     {/* Policy Details Section */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Policy Details</CardTitle>
+                            <div className="flex justify-between items-center">
+                                <CardTitle>Policy Details</CardTitle>
+                                
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {/* Policy Dates */}
@@ -438,8 +440,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                 <Input
                                                     type="number"
                                                     {...field}
-                                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                                    disabled={!!premiumBreakdown}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const parsedValue = value === '' ? 0 : parseFloat(value);
+                                                        field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -456,14 +461,13 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                             <Select
                                                 onValueChange={field.onChange}
                                                 value={field.value}
-                                                disabled={!!premiumBreakdown}
                                             >
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                                         <SelectValue placeholder="Select currency" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white border-gray-300">
                                                     <SelectItem value="ZMW">ZMW</SelectItem>
                                                     <SelectItem value="USD">USD</SelectItem>
                                                 </SelectContent>
@@ -481,11 +485,11 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                             <FormLabel>Payment Status</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                                                         <SelectValue placeholder="Select payment status" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="bg-white border-gray-300">
                                                     <SelectItem value="paid">Paid</SelectItem>
                                                     <SelectItem value="pending">Pending</SelectItem>
                                                     <SelectItem value="partial">Partial</SelectItem>

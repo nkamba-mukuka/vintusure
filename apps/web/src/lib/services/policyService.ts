@@ -17,6 +17,7 @@ import {
     getCountFromServer,
 } from 'firebase/firestore'
 import type { PolicyFormData, PolicyData } from '@/lib/validations/policy'
+import type { Policy } from '@/types/policy'
 
 const COLLECTION_NAME = 'policies'
 
@@ -38,15 +39,23 @@ function convertTimestampsToDate(data: PolicyData): PolicyFormData {
 }
 
 export const policyService = {
-    async create(data: PolicyFormData, userId: string) {
+    async create(data: Omit<PolicyFormData, 'createdBy' | 'agent_id'>, userId: string): Promise<Policy> {
         const policyData = {
             ...convertDatesToTimestamps(data),
+            createdBy: userId, // Add the authenticated user's ID
+            agent_id: userId, // Add agent_id field for tracking which agent created the policy
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            createdBy: userId,
-        }
-        const docRef = await addDoc(collection(db, COLLECTION_NAME), policyData)
-        return { id: docRef.id, ...policyData }
+        };
+
+        const docRef = await addDoc(collection(db, COLLECTION_NAME), policyData);
+
+        return {
+            ...policyData,
+            id: docRef.id,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+        } as Policy;
     },
 
     async update(id: string, data: Partial<PolicyFormData>) {
@@ -84,7 +93,7 @@ export const policyService = {
 
         let q = query(policiesRef, orderBy('createdAt', 'desc'), limit(10))
 
-        // Filter by user if provided (for user-specific data access)
+        // Always filter by user for user-specific data access
         if (userId) {
             q = query(q, where('createdBy', '==', userId))
         }

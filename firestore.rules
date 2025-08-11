@@ -1,5 +1,4 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
     // Helper functions
@@ -9,112 +8,119 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    function isAgent() {
+    function hasValidRole() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'agent';
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'agent'];
     }
-
+    
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-
-    function hasValidRole() {
-      return isAuthenticated() && 
-        (isAdmin() || isAgent());
+    
+    function isDataOwner(createdBy) {
+      return isAuthenticated() && request.auth.uid == createdBy;
+    }
+    
+    function isValidPolicyData() {
+        return request.resource.data.keys().hasAll(['type', 'status', 'customerId', 'policyNumber', 'vehicle', 'startDate', 'endDate', 'premium', 'createdBy', 'agent_id']) &&
+            request.resource.data.type in ['comprehensive', 'third_party'] &&
+            request.resource.data.status in ['active', 'expired', 'cancelled', 'pending'] &&
+            request.resource.data.vehicle.keys().hasAll(['registrationNumber', 'make', 'model', 'year', 'engineNumber', 'chassisNumber', 'value', 'usage']) &&
+            request.resource.data.premium.keys().hasAll(['amount', 'currency', 'paymentStatus', 'paymentMethod']) &&
+            request.resource.data.agent_id == request.auth.uid;
+    }
+    
+    function isValidCustomerData() {
+        return request.resource.data.keys().hasAll(['nrcPassport', 'firstName', 'lastName', 'email', 'phone', 'address', 'dateOfBirth', 'gender', 'occupation', 'createdBy', 'agent_id']) &&
+            request.resource.data.gender in ['male', 'female', 'other'] &&
+            request.resource.data.address.keys().hasAll(['street', 'city', 'province', 'postalCode']) &&
+            request.resource.data.agent_id == request.auth.uid;
+    }
+    
+    function isValidClaimData() {
+        return request.resource.data.keys().hasAll(['policyId', 'customerId', 'incidentDate', 'description', 'location', 'damageType', 'amount', 'createdBy', 'agent_id']) &&
+            request.resource.data.damageType in ['Vehicle', 'Property', 'Personal'] &&
+            request.resource.data.location.keys().hasAll(['latitude', 'longitude', 'address']) &&
+            request.resource.data.agent_id == request.auth.uid;
     }
 
     function isValidUserData() {
-      return request.resource.data.keys().hasAll(['email', 'role', 'createdAt']) &&
-        request.resource.data.role in ['admin', 'agent'] &&
-        request.resource.data.email is string &&
-        request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$');
+        return request.resource.data.keys().hasAll(['email', 'role']) &&
+            request.resource.data.role in ['admin', 'agent', 'customer'];
     }
 
-    function isValidPolicyData() {
-      return request.resource.data.keys().hasAll(['customerId', 'type', 'status', 'startDate', 'endDate', 'premium']) &&
-        request.resource.data.type in ['comprehensive', 'third_party'] &&
-        request.resource.data.status in ['active', 'expired', 'cancelled', 'pending'] &&
-        request.resource.data.customerId is string &&
-        request.resource.data.premium.amount is number &&
-        request.resource.data.premium.amount > 0;
+    function isValidUserUpdateData() {
+        return request.resource.data.keys().hasAny(['firstName', 'lastName', 'phone', 'role', 'department', 'employeeId', 'insuranceCompany', 'bio', 'address', 'profileCompleted']) &&
+            (!('role' in request.resource.data) || request.resource.data.role in ['admin', 'agent', 'customer']);
     }
 
-    function isValidClaimData() {
-      return request.resource.data.keys().hasAll(['policyId', 'status', 'description', 'amount']) &&
-        request.resource.data.status in ['Submitted', 'UnderReview', 'Approved', 'Rejected', 'Paid'] &&
-        request.resource.data.amount is number &&
-        request.resource.data.amount > 0;
-    }
-
-    // Users collection - strict access control
+    // Users collection - users can manage their own accounts
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isValidUserData();
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin() && request.auth.uid != userId; // Prevent self-deletion
+      allow create: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        isValidUserData();
+      allow update: if isOwner(userId) || isAdmin() &&
+        isValidUserUpdateData();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // Customers collection - role-based access with data validation
+    // Customers collection - user-specific access
     match /customers/{customerId} {
-      allow read: if hasValidRole();
-      allow create: if hasValidRole() && 
-        request.resource.data.keys().hasAll(['name', 'email', 'phone', 'createdBy']) &&
+      allow read: if isDataOwner(resource.data.createdBy) || isAdmin();
+      allow create: if isAuthenticated() && 
+        isValidCustomerData() &&
         request.resource.data.createdBy == request.auth.uid;
-      allow update: if hasValidRole() && 
-        request.resource.data.createdBy == resource.data.createdBy;
-      allow delete: if isAdmin();
+      allow update: if isDataOwner(resource.data.createdBy) || isAdmin();
+      allow delete: if isDataOwner(resource.data.createdBy) || isAdmin();
+      // Allow aggregation queries for authenticated users
+      allow list: if isAuthenticated();
     }
 
-    // Policies collection - strict validation and ownership
+    // Policies collection - user-specific access
     match /policies/{policyId} {
-      allow read: if hasValidRole();
-      allow create: if hasValidRole() && isValidPolicyData() &&
+      allow read: if isDataOwner(resource.data.createdBy) || isAdmin();
+      allow create: if isAuthenticated() && 
+        isValidPolicyData() &&
         request.resource.data.createdBy == request.auth.uid;
-      allow update: if hasValidRole() && isValidPolicyData() &&
-        (resource.data.createdBy == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow update: if isDataOwner(resource.data.createdBy) || isAdmin();
+      allow delete: if isDataOwner(resource.data.createdBy) || isAdmin();
+      // Allow aggregation queries for authenticated users
+      allow list: if isAuthenticated();
     }
 
-    // Claims collection - enhanced validation
+    // Claims collection - user-specific access
     match /claims/{claimId} {
-      allow read: if hasValidRole();
-      allow create: if hasValidRole() && isValidClaimData() &&
+      allow read: if isDataOwner(resource.data.createdBy) || isAdmin();
+      allow create: if isAuthenticated() && 
+        isValidClaimData() &&
         request.resource.data.createdBy == request.auth.uid;
-      allow update: if hasValidRole() && isValidClaimData() &&
-        (resource.data.createdBy == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow update: if isDataOwner(resource.data.createdBy) || isAdmin();
+      allow delete: if isDataOwner(resource.data.createdBy) || isAdmin();
+      // Allow aggregation queries for authenticated users
+      allow list: if isAuthenticated();
     }
 
-    // Documents collection - file type and size validation
+    // Documents collection - user-specific access
     match /documents/{documentId} {
-      allow read: if hasValidRole();
-      allow create: if hasValidRole() &&
-        request.resource.data.keys().hasAll(['fileName', 'fileType', 'fileSize', 'uploadedBy']) &&
-        request.resource.data.uploadedBy == request.auth.uid &&
-        request.resource.data.fileSize <= 10 * 1024 * 1024 && // 10MB limit
-        request.resource.data.fileType in ['application/pdf', 'image/jpeg', 'image/png'];
-      allow update: if hasValidRole() &&
-        (resource.data.uploadedBy == request.auth.uid || isAdmin());
-      allow delete: if isAdmin() || 
-        (hasValidRole() && resource.data.uploadedBy == request.auth.uid);
+      allow read: if isDataOwner(resource.data.uploadedBy) || isAdmin();
+      allow create: if isAuthenticated() && 
+        request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if isDataOwner(resource.data.uploadedBy) || isAdmin();
+      allow delete: if isDataOwner(resource.data.uploadedBy) || isAdmin();
+      // Allow aggregation queries for authenticated users
+      allow list: if isAuthenticated();
     }
 
-    // Query logs - admin only access
-    match /queryLogs/{logId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Security logs - admin only access
-    match /securityLogs/{logId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Rate limiting data - system managed
-    match /rateLimits/{userId} {
-      allow read, write: if false; // Only system can access
+    // Logs collection - read-only for admins
+    match /logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Logs are system-generated only
     }
   }
-} 
+}

@@ -1,10 +1,10 @@
-import { z } from 'zod'
-import type { PolicyType, PolicyStatus } from '../types/policy'
+import { z } from 'zod';
 
-export const policyFormSchema = z.object({
-    type: z.enum(['comprehensive', 'third_party'] as const),
-    status: z.enum(['active', 'expired', 'cancelled', 'pending'] as const).default('pending'),
+export const policySchema = z.object({
+    type: z.enum(['comprehensive', 'third_party']),
+    status: z.enum(['active', 'expired', 'cancelled', 'pending']),
     customerId: z.string(),
+    policyNumber: z.string(),
     vehicle: z.object({
         registrationNumber: z.string(),
         make: z.string(),
@@ -13,27 +13,19 @@ export const policyFormSchema = z.object({
         engineNumber: z.string(),
         chassisNumber: z.string(),
         value: z.number(),
-        usage: z.enum(['private', 'commercial'] as const)
+        usage: z.enum(['private', 'commercial'])
     }),
     startDate: z.date(),
     endDate: z.date(),
     premium: z.object({
         amount: z.number(),
         currency: z.string(),
-        paymentStatus: z.enum(['paid', 'pending', 'failed'] as const),
+        paymentStatus: z.enum(['pending', 'paid', 'partial']),
         paymentMethod: z.string()
     }),
-    policyNumber: z.string()
-}).refine(
-    (data) => {
-        const start = new Date(data.startDate)
-        const end = new Date(data.endDate)
-        return end > start
-    },
-    {
-        message: 'End date must be after start date',
-        path: ['endDate'],
-    }
-)
+    createdAt: z.date(),
+    updatedAt: z.date(),
+    createdBy: z.string()
+});
 
-export type PolicyFormData = z.infer<typeof policyFormSchema> 
+export type PolicyFormData = z.infer<typeof policySchema> 

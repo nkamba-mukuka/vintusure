@@ -1,38 +1,9 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isAdmin() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    function isAgent() {
-      return isAuthenticated() && 
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'agent';
-    }
-
-    // Document uploads
-    match /documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (isAdmin() || isAgent()) &&
-        request.resource.size < 10 * 1024 * 1024 && // 10MB
-        request.resource.contentType.matches('application/pdf');
-      allow delete: if isAdmin();
-    }
-
-    // Claim evidence uploads
-    match /claims/{claimId}/{fileName} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && (isAdmin() || isAgent()) &&
-        request.resource.size < 5 * 1024 * 1024 && // 5MB
-        request.resource.contentType.matches('image/.*|application/pdf');
-      allow delete: if isAdmin();
+    // Allow read/write access to authenticated users
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
-} 
+}

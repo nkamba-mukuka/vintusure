@@ -27,6 +27,9 @@
   ],
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.12",
+    "dotenv": "^17.2.1",
+    "firebase": "^10.14.1",
+    "firebase-admin": "^12.7.0",
     "flag": "^5.0.1"
   }
 }

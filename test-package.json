@@ -1,0 +1,38 @@
+{
+  "name": "vintusure-indexing-rag-tests",
+  "version": "1.0.0",
+  "description": "Test script for VintuSure indexing and RAG functionality",
+  "main": "test-indexing-rag-system.js",
+  "scripts": {
+    "test": "node test-indexing-rag-system.js",
+    "test:runner": "node run-tests.js",
+    "test:all": "node run-tests.js --all",
+    "test:customer": "node run-tests.js --customer",
+    "test:claims": "node run-tests.js --claims",
+    "test:policies": "node run-tests.js --policies",
+    "test:documents": "node run-tests.js --documents",
+    "test:rag": "node run-tests.js --rag",
+    "test:ai": "node run-tests.js --ai",
+    "test:help": "node run-tests.js --help"
+  },
+  "dependencies": {
+    "firebase": "^10.7.0",
+    "firebase-admin": "^12.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "keywords": [
+    "firebase",
+    "rag",
+    "vector-search",
+    "indexing",
+    "testing",
+    "vintusure"
+  ],
+  "author": "VintuSure Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
