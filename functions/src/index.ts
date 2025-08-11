@@ -217,11 +217,11 @@ Please be specific and accurate in your assessment. Focus on the Zambian market 
 
     } catch (error) {
         console.error('Error in analyzeCarPhoto:', error);
-        
+
         // Return a fallback response instead of throwing an error
         const fallbackResponse = createFallbackResponse();
         console.log('Returning fallback response due to error');
-        
+
         return fallbackResponse;
     }
 });
@@ -673,7 +673,7 @@ export const indexCustomerData = onDocumentCreated({
 
     } catch (error) {
         console.error(`Error indexing customer ${event.params.customerId}:`, error);
-        
+
         // Update the customer document with error status
         await db.collection('customers').doc(event.params.customerId).update({
             vectorIndexed: false,
@@ -727,7 +727,7 @@ export const indexClaimData = onDocumentCreated({
 
     } catch (error) {
         console.error(`Error indexing claim ${event.params.claimId}:`, error);
-        
+
         // Update the claim document with error status
         await db.collection('claims').doc(event.params.claimId).update({
             vectorIndexed: false,
@@ -758,7 +758,7 @@ export const indexPolicyData = onDocumentCreated({
         console.log(`Processing policy data for indexing: ${policyId}`);
 
         // Extract and concatenate relevant policy data for embedding
-        const policyText = createPolicyEmbeddingText(policyData);
+        const policyText = await createPolicyEmbeddingText(policyData);
 
         console.log(`Generated policy text for embedding: ${policyText}`);
 
@@ -781,7 +781,7 @@ export const indexPolicyData = onDocumentCreated({
 
     } catch (error) {
         console.error(`Error indexing policy ${event.params.policyId}:`, error);
-        
+
         // Update the policy document with error status
         await db.collection('policies').doc(event.params.policyId).update({
             vectorIndexed: false,
@@ -835,7 +835,7 @@ export const indexDocumentData = onDocumentCreated({
 
     } catch (error) {
         console.error(`Error indexing document ${event.params.documentId}:`, error);
-        
+
         // Update the document with error status
         await db.collection('documents').doc(event.params.documentId).update({
             vectorIndexed: false,
@@ -869,7 +869,7 @@ export const updateCustomerIndex = onDocumentUpdated({
         }
 
         // Check if relevant fields have changed to avoid unnecessary re-indexing
-        const relevantFieldsChanged = 
+        const relevantFieldsChanged =
             beforeData?.firstName !== afterData.firstName ||
             beforeData?.lastName !== afterData.lastName ||
             beforeData?.email !== afterData.email ||
@@ -909,7 +909,7 @@ export const updateCustomerIndex = onDocumentUpdated({
 
     } catch (error) {
         console.error(`Error re-indexing customer ${event.params.customerId}:`, error);
-        
+
         // Update the customer document with error status
         await db.collection('customers').doc(event.params.customerId).update({
             vectorIndexed: false,
@@ -939,7 +939,7 @@ export const updateClaimIndex = onDocumentUpdated({
         }
 
         // Check if relevant fields have changed to avoid unnecessary re-indexing
-        const relevantFieldsChanged = 
+        const relevantFieldsChanged =
             beforeData?.description !== afterData.description ||
             beforeData?.status !== afterData.status ||
             beforeData?.damageType !== afterData.damageType ||
@@ -978,7 +978,7 @@ export const updateClaimIndex = onDocumentUpdated({
 
     } catch (error) {
         console.error(`Error re-indexing claim ${event.params.claimId}:`, error);
-        
+
         // Update the claim document with error status
         await db.collection('claims').doc(event.params.claimId).update({
             vectorIndexed: false,
@@ -1008,7 +1008,7 @@ export const updatePolicyIndex = onDocumentUpdated({
         }
 
         // Check if relevant fields have changed to avoid unnecessary re-indexing
-        const relevantFieldsChanged = 
+        const relevantFieldsChanged =
             beforeData?.type !== afterData.type ||
             beforeData?.status !== afterData.status ||
             beforeData?.vehicle?.make !== afterData.vehicle?.make ||
@@ -1024,7 +1024,7 @@ export const updatePolicyIndex = onDocumentUpdated({
         console.log(`Processing policy update for re-indexing: ${policyId}`);
 
         // Extract and concatenate relevant policy data for embedding
-        const policyText = createPolicyEmbeddingText(afterData);
+        const policyText = await createPolicyEmbeddingText(afterData);
 
         console.log(`Generated updated policy text for embedding: ${policyText}`);
 
@@ -1048,7 +1048,7 @@ export const updatePolicyIndex = onDocumentUpdated({
 
     } catch (error) {
         console.error(`Error re-indexing policy ${event.params.policyId}:`, error);
-        
+
         // Update the policy document with error status
         await db.collection('policies').doc(event.params.policyId).update({
             vectorIndexed: false,
@@ -1078,7 +1078,7 @@ export const updateDocumentIndex = onDocumentUpdated({
         }
 
         // Check if relevant fields have changed to avoid unnecessary re-indexing
-        const relevantFieldsChanged = 
+        const relevantFieldsChanged =
             beforeData?.fileName !== afterData.fileName ||
             beforeData?.description !== afterData.description ||
             beforeData?.category !== afterData.category ||
@@ -1117,7 +1117,7 @@ export const updateDocumentIndex = onDocumentUpdated({
 
     } catch (error) {
         console.error(`Error re-indexing document ${event.params.documentId}:`, error);
-        
+
         // Update the document with error status
         await db.collection('documents').doc(event.params.documentId).update({
             vectorIndexed: false,
@@ -1208,7 +1208,7 @@ export const deletePolicyIndex = onDocumentDeleted({
 // Helper function to create searchable text from customer data
 function createCustomerEmbeddingText(customer: Customer): string {
     const addressText = `${customer.address.street}, ${customer.address.city}, ${customer.address.province}, ${customer.address.postalCode}`;
-    
+
     return [
         `Customer Name: ${customer.firstName} ${customer.lastName}`,
         `ID Document: ${customer.nrcPassport}`,
@@ -1240,31 +1240,36 @@ function createClaimEmbeddingText(claim: Claim): string {
 }
 
 // Helper function to create searchable text from policy data
-function createPolicyEmbeddingText(policy: Policy): string {
-    const startDate = policy.startDate?.toDate ? policy.startDate.toDate().toISOString().split('T')[0] : policy.startDate;
-    const endDate = policy.endDate?.toDate ? policy.endDate.toDate().toISOString().split('T')[0] : policy.endDate;
-    
-    return [
-        `Policy ID: ${policy.id}`,
-        `Policy Number: ${policy.policyNumber}`,
-        `Customer ID: ${policy.customerId}`,
-        `Type: ${policy.type}`,
-        `Status: ${policy.status}`,
-        `Vehicle: ${policy.vehicle.make} ${policy.vehicle.model} ${policy.vehicle.year} (${policy.vehicle.registrationNumber})`,
-        `Vehicle Value: ${policy.vehicle.value}`,
-        `Usage: ${policy.vehicle.usage}`,
-        `Start Date: ${startDate}`,
-        `End Date: ${endDate}`,
-        `Premium: ${policy.premium.amount} ${policy.premium.currency}`,
-        `Payment Status: ${policy.premium.paymentStatus}`,
-        `Payment Method: ${policy.premium.paymentMethod}`
-    ].join('. ');
+async function createPolicyEmbeddingText(policyData: Policy): Promise<string> {
+    try {
+        // Get customer data
+        const customerDoc = await db.collection('customers').doc(policyData.customerId).get();
+        const customerData = customerDoc.data() as Customer;
+
+        return `
+Policy Information:
+Policy Number: ${policyData.policyNumber}
+Type: ${policyData.type}
+Status: ${policyData.status}
+Customer Name: ${customerData.firstName} ${customerData.lastName}
+Customer ID: ${policyData.customerId}
+Vehicle: ${policyData.vehicle.make} ${policyData.vehicle.model} ${policyData.vehicle.year}
+Registration Number: ${policyData.vehicle.registrationNumber}
+Start Date: ${policyData.startDate}
+End Date: ${policyData.endDate}
+Premium Amount: ${policyData.premium.amount} ${policyData.premium.currency}
+Payment Status: ${policyData.premium.paymentStatus}
+`.trim();
+    } catch (error) {
+        console.error('Error creating policy embedding text:', error);
+        throw error;
+    }
 }
 
 // Helper function to create searchable text from document data
 function createDocumentEmbeddingText(document: Document): string {
     const uploadDate = document.uploadedAt?.toDate ? document.uploadedAt.toDate().toISOString().split('T')[0] : document.uploadedAt;
-    
+
     const baseText = [
         `Document ID: ${document.id}`,
         `File Name: ${document.fileName}`,
@@ -1316,7 +1321,7 @@ async function generateCustomerEmbedding(text: string): Promise<number[]> {
 
         // Prepare the embeddings API request
         const embeddingsUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google/models/text-embedding-004:predict`;
-        
+
         const requestBody = {
             instances: [
                 {
@@ -1352,7 +1357,7 @@ async function generateCustomerEmbedding(text: string): Promise<number[]> {
         }
 
         const embedding = result.predictions[0].embeddings.values;
-        
+
         if (!Array.isArray(embedding) || embedding.length === 0) {
             throw new Error('Invalid embedding vector in response');
         }
@@ -1362,13 +1367,13 @@ async function generateCustomerEmbedding(text: string): Promise<number[]> {
 
     } catch (error) {
         console.error('Error generating customer embedding:', error);
-        
+
         // Fallback to mock embedding if API fails (for development)
         console.log('Falling back to mock embedding due to error');
         const mockEmbedding = Array.from({ length: 768 }, (_, i) => {
             return Math.sin(text.charCodeAt(i % text.length) + i) * 0.1;
         });
-        
+
         console.log(`Generated fallback mock embedding with ${mockEmbedding.length} dimensions`);
         return mockEmbedding;
     }
@@ -1386,16 +1391,16 @@ async function upsertCustomerVector(customerId: string, embedding: number[], tex
         console.log(`Customer ID: ${customerId}`);
         console.log(`Embedding dimensions: ${embedding.length}`);
         console.log(`Text: ${text.substring(0, 100)}...`);
-        
+
         // Validate embedding vector
         if (!embedding || embedding.length === 0) {
             throw new Error('Empty or invalid embedding vector provided');
         }
-        
+
         if (embedding.some(val => typeof val !== 'number' || isNaN(val))) {
             throw new Error('Embedding vector contains invalid numeric values');
         }
-        
+
         console.log('Embedding validation passed:', {
             length: embedding.length,
             minValue: Math.min(...embedding),
@@ -1427,7 +1432,7 @@ async function upsertCustomerVector(customerId: string, embedding: number[], tex
         // Note: The VertexAI SDK might not have direct vector search upsert methods
         // We may need to use the REST API or a different approach
         // For now, we'll log the operation and mark it as successful
-        
+
         console.log('Vector upsert operation prepared:', {
             indexEndpointId,
             deployedIndexId,
@@ -1455,7 +1460,7 @@ async function upsertCustomerVector(customerId: string, embedding: number[], tex
 
         // Prepare the upsert request for streaming updates
         const upsertUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:upsertDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapoints: [datapoint]
@@ -1490,7 +1495,7 @@ async function upsertCustomerVector(customerId: string, embedding: number[], tex
 
     } catch (error) {
         console.error('Error upserting customer vector:', error);
-        
+
         // Log detailed error information for debugging
         console.error('Vector upsert error details:', {
             customerId,
@@ -1499,11 +1504,11 @@ async function upsertCustomerVector(customerId: string, embedding: number[], tex
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
             errorStack: error instanceof Error ? error.stack : undefined
         });
-        
+
         // For now, don't throw the error to prevent customer creation from failing
         // TODO: Fix the underlying vector search issue
         console.warn('Vector upsert failed, but continuing with customer creation');
-        
+
         // You can uncomment the line below to make it fail fast during debugging
         // throw error;
     }
@@ -1521,16 +1526,16 @@ async function upsertClaimVector(claimId: string, embedding: number[], text: str
         console.log(`Claim ID: ${claimId}`);
         console.log(`Embedding dimensions: ${embedding.length}`);
         console.log(`Text: ${text.substring(0, 100)}...`);
-        
+
         // Validate embedding vector
         if (!embedding || embedding.length === 0) {
             throw new Error('Empty or invalid embedding vector provided');
         }
-        
+
         if (embedding.some(val => typeof val !== 'number' || isNaN(val))) {
             throw new Error('Embedding vector contains invalid numeric values');
         }
-        
+
         console.log('Claim embedding validation passed:', {
             length: embedding.length,
             minValue: Math.min(...embedding),
@@ -1558,7 +1563,7 @@ async function upsertClaimVector(claimId: string, embedding: number[], text: str
 
         // Prepare the upsert request
         const upsertUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:upsertDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapoints: [
@@ -1613,7 +1618,7 @@ async function upsertClaimVector(claimId: string, embedding: number[], text: str
 
     } catch (error) {
         console.error('Error upserting claim vector:', error);
-        
+
         // Log detailed error information for debugging
         console.error('Claim vector upsert error details:', {
             claimId,
@@ -1622,11 +1627,11 @@ async function upsertClaimVector(claimId: string, embedding: number[], text: str
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
             errorStack: error instanceof Error ? error.stack : undefined
         });
-        
+
         // For now, don't throw the error to prevent claim creation from failing
         // TODO: Fix the underlying vector search issue
         console.warn('Claim vector upsert failed, but continuing with claim creation');
-        
+
         // You can uncomment the line below to make it fail fast during debugging
         // throw error;
     }
@@ -1644,16 +1649,16 @@ async function upsertPolicyVector(policyId: string, embedding: number[], text: s
         console.log(`Policy ID: ${policyId}`);
         console.log(`Embedding dimensions: ${embedding.length}`);
         console.log(`Text: ${text.substring(0, 100)}...`);
-        
+
         // Validate embedding vector
         if (!embedding || embedding.length === 0) {
             throw new Error('Empty or invalid embedding vector provided');
         }
-        
+
         if (embedding.some(val => typeof val !== 'number' || isNaN(val))) {
             throw new Error('Embedding vector contains invalid numeric values');
         }
-        
+
         console.log('Policy embedding validation passed:', {
             length: embedding.length,
             minValue: Math.min(...embedding),
@@ -1681,7 +1686,7 @@ async function upsertPolicyVector(policyId: string, embedding: number[], text: s
 
         // Prepare the upsert request
         const upsertUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:upsertDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapoints: [
@@ -1736,7 +1741,7 @@ async function upsertPolicyVector(policyId: string, embedding: number[], text: s
 
     } catch (error) {
         console.error('Error upserting policy vector:', error);
-        
+
         // Log detailed error information for debugging
         console.error('Policy vector upsert error details:', {
             policyId,
@@ -1745,11 +1750,11 @@ async function upsertPolicyVector(policyId: string, embedding: number[], text: s
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
             errorStack: error instanceof Error ? error.stack : undefined
         });
-        
+
         // For now, don't throw the error to prevent policy creation from failing
         // TODO: Fix the underlying vector search issue
         console.warn('Policy vector upsert failed, but continuing with policy creation');
-        
+
         // You can uncomment the line below to make it fail fast during debugging
         // throw error;
     }
@@ -1767,16 +1772,16 @@ async function upsertDocumentVector(documentId: string, embedding: number[], tex
         console.log(`Document ID: ${documentId}`);
         console.log(`Embedding dimensions: ${embedding.length}`);
         console.log(`Text: ${text.substring(0, 100)}...`);
-        
+
         // Validate embedding vector
         if (!embedding || embedding.length === 0) {
             throw new Error('Empty or invalid embedding vector provided');
         }
-        
+
         if (embedding.some(val => typeof val !== 'number' || isNaN(val))) {
             throw new Error('Embedding vector contains invalid numeric values');
         }
-        
+
         console.log('Document embedding validation passed:', {
             length: embedding.length,
             minValue: Math.min(...embedding),
@@ -1804,7 +1809,7 @@ async function upsertDocumentVector(documentId: string, embedding: number[], tex
 
         // Prepare the upsert request
         const upsertUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:upsertDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapoints: [
@@ -1859,7 +1864,7 @@ async function upsertDocumentVector(documentId: string, embedding: number[], tex
 
     } catch (error) {
         console.error('Error upserting document vector:', error);
-        
+
         // Log detailed error information for debugging
         console.error('Document vector upsert error details:', {
             documentId,
@@ -1868,11 +1873,11 @@ async function upsertDocumentVector(documentId: string, embedding: number[], tex
             errorMessage: error instanceof Error ? error.message : 'Unknown error',
             errorStack: error instanceof Error ? error.stack : undefined
         });
-        
+
         // For now, don't throw the error to prevent document creation from failing
         // TODO: Fix the underlying vector search issue
         console.warn('Document vector upsert failed, but continuing with document creation');
-        
+
         // You can uncomment the line below to make it fail fast during debugging
         // throw error;
     }
@@ -1907,7 +1912,7 @@ async function deleteCustomerVector(customerId: string): Promise<void> {
 
         // Prepare the delete request
         const deleteUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:removeDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapointIds: [customerId]
@@ -1970,7 +1975,7 @@ async function deleteClaimVector(claimId: string): Promise<void> {
 
         // Prepare the delete request
         const deleteUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:removeDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapointIds: [claimId]
@@ -2033,7 +2038,7 @@ async function deletePolicyVector(policyId: string): Promise<void> {
 
         // Prepare the delete request
         const deleteUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:removeDatapoints`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             datapointIds: [policyId]
@@ -2127,7 +2132,7 @@ export const queryCustomerRAG = onCall<QueryRequest, Promise<ExtendedQueryRespon
 
     } catch (error) {
         console.error('Error in customer RAG query:', error);
-        
+
         return {
             success: false,
             error: 'Failed to process RAG query',
@@ -2192,7 +2197,7 @@ export const queryClaimsRAG = onCall<QueryRequest, Promise<ClaimsQueryResponse>>
 
     } catch (error) {
         console.error('Error in claims RAG query:', error);
-        
+
         return {
             success: false,
             error: 'Failed to process claims RAG query',
@@ -2257,7 +2262,7 @@ export const queryPoliciesRAG = onCall<QueryRequest, Promise<PoliciesQueryRespon
 
     } catch (error) {
         console.error('Error in policies RAG query:', error);
-        
+
         return {
             success: false,
             error: 'Failed to process policies RAG query',
@@ -2322,7 +2327,7 @@ export const queryDocumentsRAG = onCall<QueryRequest, Promise<DocumentsQueryResp
 
     } catch (error) {
         console.error('Error in documents RAG query:', error);
-        
+
         return {
             success: false,
             error: 'Failed to process documents RAG query',
@@ -2355,7 +2360,7 @@ async function searchCustomerVectors(queryEmbedding: number[], topK: number = 5)
 
         // Prepare the search request
         const searchUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:findNeighbors`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             queries: [
@@ -2419,11 +2424,11 @@ async function getCustomerContexts(similarCustomers: VectorSearchResult[]): Prom
         for (const result of similarCustomers) {
             try {
                 const customerDoc = await db.collection('customers').doc(result.customerId).get();
-                
+
                 if (customerDoc.exists) {
                     const customerData = customerDoc.data() as Customer;
                     const context = createCustomerEmbeddingText(customerData);
-                    
+
                     customerContexts.push({
                         customerId: result.customerId,
                         similarity: result.similarity,
@@ -2471,7 +2476,7 @@ async function searchClaimVectors(queryEmbedding: number[], topK: number = 5): P
 
         // Prepare the search request
         const searchUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:findNeighbors`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             queries: [
@@ -2551,7 +2556,7 @@ async function searchDocumentVectors(queryEmbedding: number[], topK: number = 5)
 
         // Prepare the search request
         const searchUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:findNeighbors`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             neighborCount: topK,
@@ -2579,11 +2584,11 @@ async function searchDocumentVectors(queryEmbedding: number[], topK: number = 5)
 
         // Parse the response to extract similar documents
         const neighbors = result.nearestNeighbors?.[0]?.neighbors || [];
-        
+
         const searchResults: DocumentsVectorSearchResult[] = neighbors.map((neighbor: any) => {
             const distance = neighbor.distance || 0;
             const similarity = 1 - distance; // Convert distance to similarity
-            
+
             return {
                 documentId: neighbor.datapoint.datapointId,
                 distance: distance,
@@ -2624,7 +2629,7 @@ async function searchPolicyVectors(queryEmbedding: number[], topK: number = 5): 
 
         // Prepare the search request
         const searchUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}:findNeighbors`;
-        
+
         const requestBody = {
             deployedIndexId: deployedIndexId,
             queries: [
@@ -2688,11 +2693,11 @@ async function getClaimContexts(similarClaims: ClaimsVectorSearchResult[]): Prom
         for (const result of similarClaims) {
             try {
                 const claimDoc = await db.collection('claims').doc(result.claimId).get();
-                
+
                 if (claimDoc.exists) {
                     const claimData = claimDoc.data() as Claim;
                     const context = createClaimEmbeddingText(claimData);
-                    
+
                     claimContexts.push({
                         claimId: result.claimId,
                         similarity: result.similarity,
@@ -2715,37 +2720,29 @@ async function getClaimContexts(similarClaims: ClaimsVectorSearchResult[]): Prom
 
 // Retrieve policy contexts from Firestore based on vector search results
 async function getPolicyContexts(similarPolicies: PoliciesVectorSearchResult[]): Promise<PoliciesContext[]> {
-    try {
-        console.log(`Retrieving policy contexts for ${similarPolicies.length} policies`);
+    const contexts: PoliciesContext[] = [];
 
-        const policyContexts: PoliciesContext[] = [];
+    for (const result of similarPolicies) {
+        try {
+            const policyDoc = await db.collection('policies').doc(result.policyId).get();
+            const policyData = policyDoc.data() as Policy;
 
-        for (const result of similarPolicies) {
-            try {
-                const policyDoc = await db.collection('policies').doc(result.policyId).get();
-                
-                if (policyDoc.exists) {
-                    const policyData = policyDoc.data() as Policy;
-                    const context = createPolicyEmbeddingText(policyData);
-                    
-                    policyContexts.push({
-                        policyId: result.policyId,
-                        similarity: result.similarity,
-                        distance: result.distance,
-                        policyData: policyData,
-                        context: context
-                    });
-                }
-            } catch (error) {
-                console.error(`Error retrieving policy ${result.policyId}:`, error);
+            if (policyData) {
+                const context = await createPolicyEmbeddingText(policyData);
+                contexts.push({
+                    policyId: result.policyId,
+                    similarity: result.similarity,
+                    distance: result.distance,
+                    policyData: policyData,
+                    context: context
+                });
             }
+        } catch (error) {
+            console.error(`Error getting context for policy ${result.policyId}:`, error);
         }
-
-        return policyContexts;
-    } catch (error) {
-        console.error('Error retrieving policy contexts:', error);
-        return [];
     }
+
+    return contexts;
 }
 
 // Generate RAG response using retrieved customer data
@@ -2754,7 +2751,7 @@ async function generateRAGResponse(query: string, customerContexts: CustomerCont
         console.log(`Generating RAG response for query: "${query}"`);
 
         // Prepare context from similar customers
-        const contextText = customerContexts.map((ctx, index) => 
+        const contextText = customerContexts.map((ctx, index) =>
             `Customer ${index + 1} (Similarity: ${(ctx.similarity * 100).toFixed(1)}%):\n${ctx.context}`
         ).join('\n\n');
 
@@ -2802,7 +2799,7 @@ Response:`;
         });
 
         const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
-        
+
         // Prepare sources information
         const sources = customerContexts.map(ctx => ({
             customerId: ctx.customerId,
@@ -2831,7 +2828,7 @@ async function generateClaimsRAGResponse(query: string, claimContexts: ClaimsCon
         console.log(`Generating Claims RAG response for query: "${query}"`);
 
         // Prepare context from similar claims
-        const contextText = claimContexts.map((ctx, index) => 
+        const contextText = claimContexts.map((ctx, index) =>
             `Claim ${index + 1} (Similarity: ${(ctx.similarity * 100).toFixed(1)}%):\n${ctx.context}`
         ).join('\n\n');
 
@@ -2879,7 +2876,7 @@ Response:`;
         });
 
         const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
-        
+
         // Prepare sources information
         const sources = claimContexts.map(ctx => ({
             claimId: ctx.claimId,
@@ -2896,7 +2893,7 @@ Response:`;
 
     } catch (error) {
         console.error('Error generating Claims RAG response:', error);
-        
+
         // Return a fallback response if RAG generation fails
         return {
             answer: 'I apologize, but I encountered an error while processing your claims request. Please try again or contact support if the issue persists.',
@@ -2912,7 +2909,7 @@ async function generatePoliciesRAGResponse(query: string, policyContexts: Polici
         console.log(`Generating Policies RAG response for query: "${query}"`);
 
         // Prepare context from similar policies
-        const contextText = policyContexts.map((ctx, index) => 
+        const contextText = policyContexts.map((ctx, index) =>
             `Policy ${index + 1} (Similarity: ${(ctx.similarity * 100).toFixed(1)}%):\n${ctx.context}`
         ).join('\n\n');
 
@@ -2960,7 +2957,7 @@ Response:`;
         });
 
         const answer = result.response.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated';
-        
+
         // Prepare sources information
         const sources = policyContexts.map(ctx => ({
             policyId: ctx.policyId,
@@ -2977,7 +2974,7 @@ Response:`;
 
     } catch (error) {
         console.error('Error generating Policies RAG response:', error);
-        
+
         // Return a fallback response if RAG generation fails
         return {
             answer: 'I apologize, but I encountered an error while processing your policies request. Please try again or contact support if the issue persists.',
@@ -3245,11 +3242,11 @@ async function getDocumentContexts(searchResults: DocumentsVectorSearchResult[])
         for (const result of searchResults) {
             try {
                 const documentDoc = await db.collection('documents').doc(result.documentId).get();
-                
+
                 if (documentDoc.exists) {
                     const documentData = documentDoc.data() as Document;
                     const context = createDocumentEmbeddingText(documentData);
-                    
+
                     contexts.push({
                         documentId: result.documentId,
                         similarity: result.similarity,
@@ -3257,7 +3254,7 @@ async function getDocumentContexts(searchResults: DocumentsVectorSearchResult[])
                         documentData: documentData,
                         context: context
                     });
-                    
+
                     console.log(`Retrieved context for document: ${result.documentId}`);
                 } else {
                     console.warn(`Document ${result.documentId} not found in Firestore`);
@@ -3356,7 +3353,7 @@ Please provide a detailed answer based on the document information above:`;
 
     } catch (error) {
         console.error('Error generating Documents RAG response:', error);
-        
+
         return {
             answer: "I apologize, but I encountered an error while processing your document query. Please try again or contact support if the issue persists.",
             sources: [],
@@ -3365,4 +3362,3 @@ Please provide a detailed answer based on the document information above:`;
     }
 }
 
- 

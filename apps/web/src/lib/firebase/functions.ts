@@ -1,7 +1,41 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from './config';
+import { auth, functions } from './config';
 
-const functions = getFunctions(app);
+// Export the functions instance
+export { functions };
+
+// Helper function to get the current user's ID token
+export const getIdToken = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error('No user logged in');
+    }
+    return user.getIdToken();
+};
+
+// Define function types
+export interface AIGenerationRequest {
+    prompt: string;
+    maxTokens?: number;
+    temperature?: number;
+}
+
+export interface AIGenerationResponse {
+    text: string;
+    success: boolean;
+    error?: string;
+}
+
+// Define callable functions
+export const generateAIContent = httpsCallable<AIGenerationRequest, AIGenerationResponse>(
+    functions,
+    'generateAIContent'
+);
+
+export const analyzeCarPhoto = httpsCallable(functions, 'analyzeCarPhoto');
+export const indexDocument = httpsCallable(functions, 'indexDocument');
+export const queryRAG = httpsCallable(functions, 'queryRAG');
+export const healthCheck = httpsCallable(functions, 'healthCheck');
 
 // Premium calculation function
 export const calculatePremium = httpsCallable<{

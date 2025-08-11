@@ -1,219 +1,122 @@
-import {
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    query,
-    where,
-    orderBy,
-    limit,
-    startAfter,
-    serverTimestamp,
-    QueryConstraint,
-    Timestamp,
-} from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Claim, ClaimStatus, DamageType } from '@/types/policy';
-
-const COLLECTION_NAME = 'claims';
-
-interface ClaimFilters {
-    status?: ClaimStatus;
-    damageType?: DamageType;
-    policyId?: string;
-    customerId?: string;
-    startDate?: Date;
-    endDate?: Date;
-    searchTerm?: string;
-    userId?: string;
-}
-
-interface ClaimListResponse {
-    claims: Claim[];
-    lastDoc: any;
-    total: number;
-}
-
-// Helper function to convert Firestore timestamps to string dates
-const convertTimestamps = (data: any): any => {
-    if (data instanceof Timestamp) {
-        return data.toDate().toISOString();
-    } else if (Array.isArray(data)) {
-        return data.map(convertTimestamps);
-    } else if (data && typeof data === 'object') {
-        return Object.keys(data).reduce((result, key) => {
-            result[key] = convertTimestamps(data[key]);
-            return result;
-        }, {} as any);
-    }
-    return data;
-};
+import { doc, collection, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, limit, startAfter, DocumentSnapshot, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { Claim } from '@/types/claim';
 
 export const claimService = {
     async create(data: Omit<Claim, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'createdBy' | 'agent_id'>, userId: string): Promise<Claim> {
         const claimData = {
             ...data,
-            createdBy: userId, // Add the authenticated user's ID
-            agent_id: userId, // Add agent_id field for tracking which agent created the claim
-            status: 'Submitted' as const,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            status: 'Submitted',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            createdBy: userId,
+            agent_id: userId,
         };
 
-        const docRef = await addDoc(collection(db, COLLECTION_NAME), claimData);
-
+        const docRef = await addDoc(collection(db, 'claims'), claimData);
         return {
             ...claimData,
             id: docRef.id,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         } as Claim;
     },
 
+    async get(id: string): Promise<Claim> {
+        const docRef = doc(db, 'claims', id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            throw new Error('Claim not found');
+        }
+
+        return {
+            ...docSnap.data(),
+            id: docSnap.id,
+            incidentDate: docSnap.data().incidentDate.toDate(),
+            createdAt: docSnap.data().createdAt.toDate(),
+            updatedAt: docSnap.data().updatedAt.toDate(),
+        } as Claim;
+    },
+
+    async getById(id: string): Promise<Claim> {
+        return this.get(id);
+    },
+
     async update(id: string, data: Partial<Claim>): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
+        const docRef = doc(db, 'claims', id);
         await updateDoc(docRef, {
             ...data,
-            updatedAt: serverTimestamp(),
+            updatedAt: new Date(),
         });
     },
 
     async delete(id: string): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
+        const docRef = doc(db, 'claims', id);
         await deleteDoc(docRef);
     },
 
-    async getById(id: string): Promise<Claim | null> {
-        const docRef = doc(db, COLLECTION_NAME, id);
-        const docSnap = await getDoc(docRef);
+    async list(params: { userId: string; lastDoc?: DocumentSnapshot; limit?: number } = { userId: '', limit: 10 }): Promise<{ claims: Claim[]; total: number; lastDoc: DocumentSnapshot }> {
+        const claimsRef = collection(db, 'claims');
+        let q = query(
+            claimsRef,
+            where('createdBy', '==', params.userId),
+            orderBy('createdAt', 'desc'),
+            limit(params.limit || 10)
+        );
 
-        if (!docSnap.exists()) {
-            return null;
+        if (params.lastDoc) {
+            q = query(q, startAfter(params.lastDoc));
         }
 
-        const data = docSnap.data();
-        return {
-            id: docSnap.id,
-            ...convertTimestamps(data),
-        } as Claim;
-    },
-
-    async list(filters?: ClaimFilters, pageSize: number = 10, lastDoc?: any): Promise<ClaimListResponse> {
-        const constraints: QueryConstraint[] = [];
-
-        // Filter by user if provided (for user-specific data access)
-        if (filters?.userId) {
-            constraints.push(where('createdBy', '==', filters.userId));
-        }
-
-        if (filters?.status) {
-            constraints.push(where('status', '==', filters.status));
-        }
-
-        if (filters?.damageType) {
-            constraints.push(where('damageType', '==', filters.damageType));
-        }
-
-        if (filters?.policyId) {
-            constraints.push(where('policyId', '==', filters.policyId));
-        }
-
-        if (filters?.customerId) {
-            constraints.push(where('customerId', '==', filters.customerId));
-        }
-
-        if (filters?.startDate) {
-            constraints.push(where('incidentDate', '>=', filters.startDate.toISOString()));
-        }
-
-        if (filters?.endDate) {
-            constraints.push(where('incidentDate', '<=', filters.endDate.toISOString()));
-        }
-
-        if (filters?.searchTerm) {
-            constraints.push(
-                where('searchableFields', 'array-contains', filters.searchTerm.toLowerCase())
-            );
-        }
-
-        // Always sort by createdAt in descending order (newest first)
-        constraints.push(orderBy('createdAt', 'desc'));
-
-        // First, get total count without pagination
-        const countQuery = query(collection(db, COLLECTION_NAME), ...constraints);
-        const countSnapshot = await getDocs(countQuery);
-        const total = countSnapshot.size;
-
-        // Then get paginated results
-        constraints.push(limit(pageSize));
-        if (lastDoc) {
-            constraints.push(startAfter(lastDoc));
-        }
-
-        const q = query(collection(db, COLLECTION_NAME), ...constraints);
-        const querySnapshot = await getDocs(q);
-
-        const claims = querySnapshot.docs.map(doc => ({
+        const snapshot = await getDocs(q);
+        const claims = snapshot.docs.map(doc => ({
+            ...doc.data(),
             id: doc.id,
-            ...convertTimestamps(doc.data()),
+            incidentDate: doc.data().incidentDate.toDate(),
+            createdAt: doc.data().createdAt.toDate(),
+            updatedAt: doc.data().updatedAt.toDate(),
         })) as Claim[];
+
+        const totalSnapshot = await getDocs(query(claimsRef, where('createdBy', '==', params.userId)));
 
         return {
             claims,
-            lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1],
-            total,
+            total: totalSnapshot.size,
+            lastDoc: snapshot.docs[snapshot.docs.length - 1],
         };
     },
 
-    async updateStatus(id: string, status: ClaimStatus, reviewNotes?: string): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
+    async updateStatus(id: string, status: Claim['status'], reviewNotes?: string): Promise<void> {
+        const docRef = doc(db, 'claims', id);
         await updateDoc(docRef, {
             status,
             reviewNotes,
-            updatedAt: serverTimestamp(),
+            updatedAt: new Date(),
         });
     },
 
     async approveAmount(id: string, approvedAmount: number, reviewNotes: string): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, id);
+        const docRef = doc(db, 'claims', id);
         await updateDoc(docRef, {
-            status: 'Approved' as const,
+            status: 'Approved',
             approvedAmount,
             reviewNotes,
-            updatedAt: serverTimestamp(),
+            updatedAt: new Date(),
         });
     },
 
     async addDocument(claimId: string, documentUrl: string): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, claimId);
-        const claimDoc = await getDoc(docRef);
-
-        if (!claimDoc.exists()) {
-            throw new Error('Claim not found');
-        }
-
-        const currentDocuments = claimDoc.data().documents || [];
+        const docRef = doc(db, 'claims', claimId);
         await updateDoc(docRef, {
-            documents: [...currentDocuments, documentUrl],
-            updatedAt: serverTimestamp(),
+            documents: arrayUnion(documentUrl),
+            updatedAt: new Date(),
         });
     },
 
     async removeDocument(claimId: string, documentUrl: string): Promise<void> {
-        const docRef = doc(db, COLLECTION_NAME, claimId);
-        const claimDoc = await getDoc(docRef);
-
-        if (!claimDoc.exists()) {
-            throw new Error('Claim not found');
-        }
-
-        const currentDocuments = claimDoc.data().documents || [];
+        const docRef = doc(db, 'claims', claimId);
         await updateDoc(docRef, {
-            documents: currentDocuments.filter((url: string) => url !== documentUrl),
-            updatedAt: serverTimestamp(),
+            documents: arrayRemove(documentUrl),
+            updatedAt: new Date(),
         });
     },
 }; 

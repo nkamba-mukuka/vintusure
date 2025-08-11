@@ -24,19 +24,34 @@ export interface Premium {
 }
 
 export interface Policy {
-    id: string
-    type: PolicyType
-    status: PolicyStatus
-    customerId: string
-    policyNumber: string
-    vehicle: Vehicle
-    startDate: Timestamp
-    endDate: Timestamp
-    premium: Premium
-    createdAt: Timestamp
-    updatedAt: Timestamp
-    createdBy: string
-    agent_id: string // ID of the agent who created the policy
+    id: string;
+    type: 'comprehensive' | 'third_party';
+    status: 'active' | 'expired' | 'cancelled' | 'pending';
+    customerId: string;
+    customerName?: string;
+    vehicle: {
+        value: number;
+        registrationNumber: string;
+        make: string;
+        model: string;
+        year: number;
+        engineNumber: string;
+        chassisNumber: string;
+        usage: 'private' | 'commercial';
+    };
+    startDate: Date;
+    endDate: Date;
+    premium: {
+        amount: number;
+        currency: string;
+        paymentStatus: 'partial' | 'pending' | 'paid';
+        nextPaymentDate?: Date;
+    };
+    policyNumber?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+    createdBy?: string;
+    agent_id?: string;
 }
 
 export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {

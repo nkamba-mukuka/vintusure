@@ -1,257 +1,222 @@
 
-import { Link } from 'react-router-dom'
-import { format } from 'date-fns'
-import { Button } from '@/components/ui/button'
-import { Trash2, Edit, Plus } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
-import type { PolicyFormData } from '@/lib/validations/policy'
-import LoadingState from '@/components/LoadingState'
-import { useState } from 'react'
-import PolicyModalForm from './PolicyModalForm'
-import { ResponsiveTable, MobileCardView, MobileCardItem, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { policyService } from '@/lib/services/policyService';
+import { customerService } from '@/lib/services/customerService';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Policy } from '@/types/policy';
+import { Customer } from '@/types/customer';
 
-interface PolicyListProps {
-    policies: (PolicyFormData & { id: string })[]
-    isLoading: boolean
-    currentPage: number
-    totalPages: number
-    onPageChange: (page: number) => void
-    onPolicyDelete?: (policyId: string) => Promise<void>
-    onPolicyUpdate?: () => void
+interface PolicyWithCustomer extends Omit<Policy, 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {
+    customerName?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+    createdBy?: string;
+    agent_id?: string;
 }
 
-export default function PolicyList({ 
-    policies, 
-    isLoading, 
-    currentPage, 
-    totalPages, 
-    onPageChange,
-    onPolicyDelete,
-    onPolicyUpdate
-}: PolicyListProps) {
-    const { toast } = useToast()
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [editingPolicy, setEditingPolicy] = useState<(PolicyFormData & { id: string }) | undefined>(undefined)
-    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
+export default function PolicyList() {
+    const navigate = useNavigate();
+    const { user } = useAuthContext();
+    const { toast } = useToast();
+    const [policies, setPolicies] = useState<PolicyWithCustomer[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [policyToDelete, setPolicyToDelete] = useState<{ id: string; number?: string } | null>(null);
 
-    const handleDelete = async (policyId: string, policyNumber: string) => {
-        if (!window.confirm(`Are you sure you want to delete policy ${policyNumber}? This action cannot be undone.`)) {
-            return
-        }
+    useEffect(() => {
+        const loadData = async () => {
+            if (!user) return;
+
+            try {
+                setIsLoading(true);
+                const policiesData = await policyService.list({ userId: user.uid });
+                const customersData = await customerService.list({ userId: user.uid });
+
+                const policiesWithCustomers: PolicyWithCustomer[] = policiesData.policies.map(policy => {
+                    const customer = customersData.customers.find(c => c.id === policy.customerId);
+                    return {
+                        ...policy,
+                        customerName: customer ? `${customer.firstName} ${customer.lastName}` : 'Unknown Customer',
+                    };
+                });
+
+                setPolicies(policiesWithCustomers);
+                setCustomers(customersData.customers);
+            } catch (error) {
+                console.error('Error loading policies:', error);
+                toast({
+                    title: 'Error',
+                    description: 'Failed to load policies',
+                    variant: 'destructive',
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadData();
+    }, [user, toast]);
+
+    const handleDelete = (id: string, policyNumber?: string) => {
+        setPolicyToDelete({ id, number: policyNumber });
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!policyToDelete) return;
 
         try {
-            await onPolicyDelete?.(policyId)
+            await policyService.delete(policyToDelete.id);
+            setPolicies(prev => prev.filter(policy => policy.id !== policyToDelete.id));
             toast({
-                title: 'Policy deleted',
-                description: `Policy ${policyNumber} has been deleted successfully.`,
-            })
+                title: 'Success',
+                description: `Policy ${policyToDelete.number || ''} deleted successfully`,
+            });
         } catch (error) {
-            console.error('Error deleting policy:', error)
+            console.error('Error deleting policy:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to delete policy. Please try again.',
+                description: 'Failed to delete policy',
                 variant: 'destructive',
-            })
+            });
+        } finally {
+            setShowDeleteConfirm(false);
+            setPolicyToDelete(null);
         }
-    }
+    };
 
-    const handleCreatePolicy = () => {
-        setModalMode('create')
-        setEditingPolicy(undefined)
-        setIsModalOpen(true)
-    }
-
-    const handleEditPolicy = (policy: PolicyFormData & { id: string }) => {
-        setModalMode('edit')
-        setEditingPolicy(policy)
-        setIsModalOpen(true)
-    }
-
-    const handleModalClose = () => {
-        setIsModalOpen(false)
-        setEditingPolicy(undefined)
-    }
-
-    const handleModalSuccess = () => {
-        onPolicyUpdate?.() // Refresh the list
-    }
+    const getStatusColor = (status: Policy['status']) => {
+        switch (status) {
+            case 'active':
+                return 'bg-green-100 text-green-800';
+            case 'expired':
+                return 'bg-red-100 text-red-800';
+            case 'cancelled':
+                return 'bg-gray-100 text-gray-800';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     if (isLoading) {
-        return <LoadingState />
-    }
-
-    if (policies.length === 0) {
-        return (
-            <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Policies</h2>
-                    <Button onClick={handleCreatePolicy} className="flex items-center gap-2 w-full sm:w-auto">
-                        <Plus className="h-4 w-4" />
-                        Create Policy
-                    </Button>
-                </div>
-                <div className="text-center py-8">
-                    <p className="text-gray-500">No policies found</p>
-                </div>
-                <PolicyModalForm
-                    isOpen={isModalOpen}
-                    onClose={handleModalClose}
-                    initialData={editingPolicy}
-                    onSuccess={handleModalSuccess}
-                />
-            </div>
-        )
+        return <div>Loading...</div>;
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Policies</h2>
-                <Button onClick={handleCreatePolicy} className="flex items-center gap-2 w-full sm:w-auto">
-                    <Plus className="h-4 w-4" />
-                    Create Policy
-                </Button>
-            </div>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Policies</CardTitle>
+                            <CardDescription>Manage insurance policies</CardDescription>
+                        </div>
+                        <Button onClick={() => navigate('/policies/new')}>New Policy</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Policy Number</TableHead>
+                                <TableHead>Customer</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Premium</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {policies.map(policy => (
+                                <TableRow key={policy.id}>
+                                    <TableCell>{policy.policyNumber || 'N/A'}</TableCell>
+                                    <TableCell>{policy.customerName || 'Unknown Customer'}</TableCell>
+                                    <TableCell className="capitalize">{policy.type}</TableCell>
+                                    <TableCell>
+                                        <Badge className={getStatusColor(policy.status)}>
+                                            {policy.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {new Intl.NumberFormat('en-ZM', {
+                                            style: 'currency',
+                                            currency: policy.premium.currency,
+                                        }).format(policy.premium.amount)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => navigate(`/policies/${policy.id}`)}
+                                            >
+                                                View
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => navigate(`/policies/${policy.id}/edit`)}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDelete(policy.id, policy.policyNumber)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-            {/* Mobile Card View */}
-            <MobileCardView>
-                {policies.map((policy) => (
-                    <MobileCardItem key={policy.id}>
-                        <div className="flex justify-between items-start">
-                            <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-sm truncate">{policy.policyNumber}</h3>
-                                <p className="text-xs text-muted-foreground truncate">{policy.customerName}</p>
-                            </div>
-                            <Badge variant={policy.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                                {policy.status}
-                            </Badge>
-                        </div>
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Type:</span>
-                                <span>{policy.type}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Premium:</span>
-                                <span>{policy.premium?.amount || 0} {policy.premium?.currency || 'ZMW'}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Start Date:</span>
-                                <span>{policy.startDate ? format(new Date(policy.startDate), 'MMM dd, yyyy') : 'N/A'}</span>
-                            </div>
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditPolicy(policy)}
-                                className="flex-1"
-                            >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
+                        <p className="text-gray-600 mb-4">
+                            This will permanently delete policy{' '}
+                            {policyToDelete?.number ? `#${policyToDelete.number}` : ''}.
+                            This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                                Cancel
                             </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(policy.id, policy.policyNumber)}
-                                className="flex-1 text-destructive hover:text-destructive"
-                            >
-                                <Trash2 className="h-3 w-3 mr-1" />
+                            <Button variant="destructive" onClick={confirmDelete}>
                                 Delete
                             </Button>
                         </div>
-                    </MobileCardItem>
-                ))}
-            </MobileCardView>
-
-            {/* Desktop Table View */}
-            <ResponsiveTable className="hidden sm:block">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Policy Number</TableHead>
-                            <TableHead>Customer</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Premium</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Start Date</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {policies.map((policy) => (
-                            <TableRow key={policy.id}>
-                                <TableCell className="font-medium">{policy.policyNumber}</TableCell>
-                                <TableCell>{policy.customerName}</TableCell>
-                                <TableCell>{policy.type}</TableCell>
-                                <TableCell>{policy.premium?.amount || 0} {policy.premium?.currency || 'ZMW'}</TableCell>
-                                <TableCell>
-                                    <Badge variant={policy.status === 'active' ? 'default' : 'secondary'}>
-                                        {policy.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    {policy.startDate ? format(new Date(policy.startDate), 'MMM dd, yyyy') : 'N/A'}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleEditPolicy(policy)}
-                                        >
-                                            <Edit className="h-3 w-3 mr-1" />
-                                            Edit
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleDelete(policy.id, policy.policyNumber)}
-                                            className="text-destructive hover:text-destructive"
-                                        >
-                                            <Trash2 className="h-3 w-3 mr-1" />
-                                            Delete
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </ResponsiveTable>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onPageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                    >
-                        Previous
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onPageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                    >
-                        Next
-                    </Button>
+                    </div>
                 </div>
             )}
-
-            <PolicyModalForm
-                isOpen={isModalOpen}
-                onClose={handleModalClose}
-                initialData={editingPolicy}
-                onSuccess={handleModalSuccess}
-            />
         </div>
-    )
+    );
 } 

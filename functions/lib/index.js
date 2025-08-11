@@ -599,7 +599,7 @@ exports.indexPolicyData = (0, firestore_2.onDocumentCreated)({
         }
         console.log(`Processing policy data for indexing: ${policyId}`);
         // Extract and concatenate relevant policy data for embedding
-        const policyText = createPolicyEmbeddingText(policyData);
+        const policyText = await createPolicyEmbeddingText(policyData);
         console.log(`Generated policy text for embedding: ${policyText}`);
         // Generate embedding using Vertex AI
         const embedding = await generateCustomerEmbedding(policyText);
@@ -807,7 +807,7 @@ exports.updatePolicyIndex = (0, firestore_2.onDocumentUpdated)({
         }
         console.log(`Processing policy update for re-indexing: ${policyId}`);
         // Extract and concatenate relevant policy data for embedding
-        const policyText = createPolicyEmbeddingText(afterData);
+        const policyText = await createPolicyEmbeddingText(afterData);
         console.log(`Generated updated policy text for embedding: ${policyText}`);
         // Generate embedding using Vertex AI
         const embedding = await generateCustomerEmbedding(policyText);
@@ -983,24 +983,30 @@ function createClaimEmbeddingText(claim) {
     ].join('. ');
 }
 // Helper function to create searchable text from policy data
-function createPolicyEmbeddingText(policy) {
-    const startDate = policy.startDate?.toDate ? policy.startDate.toDate().toISOString().split('T')[0] : policy.startDate;
-    const endDate = policy.endDate?.toDate ? policy.endDate.toDate().toISOString().split('T')[0] : policy.endDate;
-    return [
-        `Policy ID: ${policy.id}`,
-        `Policy Number: ${policy.policyNumber}`,
-        `Customer ID: ${policy.customerId}`,
-        `Type: ${policy.type}`,
-        `Status: ${policy.status}`,
-        `Vehicle: ${policy.vehicle.make} ${policy.vehicle.model} ${policy.vehicle.year} (${policy.vehicle.registrationNumber})`,
-        `Vehicle Value: ${policy.vehicle.value}`,
-        `Usage: ${policy.vehicle.usage}`,
-        `Start Date: ${startDate}`,
-        `End Date: ${endDate}`,
-        `Premium: ${policy.premium.amount} ${policy.premium.currency}`,
-        `Payment Status: ${policy.premium.paymentStatus}`,
-        `Payment Method: ${policy.premium.paymentMethod}`
-    ].join('. ');
+async function createPolicyEmbeddingText(policyData) {
+    try {
+        // Get customer data
+        const customerDoc = await db.collection('customers').doc(policyData.customerId).get();
+        const customerData = customerDoc.data();
+        return `
+Policy Information:
+Policy Number: ${policyData.policyNumber}
+Type: ${policyData.type}
+Status: ${policyData.status}
+Customer Name: ${customerData.firstName} ${customerData.lastName}
+Customer ID: ${policyData.customerId}
+Vehicle: ${policyData.vehicle.make} ${policyData.vehicle.model} ${policyData.vehicle.year}
+Registration Number: ${policyData.vehicle.registrationNumber}
+Start Date: ${policyData.startDate}
+End Date: ${policyData.endDate}
+Premium Amount: ${policyData.premium.amount} ${policyData.premium.currency}
+Payment Status: ${policyData.premium.paymentStatus}
+`.trim();
+    }
+    catch (error) {
+        console.error('Error creating policy embedding text:', error);
+        throw error;
+    }
 }
 // Helper function to create searchable text from document data
 function createDocumentEmbeddingText(document) {
@@ -2216,34 +2222,27 @@ async function getClaimContexts(similarClaims) {
 }
 // Retrieve policy contexts from Firestore based on vector search results
 async function getPolicyContexts(similarPolicies) {
-    try {
-        console.log(`Retrieving policy contexts for ${similarPolicies.length} policies`);
-        const policyContexts = [];
-        for (const result of similarPolicies) {
-            try {
-                const policyDoc = await db.collection('policies').doc(result.policyId).get();
-                if (policyDoc.exists) {
-                    const policyData = policyDoc.data();
-                    const context = createPolicyEmbeddingText(policyData);
-                    policyContexts.push({
-                        policyId: result.policyId,
-                        similarity: result.similarity,
-                        distance: result.distance,
-                        policyData: policyData,
-                        context: context
-                    });
-                }
-            }
-            catch (error) {
-                console.error(`Error retrieving policy ${result.policyId}:`, error);
+    const contexts = [];
+    for (const result of similarPolicies) {
+        try {
+            const policyDoc = await db.collection('policies').doc(result.policyId).get();
+            const policyData = policyDoc.data();
+            if (policyData) {
+                const context = await createPolicyEmbeddingText(policyData);
+                contexts.push({
+                    policyId: result.policyId,
+                    similarity: result.similarity,
+                    distance: result.distance,
+                    policyData: policyData,
+                    context: context
+                });
             }
         }
-        return policyContexts;
+        catch (error) {
+            console.error(`Error getting context for policy ${result.policyId}:`, error);
+        }
     }
-    catch (error) {
-        console.error('Error retrieving policy contexts:', error);
-        return [];
-    }
+    return contexts;
 }
 // Generate RAG response using retrieved customer data
 async function generateRAGResponse(query, customerContexts, userId) {

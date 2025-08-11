@@ -10,13 +10,16 @@
   "scope": "/",
   "lang": "en-US",
   "dir": "ltr",
-  "categories": ["business", "productivity", "finance"],
+  "categories": [
+    "business",
+    "productivity",
+    "finance"
+  ],
   "icons": [
     {
       "src": "/images/vintusure-icon.ico",
       "sizes": "16x16 32x32 48x48",
-      "type": "image/x-icon",
-      "purpose": "any"
+      "type": "image/x-icon"
     },
     {
       "src": "/images/favicon-16x16.png",
@@ -39,8 +42,7 @@
     {
       "src": "/images/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "apple-touch-icon"
+      "type": "image/png"
     }
   ],
   "shortcuts": [

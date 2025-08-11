@@ -1,398 +1,97 @@
-import React, { Suspense, memo } from 'react'
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { useAuthContext } from '@/contexts/AuthContext'
-import DashboardLayout from '@/layouts/DashboardLayout'
-import { Toaster } from '@/components/ui/toaster'
-import ErrorBoundary from '@/components/ErrorBoundary'
-import LoadingState from '@/components/LoadingState'
+import { Suspense, lazy } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
+import LoadingState from '@/components/LoadingState';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
-// Optimized lazy loading with better caching and preloading
-const LandingPage = React.lazy(() => import('@/components/landingpage/LandingPage'))
-const LoginPage = React.lazy(() => import('@/routes/auth/Login'))
-const SignUpPage = React.lazy(() => import('@/routes/auth/SignUp'))
-const ForgotPasswordPage = React.lazy(() => import('@/routes/auth/ForgotPassword'))
-const ProfileOnboardingPage = React.lazy(() => import('@/routes/auth/ProfileOnboarding'))
-const ExplorePage = React.lazy(() => import('@/routes/Explore'))
-
-// Dashboard routes with higher priority
-const DashboardPage = React.lazy(() => import('@/routes/dashboard/Dashboard'))
-const ProfilePage = React.lazy(() => import('@/routes/dashboard/Profile'))
-const SettingsPage = React.lazy(() => import('@/routes/dashboard/Settings'))
-
-// Policy management routes
-const PoliciesPage = React.lazy(() => import('@/routes/dashboard/policies/Policies'))
-const NewPolicyPage = React.lazy(() => import('@/routes/dashboard/policies/NewPolicy'))
-const EditPolicyPage = React.lazy(() => import('@/routes/dashboard/policies/EditPolicy'))
-const PolicyDetailsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDetails'))
-const PolicyDocumentsPage = React.lazy(() => import('@/routes/dashboard/policies/PolicyDocuments'))
-
-// Claims management routes
-const ClaimsPage = React.lazy(() => import('@/routes/dashboard/claims/Claims'))
-const NewClaimPage = React.lazy(() => import('@/routes/dashboard/claims/NewClaim'))
-const EditClaimPage = React.lazy(() => import('@/routes/dashboard/claims/EditClaim'))
-const ClaimDetailsPage = React.lazy(() => import('@/routes/dashboard/claims/ClaimDetails'))
-
-// Customer management routes
-const CustomersPage = React.lazy(() => import('@/routes/dashboard/customers/Customers'))
-const NewCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/NewCustomer'))
-const EditCustomerPage = React.lazy(() => import('@/routes/dashboard/customers/EditCustomer'))
-
-// AI routes - heavier components loaded separately
-const RAGTestPage = React.lazy(() => import('@/routes/dashboard/RAGTest'))
-const AIGeneratorPage = React.lazy(() => import('@/routes/dashboard/AIGenerator'))
-const CarAnalyzerPage = React.lazy(() => import('@/routes/dashboard/CarAnalyzer'))
-const VintuSureAIPage = React.lazy(() => import('@/routes/dashboard/VintuSureAI'))
-
-
-
-// Memoized route components for better performance
-const ProtectedRoute = memo(() => {
-    const { user, loading } = useAuthContext()
-
-    if (loading) {
-        return <LoadingState message="Authenticating..." variant="pulse" />
-    }
-
-    if (!user) {
-        return <Navigate to="/login" replace />
-    }
-
-    // Check if profile is completed
-    if (!user.profileCompleted) {
-        return <Navigate to="/onboarding" replace />
-    }
-
-    return <Outlet />
-})
-
-const OnboardingRoute = memo(() => {
-  const { user, loading } = useAuthContext()
-
-  if (loading) {
-    return <LoadingState message="Setting up your profile..." variant="pulse" />
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-
-  // If profile is already completed, redirect to dashboard
-  if (user.profileCompleted) {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  return (
-    <Suspense fallback={<LoadingState message="Loading profile setup..." />}>
-      <ProfileOnboardingPage />
-    </Suspense>
-  )
-})
-
-// Add display names for debugging
-ProtectedRoute.displayName = 'ProtectedRoute'
-OnboardingRoute.displayName = 'OnboardingRoute'
+// Lazy load components
+const LandingPage = lazy(() => import('@/components/landingpage/LandingPage'));
+const Login = lazy(() => import('@/routes/auth/Login'));
+const SignUp = lazy(() => import('@/routes/auth/SignUp'));
+const ForgotPassword = lazy(() => import('@/routes/auth/ForgotPassword'));
+const ProfileOnboarding = lazy(() => import('@/routes/auth/ProfileOnboarding'));
+const Dashboard = lazy(() => import('@/routes/dashboard/Dashboard'));
+const Profile = lazy(() => import('@/routes/dashboard/Profile'));
+const Settings = lazy(() => import('@/routes/dashboard/Settings'));
+const Customers = lazy(() => import('@/routes/dashboard/customers/Customers'));
+const NewCustomer = lazy(() => import('@/routes/dashboard/customers/NewCustomer'));
+const EditCustomer = lazy(() => import('@/routes/dashboard/customers/EditCustomer'));
+const Policies = lazy(() => import('@/routes/dashboard/policies/Policies'));
+const NewPolicy = lazy(() => import('@/routes/dashboard/policies/NewPolicy'));
+const EditPolicy = lazy(() => import('@/routes/dashboard/policies/EditPolicy'));
+const PolicyDetails = lazy(() => import('@/routes/dashboard/policies/PolicyDetails'));
+const PolicyDocuments = lazy(() => import('@/routes/dashboard/policies/PolicyDocuments'));
+const Claims = lazy(() => import('@/routes/dashboard/claims/Claims'));
+const NewClaim = lazy(() => import('@/routes/dashboard/claims/NewClaim'));
+const EditClaim = lazy(() => import('@/routes/dashboard/claims/EditClaim'));
+const ClaimDetails = lazy(() => import('@/routes/dashboard/claims/ClaimDetails'));
+const CarAnalyzer = lazy(() => import('@/routes/dashboard/CarAnalyzer'));
+const AIGenerator = lazy(() => import('@/routes/dashboard/AIGenerator'));
+const VintuSureAI = lazy(() => import('@/routes/dashboard/VintuSureAI'));
+const RAGTest = lazy(() => import('@/routes/dashboard/RAGTest'));
 
 export default function App() {
+    const { user, loading } = useAuthContext();
+
+    if (loading) {
+        return <LoadingState />;
+    }
+
     return (
         <ErrorBoundary>
             <Suspense fallback={<LoadingState />}>
                 <Routes>
-                    {/* Landing Page */}
-                    <Route 
-                        path="/" 
-                        element={
-                            <ErrorBoundary>
-                                <Suspense fallback={<LoadingState message="Loading VintuSure..." />}>
-                                    <LandingPage />
-                                </Suspense>
-                            </ErrorBoundary>
-                        } 
-                    />
-
                     {/* Public Routes */}
-                    <Route 
-                        path="/login" 
-                        element={
-                            <ErrorBoundary>
-                                <Suspense fallback={<LoadingState message="Loading sign in..." />}>
-                                    <LoginPage />
-                                </Suspense>
-                            </ErrorBoundary>
-                        } 
-                    />
-                    <Route 
-                        path="/signup" 
-                        element={
-                            <ErrorBoundary>
-                                <Suspense fallback={<LoadingState message="Loading sign up..." />}>
-                                    <SignUpPage />
-                                </Suspense>
-                            </ErrorBoundary>
-                        } 
-                    />
-                    <Route 
-                        path="/forgot-password" 
-                        element={
-                            <ErrorBoundary>
-                                <Suspense fallback={<LoadingState message="Loading password reset..." />}>
-                                    <ForgotPasswordPage />
-                                </Suspense>
-                            </ErrorBoundary>
-                        } 
-                    />
-                    <Route 
-                        path="/explore" 
-                        element={
-                            <ErrorBoundary>
-                                <Suspense fallback={<LoadingState message="Loading explorer..." />}>
-                                    <ExplorePage />
-                                </Suspense>
-                            </ErrorBoundary>
-                        } 
-                    />
-
-                    {/* Onboarding route */}
-                    <Route path="/onboarding" element={<OnboardingRoute />} />
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
 
                     {/* Protected Routes */}
-                    <Route element={<ProtectedRoute />}>
-                        <Route element={<DashboardLayout />}>
-                            <Route 
-                                path="/dashboard" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading dashboard..." />}>
-                                            <DashboardPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/profile" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading profile..." />}>
-                                            <ProfilePage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/settings" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading settings..." />}>
-                                            <SettingsPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route path="/policies">
-                                <Route 
-                                    index 
-                                    element={
-                                        <ErrorBoundary>
-                                            <Suspense fallback={<LoadingState message="Loading policies..." />}>
-                                                <PoliciesPage />
-                                            </Suspense>
-                                        </ErrorBoundary>
-                                    } 
-                                />
-                                <Route 
-                                    path="new" 
-                                    element={
-                                        <ErrorBoundary>
-                                            <Suspense fallback={<LoadingState message="Loading new policy form..." />}>
-                                                <NewPolicyPage />
-                                            </Suspense>
-                                        </ErrorBoundary>
-                                    } 
-                                />
-                                <Route path=":id">
-                                    <Route 
-                                        index 
-                                        element={
-                                            <ErrorBoundary>
-                                                <Suspense fallback={<LoadingState message="Loading policy details..." />}>
-                                                    <PolicyDetailsPage />
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        } 
-                                    />
-                                    <Route 
-                                        path="edit" 
-                                        element={
-                                            <ErrorBoundary>
-                                                <Suspense fallback={<LoadingState message="Loading policy editor..." />}>
-                                                    <EditPolicyPage />
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        } 
-                                    />
-                                    <Route 
-                                        path="documents" 
-                                        element={
-                                            <ErrorBoundary>
-                                                <Suspense fallback={<LoadingState message="Loading documents..." />}>
-                                                    <PolicyDocumentsPage />
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        } 
-                                    />
-                                </Route>
-                            </Route>
-                            <Route path="/claims">
-                                <Route 
-                                    index 
-                                    element={
-                                        <ErrorBoundary>
-                                            <Suspense fallback={<LoadingState message="Loading claims..." />}>
-                                                <ClaimsPage />
-                                            </Suspense>
-                                        </ErrorBoundary>
-                                    } 
-                                />
-                                <Route 
-                                    path="new" 
-                                    element={
-                                        <ErrorBoundary>
-                                            <Suspense fallback={<LoadingState message="Loading new claim form..." />}>
-                                                <NewClaimPage />
-                                            </Suspense>
-                                        </ErrorBoundary>
-                                    } 
-                                />
-                                <Route path=":id">
-                                    <Route 
-                                        index 
-                                        element={
-                                            <ErrorBoundary>
-                                                <Suspense fallback={<LoadingState message="Loading claim details..." />}>
-                                                    <ClaimDetailsPage />
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        } 
-                                    />
-                                    <Route 
-                                        path="edit" 
-                                        element={
-                                            <ErrorBoundary>
-                                                <Suspense fallback={<LoadingState message="Loading claim editor..." />}>
-                                                    <EditClaimPage />
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        } 
-                                    />
-                                </Route>
-                            </Route>
-                            <Route 
-                                path="/customers/new" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading new customer form..." />}>
-                                            <NewCustomerPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/customers/:id/edit" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading customer editor..." />}>
-                                            <EditCustomerPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/customers" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading customers..." />}>
-                                            <CustomersPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/rag-test" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading AI assistant..." />}>
-                                            <RAGTestPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/ai-generator" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading AI generator..." />}>
-                                            <AIGeneratorPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/car-analyzer" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading car analyzer..." />}>
-                                            <CarAnalyzerPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            <Route 
-                                path="/vintusure-ai" 
-                                element={
-                                    <ErrorBoundary>
-                                        <Suspense fallback={<LoadingState message="Loading VintuSure AI..." />}>
-                                            <VintuSureAIPage />
-                                        </Suspense>
-                                    </ErrorBoundary>
-                                } 
-                            />
-                            
-                        </Route>
-                    </Route>
+                    {user ? (
+                        <>
+                            {/* Profile Onboarding */}
+                            <Route path="/onboarding" element={<ProfileOnboarding />} />
 
-                    {/* 404 route */}
-                    <Route
-                        path="*"
-                        element={
-                            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                                <div className="text-center space-y-6 max-w-md">
-                                    <div className="space-y-4">
-                                        <h1 className="text-6xl font-bold text-primary animate-bounce-in">404</h1>
-                                        <h2 className="text-2xl font-semibold text-foreground">Page Not Found</h2>
-                                        <p className="text-muted-foreground leading-relaxed">
-                                            The page you're looking for doesn't exist or has been moved.
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                        <button
-                                            onClick={() => window.history.back()}
-                                            className="btn-secondary px-6 py-2 rounded-md transition-all duration-200"
-                                        >
-                                            Go Back
-                                        </button>
-                                        <button
-                                            onClick={() => window.location.href = '/'}
-                                            className="btn-primary px-6 py-2 rounded-md transition-all duration-200"
-                                        >
-                                            Go Home
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    />
+                            {/* Dashboard Routes */}
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/profile" element={<Profile />} />
+                            <Route path="/settings" element={<Settings />} />
+
+                            {/* Customer Routes */}
+                            <Route path="/customers" element={<Customers />} />
+                            <Route path="/customers/new" element={<NewCustomer />} />
+                            <Route path="/customers/:id/edit" element={<EditCustomer />} />
+
+                            {/* Policy Routes */}
+                            <Route path="/policies" element={<Policies />} />
+                            <Route path="/policies/new" element={<NewPolicy />} />
+                            <Route path="/policies/:id" element={<PolicyDetails />} />
+                            <Route path="/policies/:id/edit" element={<EditPolicy />} />
+                            <Route path="/policies/:id/documents" element={<PolicyDocuments />} />
+
+                            {/* Claim Routes */}
+                            <Route path="/claims" element={<Claims />} />
+                            <Route path="/claims/new" element={<NewClaim />} />
+                            <Route path="/claims/:id" element={<ClaimDetails />} />
+                            <Route path="/claims/:id/edit" element={<EditClaim />} />
+
+                            {/* AI Features */}
+                            <Route path="/car-analyzer" element={<CarAnalyzer />} />
+                            <Route path="/ai-generator" element={<AIGenerator />} />
+                            <Route path="/vintusure-ai" element={<VintuSureAI />} />
+                            <Route path="/rag-test" element={<RAGTest />} />
+
+                            {/* Fallback */}
+                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                        </>
+                    ) : (
+                        <Route path="*" element={<Navigate to="/login" replace />} />
+                    )}
                 </Routes>
-                <Toaster />
             </Suspense>
+            <Toaster />
         </ErrorBoundary>
-    )
+    );
 } 
