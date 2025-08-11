@@ -1,14 +1,7 @@
-import React from 'react';
-import * as Sentry from '@sentry/react';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { Toaster } from './components/ui/toaster';
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthContext } from './contexts/AuthContext';
 import LoadingState from './components/LoadingState';
-import { Suspense, lazy } from 'react';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/landingpage/LandingPage'));
@@ -36,33 +29,7 @@ const AIGenerator = lazy(() => import('./routes/dashboard/AIGenerator'));
 const VintuSureAI = lazy(() => import('./routes/dashboard/VintuSureAI'));
 const RAGTest = lazy(() => import('./routes/dashboard/RAGTest'));
 
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes
-            gcTime: 10 * 60 * 1000, // 10 minutes
-            retry: 1,
-            refetchOnWindowFocus: false,
-        },
-    },
-});
-
-const SentryFallback = () => (
-    <div className="flex h-screen w-screen items-center justify-center">
-        <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600">Something went wrong</h1>
-            <p className="mt-2 text-gray-600">Our team has been notified and is working on the issue.</p>
-            <button
-                className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-                onClick={() => window.location.reload()}
-            >
-                Refresh Page
-            </button>
-        </div>
-    </div>
-);
-
-function AppRoutes() {
+export default function AppRoutes() {
     const { user, loading } = useAuthContext();
 
     if (loading) {
@@ -122,23 +89,4 @@ function AppRoutes() {
             </Routes>
         </Suspense>
     );
-}
-
-function App() {
-    return (
-        <Sentry.ErrorBoundary fallback={SentryFallback}>
-            <QueryClientProvider client={queryClient}>
-                <BrowserRouter>
-                    <ThemeProvider>
-                        <AuthProvider>
-                            <AppRoutes />
-                            <Toaster />
-                        </AuthProvider>
-                    </ThemeProvider>
-                </BrowserRouter>
-            </QueryClientProvider>
-        </Sentry.ErrorBoundary>
-    );
-}
-
-export default App; 
+} 

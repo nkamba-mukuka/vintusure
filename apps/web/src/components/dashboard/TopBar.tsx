@@ -24,7 +24,7 @@ interface TopBarProps {
 }
 
 // Helper function to get user initials
-const getUserInitials = (firstName?: string, lastName?: string, email?: string): string => {
+const getUserInitials = (firstName: string | null | undefined, lastName: string | null | undefined, email: string | null | undefined): string => {
     if (firstName && lastName) {
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     }
@@ -89,26 +89,26 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
 
                     {/* Dashboard Navigation - Available everywhere */}
                     <div className="hidden lg:flex items-center space-x-1 glass-morphism border border-purple-200/30 rounded-lg p-1 purple-shadow">
-                        <Button 
+                        <Button
                             variant={isDashboardPage && activeTab === 'overview' ? 'default' : 'ghost'}
                             onClick={() => handleDashboardNavigation('overview')}
                             className={cn(
                                 "transition-all duration-200 px-4 py-2 text-sm",
                                 isDashboardPage && activeTab === 'overview'
-                                    ? 'btn-purple-gradient text-white shadow-sm' 
+                                    ? 'btn-purple-gradient text-white shadow-sm'
                                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                             )}
                         >
                             <BarChart3 className="h-4 w-4 mr-2" />
                             {getUserInitials(user?.firstName, user?.lastName, user?.email)} Dashboard
                         </Button>
-                        <Button 
+                        <Button
                             variant={isDashboardPage && activeTab === 'ai' ? 'default' : 'ghost'}
                             onClick={() => handleDashboardNavigation('ai')}
                             className={cn(
                                 "transition-all duration-200 px-4 py-2 text-sm",
                                 isDashboardPage && activeTab === 'ai'
-                                    ? 'btn-purple-gradient text-white shadow-sm' 
+                                    ? 'btn-purple-gradient text-white shadow-sm'
                                     : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                             )}
                         >
@@ -129,25 +129,25 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                     >
                         <div className="relative w-full h-full flex items-center justify-center">
                             {/* Sun Icon */}
-                            <Sun 
+                            <Sun
                                 className={cn(
                                     "theme-switcher-icon h-5 w-5 absolute",
-                                    theme === 'light' 
-                                        ? "active text-primary" 
+                                    theme === 'light'
+                                        ? "active text-primary"
                                         : "inactive text-muted-foreground"
                                 )}
                             />
                             {/* Moon Icon */}
-                            <Moon 
+                            <Moon
                                 className={cn(
                                     "theme-switcher-icon h-5 w-5 absolute",
-                                    theme === 'dark' 
-                                        ? "active text-primary" 
+                                    theme === 'dark'
+                                        ? "active text-primary"
                                         : "inactive text-muted-foreground"
                                 )}
                             />
                         </div>
-                        
+
                         {/* Hover effect ring */}
                         <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-primary/30 transition-all duration-200" />
                     </Button>
@@ -168,7 +168,7 @@ export default function TopBar({ onMenuClick, isSidebarCollapsed, onToggleCollap
                             <DropdownMenuLabel className="font-normal purple-modal-header">
                                 <div className="flex flex-col space-y-1">
                                     <p className="text-sm font-medium text-primary">
-                                        {user?.firstName && user?.lastName 
+                                        {user?.firstName && user?.lastName
                                             ? `${user.firstName} ${user.lastName}`
                                             : user?.email
                                         }

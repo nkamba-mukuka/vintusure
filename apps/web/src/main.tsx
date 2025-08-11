@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import './index.css'
+import { initSentry } from './lib/monitoring/sentry';
 
 // Configure future flags for React Router v7
 const router = {
@@ -26,6 +27,9 @@ const queryClient = new QueryClient({
         },
     },
 })
+
+// Initialize Sentry
+initSentry();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

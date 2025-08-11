@@ -20,7 +20,7 @@ export interface Premium {
     amount: number
     currency: string
     paymentStatus: PaymentStatus
-    paymentMethod: string
+    nextPaymentDate?: string
 }
 
 export interface Policy {
@@ -28,35 +28,54 @@ export interface Policy {
     type: 'comprehensive' | 'third_party';
     status: 'active' | 'expired' | 'cancelled' | 'pending';
     customerId: string;
-    customerName?: string;
+    policyNumber: string;
     vehicle: {
-        value: number;
         registrationNumber: string;
         make: string;
         model: string;
         year: number;
         engineNumber: string;
         chassisNumber: string;
+        value: number;
         usage: 'private' | 'commercial';
     };
-    startDate: Date;
-    endDate: Date;
+    startDate: string;
+    endDate: string;
     premium: {
         amount: number;
         currency: string;
-        paymentStatus: 'partial' | 'pending' | 'paid';
-        nextPaymentDate?: Date;
+        paymentStatus: 'pending' | 'paid' | 'partial';
+        nextPaymentDate?: string;
     };
-    policyNumber?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    createdBy?: string;
-    agent_id?: string;
+    createdAt: string;
+    updatedAt: string;
+    createdBy: string;
+    agent_id: string;
 }
 
-export interface PolicyFormData extends Omit<Policy, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {
-    id?: string;
-    agent_id?: string; // Make agent_id optional for forms
+export interface PolicyFormData {
+    type: 'comprehensive' | 'third_party';
+    status: 'active' | 'expired' | 'cancelled' | 'pending';
+    customerId: string;
+    vehicle: {
+        registrationNumber: string;
+        make: string;
+        model: string;
+        year: number;
+        engineNumber: string;
+        chassisNumber: string;
+        value: number;
+        usage: 'private' | 'commercial';
+    };
+    startDate: string;
+    endDate: string;
+    premium: {
+        amount: number;
+        currency: string;
+        paymentStatus: 'pending' | 'paid' | 'partial';
+        nextPaymentDate?: string;
+    };
+    policyNumber?: string;
 }
 
 export interface PolicyFilters {
@@ -71,15 +90,14 @@ export interface PolicyFilters {
 export interface PolicyListResponse {
     policies: Policy[];
     total: number;
-    page: number;
-    limit: number;
+    lastDoc?: any;
 }
 
 export interface Claim {
     id: string;
     policyId: string;
     customerId: string;
-    incidentDate: Date; // Changed from string to Date
+    incidentDate: string; // Changed from Date to string to match claim.ts
     description: string;
     location: {
         latitude: number;

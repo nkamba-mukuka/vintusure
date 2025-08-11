@@ -1,33 +1,24 @@
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { claimService } from '@/lib/services/claimService';
+import { z } from 'zod';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Claim, ClaimFormData, ClaimLocation, DamageType } from '@/types/claim';
+import { claimService } from '@/lib/services/claimService';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
 
 const claimFormSchema = z.object({
     customerId: z.string().min(1, 'Customer is required'),
     policyId: z.string().min(1, 'Policy is required'),
     incidentDate: z.string().min(1, 'Incident date is required'),
     location: z.object({
-        address: z.string().min(5, 'Address must be at least 5 characters'),
         latitude: z.number(),
         longitude: z.number(),
+        address: z.string().min(1, 'Address is required'),
     }),
     description: z.string().min(10, 'Description must be at least 10 characters'),
     amount: z.number().min(0, 'Amount must be greater than 0'),
@@ -35,170 +26,173 @@ const claimFormSchema = z.object({
     documents: z.array(z.string()),
 });
 
+type ClaimFormData = z.infer<typeof claimFormSchema>;
+
 interface ClaimFormProps {
-    initialData?: Claim;
-    onCancel: () => void;
-    onSuccess: () => void;
+    initialData?: Partial<ClaimFormData> & { id?: string };
+    onSuccess?: () => void;
+    onCancel?: () => void;
 }
 
-const formatClaimData = (data: ClaimFormData): Omit<Claim, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> => {
-    return {
-        ...data,
-        incidentDate: new Date(data.incidentDate),
-        amount: parseFloat(data.amount.toString()),
-    };
-};
-
-export default function ClaimForm({ initialData, onCancel, onSuccess }: ClaimFormProps) {
+export default function ClaimForm({ initialData, onSuccess, onCancel }: ClaimFormProps) {
     const { user } = useAuthContext();
     const { toast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<ClaimFormData>({
         resolver: zodResolver(claimFormSchema),
-        defaultValues: initialData ? {
-            customerId: initialData.customerId,
-            policyId: initialData.policyId,
-            incidentDate: initialData.incidentDate.toISOString().split('T')[0],
-            location: initialData.location,
-            description: initialData.description,
-            amount: initialData.amount,
-            damageType: initialData.damageType,
-            documents: initialData.documents,
-        } : {
-            customerId: '',
-            policyId: '',
-            incidentDate: new Date().toISOString().split('T')[0],
+        defaultValues: {
+            customerId: initialData?.customerId || '',
+            policyId: initialData?.policyId || '',
+            incidentDate: initialData?.incidentDate || format(new Date(), 'yyyy-MM-dd'),
             location: {
-                address: '',
-                latitude: 0,
-                longitude: 0,
+                latitude: initialData?.location?.latitude || 0,
+                longitude: initialData?.location?.longitude || 0,
+                address: initialData?.location?.address || '',
             },
-            description: '',
-            amount: 0,
-            damageType: 'Vehicle',
-            documents: [],
+            description: initialData?.description || '',
+            amount: initialData?.amount || 0,
+            damageType: initialData?.damageType || 'Vehicle',
+            documents: initialData?.documents || [],
         },
     });
 
-    const handleSubmit = async (data: ClaimFormData) => {
-        if (!user) return;
-
-        setIsSubmitting(true);
+    const onSubmit = async (data: ClaimFormData) => {
         try {
-            const formattedData = formatClaimData(data);
+            if (!user) {
+                throw new Error('User not authenticated');
+            }
 
             if (initialData?.id) {
-                await claimService.update(initialData.id, formattedData);
+                await claimService.update(initialData.id, data);
                 toast({
                     title: 'Success',
                     description: 'Claim updated successfully',
                 });
             } else {
-                await claimService.create(formattedData, user.uid);
+                await claimService.create(data, user.uid);
                 toast({
                     title: 'Success',
                     description: 'Claim created successfully',
                 });
             }
 
-            onSuccess();
+            onSuccess?.();
+            form.reset();
         } catch (error) {
-            console.error('Error submitting claim:', error);
+            console.error('Error saving claim:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to submit claim',
+                description: 'Failed to save claim. Please try again.',
                 variant: 'destructive',
             });
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Claim Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="incidentDate"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Incident Date</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+                <div>
+                    <Controller
+                        name="incidentDate"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="incidentDate" className="block text-sm font-medium">
+                                    Incident Date
+                                </label>
+                                <Input {...field} type="date" />
+                            </div>
+                        )}
+                    />
+                </div>
 
-                        <FormField
-                            control={form.control}
-                            name="location.address"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Location</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Enter incident location" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                <div>
+                    <Controller
+                        name="location.address"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="address" className="block text-sm font-medium">
+                                    Location Address
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
 
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="Describe what happened..."
-                                            className="min-h-[100px]"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                <div>
+                    <Controller
+                        name="description"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="description" className="block text-sm font-medium">
+                                    Description
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
 
-                        <FormField
-                            control={form.control}
-                            name="amount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Claim Amount</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="number"
-                                            placeholder="Enter claim amount"
-                                            {...field}
-                                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </CardContent>
-                </Card>
+                <div>
+                    <Controller
+                        name="amount"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="amount" className="block text-sm font-medium">
+                                    Amount
+                                </label>
+                                <Input
+                                    {...field}
+                                    type="number"
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                />
+                            </div>
+                        )}
+                    />
+                </div>
 
-                <div className="flex justify-end gap-4">
+                <div>
+                    <Controller
+                        name="damageType"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="damageType" className="block text-sm font-medium">
+                                    Damage Type
+                                </label>
+                                <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select damage type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Vehicle">Vehicle</SelectItem>
+                                        <SelectItem value="Property">Property</SelectItem>
+                                        <SelectItem value="Personal">Personal</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    />
+                </div>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+                {onCancel && (
                     <Button type="button" variant="outline" onClick={onCancel}>
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? 'Submitting...' : initialData ? 'Update Claim' : 'Submit Claim'}
-                    </Button>
-                </div>
-            </form>
-        </Form>
+                )}
+                <Button type="submit">
+                    {initialData?.id ? 'Update Claim' : 'Create Claim'}
+                </Button>
+            </div>
+        </form>
     );
 } 

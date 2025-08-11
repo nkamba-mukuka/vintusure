@@ -1,28 +1,29 @@
-export type DamageType = 'Vehicle' | 'Property' | 'Personal';
-
 export interface ClaimLocation {
-    address: string;
     latitude: number;
     longitude: number;
+    address: string;
 }
+
+export type DamageType = 'Vehicle' | 'Property' | 'Personal';
+export type ClaimStatus = 'Submitted' | 'UnderReview' | 'Approved' | 'Rejected' | 'Paid';
 
 export interface Claim {
     id: string;
     customerId: string;
     policyId: string;
-    incidentDate: Date;
+    incidentDate: string;
     location: ClaimLocation;
     description: string;
     amount: number;
     damageType: DamageType;
     documents: string[];
-    status: 'Submitted' | 'UnderReview' | 'Approved' | 'Rejected' | 'Paid';
+    status: ClaimStatus;
     approvedAmount?: number;
     reviewNotes?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    createdBy?: string;
-    agent_id?: string;
+    createdAt: string;
+    updatedAt: string;
+    createdBy: string;
+    agent_id: string;
 }
 
 export interface ClaimFormData {
@@ -34,6 +35,17 @@ export interface ClaimFormData {
     amount: number;
     damageType: DamageType;
     documents: string[];
-    approvedAmount?: number;
-    reviewNotes?: string;
-} 
+}
+
+export interface ClaimListResponse {
+    claims: Claim[];
+    total: number;
+    lastDoc?: any;
+}
+
+// Helper function to convert form data to claim data
+export const convertFormDataToClaim = (formData: ClaimFormData): Omit<Claim, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id' | 'status'> => {
+    return {
+        ...formData,
+    };
+}; 

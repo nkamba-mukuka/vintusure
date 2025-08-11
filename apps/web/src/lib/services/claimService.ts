@@ -1,14 +1,14 @@
 import { db } from '@/lib/firebase/config';
-import { doc, collection, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, limit, startAfter, DocumentSnapshot, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, collection, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
 import { Claim } from '@/types/claim';
 
 export const claimService = {
-    async create(data: Omit<Claim, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'createdBy' | 'agent_id'>, userId: string): Promise<Claim> {
+    async create(data: Omit<Claim, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id' | 'status'>, userId: string): Promise<Claim> {
         const claimData = {
             ...data,
             status: 'Submitted',
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             createdBy: userId,
             agent_id: userId,
         };
@@ -31,92 +31,109 @@ export const claimService = {
         return {
             ...docSnap.data(),
             id: docSnap.id,
-            incidentDate: docSnap.data().incidentDate.toDate(),
-            createdAt: docSnap.data().createdAt.toDate(),
-            updatedAt: docSnap.data().updatedAt.toDate(),
         } as Claim;
     },
 
+    // Alias for get to maintain compatibility
     async getById(id: string): Promise<Claim> {
         return this.get(id);
     },
 
-    async update(id: string, data: Partial<Claim>): Promise<void> {
+    async list(params?: {
+        userId?: string;
+        lastDoc?: DocumentSnapshot;
+        limit?: number;
+    }): Promise<{ claims: Claim[]; total: number; lastDoc?: DocumentSnapshot }> {
+        const queryConstraints = [];
+
+        if (params?.userId) {
+            queryConstraints.push(where('agent_id', '==', params.userId));
+        }
+
+        queryConstraints.push(orderBy('createdAt', 'desc'));
+
+        if (params?.limit) {
+            queryConstraints.push(limit(params.limit));
+        }
+
+        if (params?.lastDoc) {
+            queryConstraints.push(startAfter(params.lastDoc));
+        }
+
+        const q = query(collection(db, 'claims'), ...queryConstraints);
+        const querySnapshot = await getDocs(q);
+
+        // Get total count
+        const totalQuery = query(collection(db, 'claims'),
+            params?.userId ? where('agent_id', '==', params.userId) : where('agent_id', '!=', null)
+        );
+        const totalSnapshot = await getDocs(totalQuery);
+
+        const claims = querySnapshot.docs.map(doc => ({
+            ...doc.data(),
+            id: doc.id,
+        })) as Claim[];
+
+        return {
+            claims,
+            total: totalSnapshot.size,
+            lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1],
+        };
+    },
+
+    async update(id: string, data: Partial<Claim>): Promise<Claim> {
         const docRef = doc(db, 'claims', id);
-        await updateDoc(docRef, {
+        const updateData = {
             ...data,
-            updatedAt: new Date(),
-        });
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateDoc(docRef, updateData);
+
+        const updatedDoc = await getDoc(docRef);
+        return {
+            ...updatedDoc.data(),
+            id: updatedDoc.id,
+        } as Claim;
+    },
+
+    async updateStatus(id: string, status: Claim['status'], reviewNotes?: string): Promise<Claim> {
+        const docRef = doc(db, 'claims', id);
+        const updateData = {
+            status,
+            reviewNotes,
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateDoc(docRef, updateData);
+
+        const updatedDoc = await getDoc(docRef);
+        return {
+            ...updatedDoc.data(),
+            id: updatedDoc.id,
+        } as Claim;
+    },
+
+    async approveAmount(id: string, approvedAmount: number, reviewNotes: string): Promise<Claim> {
+        const docRef = doc(db, 'claims', id);
+        const updateData = {
+            status: 'Approved',
+            approvedAmount,
+            reviewNotes,
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateDoc(docRef, updateData);
+
+        const updatedDoc = await getDoc(docRef);
+        return {
+            ...updatedDoc.data(),
+            id: updatedDoc.id,
+        } as Claim;
     },
 
     async delete(id: string): Promise<void> {
         const docRef = doc(db, 'claims', id);
         await deleteDoc(docRef);
-    },
-
-    async list(params: { userId: string; lastDoc?: DocumentSnapshot; limit?: number } = { userId: '', limit: 10 }): Promise<{ claims: Claim[]; total: number; lastDoc: DocumentSnapshot }> {
-        const claimsRef = collection(db, 'claims');
-        let q = query(
-            claimsRef,
-            where('createdBy', '==', params.userId),
-            orderBy('createdAt', 'desc'),
-            limit(params.limit || 10)
-        );
-
-        if (params.lastDoc) {
-            q = query(q, startAfter(params.lastDoc));
-        }
-
-        const snapshot = await getDocs(q);
-        const claims = snapshot.docs.map(doc => ({
-            ...doc.data(),
-            id: doc.id,
-            incidentDate: doc.data().incidentDate.toDate(),
-            createdAt: doc.data().createdAt.toDate(),
-            updatedAt: doc.data().updatedAt.toDate(),
-        })) as Claim[];
-
-        const totalSnapshot = await getDocs(query(claimsRef, where('createdBy', '==', params.userId)));
-
-        return {
-            claims,
-            total: totalSnapshot.size,
-            lastDoc: snapshot.docs[snapshot.docs.length - 1],
-        };
-    },
-
-    async updateStatus(id: string, status: Claim['status'], reviewNotes?: string): Promise<void> {
-        const docRef = doc(db, 'claims', id);
-        await updateDoc(docRef, {
-            status,
-            reviewNotes,
-            updatedAt: new Date(),
-        });
-    },
-
-    async approveAmount(id: string, approvedAmount: number, reviewNotes: string): Promise<void> {
-        const docRef = doc(db, 'claims', id);
-        await updateDoc(docRef, {
-            status: 'Approved',
-            approvedAmount,
-            reviewNotes,
-            updatedAt: new Date(),
-        });
-    },
-
-    async addDocument(claimId: string, documentUrl: string): Promise<void> {
-        const docRef = doc(db, 'claims', claimId);
-        await updateDoc(docRef, {
-            documents: arrayUnion(documentUrl),
-            updatedAt: new Date(),
-        });
-    },
-
-    async removeDocument(claimId: string, documentUrl: string): Promise<void> {
-        const docRef = doc(db, 'claims', claimId);
-        await updateDoc(docRef, {
-            documents: arrayRemove(documentUrl),
-            updatedAt: new Date(),
-        });
     },
 }; 
