@@ -35,8 +35,7 @@ import {
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2Icon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import PremiumCalculator from '@/components/premium/PremiumCalculator';
-import { PremiumBreakdown } from '@/lib/services/premiumService';
+
 import {
     Card,
     CardContent,
@@ -54,12 +53,13 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
     const { toast } = useToast();
     const { user } = useAuthContext();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [premiumBreakdown, setPremiumBreakdown] = useState<PremiumBreakdown | null>(null);
 
-    // Fetch customers for the customer select
+
+    // Fetch customers for the customer select - only current user's customers
     const { data: customers } = useQuery({
-        queryKey: ['customers'],
-        queryFn: () => customerService.list(),
+        queryKey: ['customers', user?.uid],
+        queryFn: () => customerService.list({ userId: user?.uid }),
+        enabled: !!user?.uid,
     });
 
     const form = useForm<PolicyFormData>({
@@ -111,8 +111,10 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                     description: 'The policy has been updated successfully.',
                 });
             } else {
+                // Remove policyNumber from data since it's undefined for new policies
+                const { policyNumber, ...policyData } = data;
                 await policyService.create({
-                    ...data,
+                    ...policyData,
                     status: 'pending',
                     policyNumber: `POL-${Date.now()}`,
                 }, user.uid);
@@ -135,11 +137,7 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
         }
     };
 
-    const handlePremiumCalculation = (breakdown: PremiumBreakdown) => {
-        setPremiumBreakdown(breakdown);
-        form.setValue('premium.amount', breakdown.total);
-        form.setValue('premium.currency', 'ZMW');
-    };
+
 
     return (
         <div className="space-y-8">
@@ -333,25 +331,15 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                         </CardContent>
                     </Card>
 
-                    {/* Premium Calculation Section */}
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold">Premium Calculation</h2>
-                        <PremiumCalculator
-                            onCalculate={handlePremiumCalculation}
-                            defaultValues={{
-                                vehicleValue: form.watch('vehicle.value'),
-                                vehicleType: 'car',
-                                usage: form.watch('vehicle.usage'),
-                                coverageType: form.watch('type'),
-                                vehicleAge: new Date().getFullYear() - form.watch('vehicle.year'),
-                            }}
-                        />
-                    </div>
+
 
                     {/* Policy Details Section */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Policy Details</CardTitle>
+                            <div className="flex justify-between items-center">
+                                <CardTitle>Policy Details</CardTitle>
+                                
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {/* Policy Dates */}
@@ -457,7 +445,6 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                                         const parsedValue = value === '' ? 0 : parseFloat(value);
                                                         field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
                                                     }}
-                                                    disabled={!!premiumBreakdown}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -474,7 +461,6 @@ export default function PolicyForm({ initialData, customerId }: PolicyFormProps)
                                             <Select
                                                 onValueChange={field.onChange}
                                                 value={field.value}
-                                                disabled={!!premiumBreakdown}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">

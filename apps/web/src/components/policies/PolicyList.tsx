@@ -134,7 +134,7 @@ export default function PolicyList({
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">Premium:</span>
-                                <span>${policy.premium}</span>
+                                <span>{policy.premium?.amount || 0} {policy.premium?.currency || 'ZMW'}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">Start Date:</span>
@@ -185,7 +185,7 @@ export default function PolicyList({
                                 <TableCell className="font-medium">{policy.policyNumber}</TableCell>
                                 <TableCell>{policy.customerName}</TableCell>
                                 <TableCell>{policy.type}</TableCell>
-                                <TableCell>${policy.premium}</TableCell>
+                                <TableCell>{policy.premium?.amount || 0} {policy.premium?.currency || 'ZMW'}</TableCell>
                                 <TableCell>
                                     <Badge variant={policy.status === 'active' ? 'default' : 'secondary'}>
                                         {policy.status}

@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { RAGService, QueryResponse } from '../../lib/services/ragService';
 import { useToast } from '../../hooks/use-toast';
-import { Brain, Car, Sparkles, Activity, MessageCircle, Send } from 'lucide-react';
+import { Brain, Car, Sparkles, /* Activity, */ MessageCircle, Send } from 'lucide-react';
 
 import AIContentGenerator from '../../components/ai/AIContentGenerator';
 import CarPhotoAnalyzer from '../../components/car/CarPhotoAnalyzer';
@@ -15,8 +15,8 @@ const VintuSureAI: React.FC = () => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<QueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [healthStatus, setHealthStatus] = useState<string>('unknown');
   const [activeView, setActiveView] = useState<'rag' | 'content-generator' | 'car-analyzer'>('rag');
+  // const [healthStatus, setHealthStatus] = useState<string>('unknown'); // Dev only
   const { toast } = useToast();
 
   const handleAskQuestion = async () => {
@@ -58,23 +58,23 @@ const VintuSureAI: React.FC = () => {
     }
   };
 
-  const handleHealthCheck = async () => {
-    try {
-      const health = await RAGService.healthCheck();
-      setHealthStatus(health.status);
-      toast({
-        title: 'Health Check',
-        description: `Service is ${health.status}`,
-      });
-    } catch (error) {
-      setHealthStatus('unhealthy');
-      toast({
-        title: 'Health Check Failed',
-        description: 'Service is not responding',
-        variant: 'destructive',
-      });
-    }
-  };
+  // const handleHealthCheck = async () => { // Dev only
+  //   try {
+  //     const health = await RAGService.healthCheck();
+  //     setHealthStatus(health.status);
+  //     toast({
+  //       title: 'Health Check',
+  //       description: `Service is ${health.status}`,
+  //     });
+  //   } catch (error) {
+  //     setHealthStatus('unhealthy');
+  //     toast({
+  //       title: 'Health Check Failed',
+  //       description: 'Service is not responding',
+  //       variant: 'destructive',
+  //     });
+  //   }
+  // };
 
   const formatResponse = (text: string) => {
     // Split by common title patterns and format them
@@ -168,8 +168,8 @@ const VintuSureAI: React.FC = () => {
               })}
             </TooltipProvider>
             
-            {/* Health Status */}
-            <TooltipProvider>
+            {/* Health Status - Dev only */}
+            {/* <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -191,7 +191,7 @@ const VintuSureAI: React.FC = () => {
                   </div>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
+            </TooltipProvider> */}
           </div>
         </div>
 

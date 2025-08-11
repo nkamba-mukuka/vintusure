@@ -15,7 +15,7 @@ import {
   FileText, 
   Shield, 
   AlertCircle,
-  Brain
+  Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -72,6 +72,7 @@ export default function DashboardPage() {
       icon: FileText,
       link: '/claims/new',
     },
+
   ];
 
   return (

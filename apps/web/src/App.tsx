@@ -43,6 +43,8 @@ const AIGeneratorPage = React.lazy(() => import('@/routes/dashboard/AIGenerator'
 const CarAnalyzerPage = React.lazy(() => import('@/routes/dashboard/CarAnalyzer'))
 const VintuSureAIPage = React.lazy(() => import('@/routes/dashboard/VintuSureAI'))
 
+
+
 // Memoized route components for better performance
 const ProtectedRoute = memo(() => {
     const { user, loading } = useAuthContext()
@@ -353,6 +355,7 @@ export default function App() {
                                     </ErrorBoundary>
                                 } 
                             />
+                            
                         </Route>
                     </Route>
 

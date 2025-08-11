@@ -41,8 +41,7 @@ import {
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2Icon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import PremiumCalculator from '@/components/premium/PremiumCalculator';
-import { PremiumBreakdown } from '@/lib/services/premiumService';
+
 import React from 'react';
 
 interface PolicyModalFormProps {
@@ -63,12 +62,13 @@ export default function PolicyModalForm({
     const { toast } = useToast();
     const { user } = useAuthContext();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [premiumBreakdown, setPremiumBreakdown] = useState<PremiumBreakdown | null>(null);
 
-    // Fetch customers for the customer select
+
+    // Fetch customers for the customer select - only current user's customers
     const { data: customers } = useQuery({
-        queryKey: ['customers'],
-        queryFn: () => customerService.list(),
+        queryKey: ['customers', user?.uid],
+        queryFn: () => customerService.list({ userId: user?.uid }),
+        enabled: !!user?.uid,
     });
 
     const form = useForm<PolicyFormData>({
@@ -181,7 +181,13 @@ export default function PolicyModalForm({
                 if (!user?.uid) {
                     throw new Error('User not authenticated');
                 }
-                await policyService.create(data, user.uid);
+                // Remove policyNumber from data since it's undefined for new policies
+                const { policyNumber, ...policyData } = data;
+                await policyService.create({
+                    ...policyData,
+                    status: 'pending',
+                    policyNumber: `POL-${Date.now()}`,
+                }, user.uid);
                 toast({
                     title: 'Policy Created',
                     description: 'Policy has been created successfully.',
@@ -202,10 +208,7 @@ export default function PolicyModalForm({
         }
     };
 
-    const handlePremiumCalculation = (breakdown: PremiumBreakdown) => {
-        setPremiumBreakdown(breakdown);
-        form.setValue('premium.amount', breakdown.totalPremium);
-    };
+
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -509,20 +512,14 @@ export default function PolicyModalForm({
                             </div>
                         </div>
 
-                        {/* Premium Calculator */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold">Premium Calculation</h3>
-                            <PremiumCalculator
-                                vehicleValue={form.watch('vehicle.value')}
-                                policyType={form.watch('type')}
-                                vehicleUsage={form.watch('vehicle.usage')}
-                                onCalculation={handlePremiumCalculation}
-                            />
-                        </div>
+
 
                         {/* Premium Information */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-semibold">Premium Information</h3>
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-semibold">Premium Information</h3>
+                                
+                            </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField

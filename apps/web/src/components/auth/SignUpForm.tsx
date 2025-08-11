@@ -88,31 +88,9 @@ export default function SignUpForm() {
                     <img src={vintusureLogo} alt="VintuSure Logo" className="h-12 w-12" />
                 </div>
                 <CardTitle className="text-2xl font-bold tracking-tight text-white">Create an account</CardTitle>
-                <CardDescription className="text-white/80">Sign up with your Google account</CardDescription>
+                <CardDescription className="text-white/80">Create your account to get started</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Social Sign Up Buttons */}
-                <div className="flex flex-col gap-4">
-                    <Button variant="outline" className="w-full border-white/20 text-white bg-white/5 backdrop-blur-sm" type="button">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 mr-2">
-                            <path
-                                d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                                fill="currentColor"
-                            />
-                        </svg>
-                        Sign up with Google
-                    </Button>
-                </div>
-
-                {/* Divider */}
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-white/20"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-transparent text-white/60">Or continue with</span>
-                    </div>
-                </div>
 
                 {/* Error Message */}
                 {authError && (
@@ -136,7 +114,7 @@ export default function SignUpForm() {
                                     message: 'Invalid email address',
                                 },
                             })}
-                            className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40 focus:text-white ${errors.email ? 'border-red-400' : ''}`}
+                            className={`bg-white/10 border-white/20 text-indigo-400 placeholder:text-white/50 focus:bg-white/20 focus:border-white/40 focus:text-indigo-400 ${errors.email ? 'border-red-400' : ''}`}
                         />
                         {errors.email && (
                             <p className="text-sm text-red-300">{errors.email.message}</p>
@@ -155,7 +133,7 @@ export default function SignUpForm() {
                                     message: 'Password must be at least 6 characters',
                                 },
                             })}
-                            className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40 focus:text-white ${errors.password ? 'border-red-400' : ''}`}
+                            className={`bg-white/10 border-white/20 text-indigo-400 placeholder:text-white/50 focus:bg-white/20 focus:border-white/40 focus:text-indigo-400 ${errors.password ? 'border-red-400' : ''}`}
                         />
                         {errors.password && (
                             <p className="text-sm text-red-300">{errors.password.message}</p>
@@ -172,7 +150,7 @@ export default function SignUpForm() {
                                 validate: value =>
                                     value === password || 'The passwords do not match',
                             })}
-                            className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40 focus:text-white ${errors.confirmPassword ? 'border-red-400' : ''}`}
+                            className={`bg-white/10 border-white/20 text-indigo-400 placeholder:text-white/50 focus:bg-white/20 focus:border-white/40 focus:text-indigo-400 ${errors.confirmPassword ? 'border-red-400' : ''}`}
                         />
                         {errors.confirmPassword && (
                             <p className="text-sm text-red-300">{errors.confirmPassword.message}</p>
