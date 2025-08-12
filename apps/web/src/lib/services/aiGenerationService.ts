@@ -1,72 +1,65 @@
-import {
-    GoogleGenerativeAI,
-    GenerativeModel,
-    GenerationConfig,
-    GenerateContentRequest,
-    EnhancedGenerateContentResponse
-} from '@google/generative-ai';
+import { functions } from '@/lib/firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 
-interface GenerationRequest {
+export interface AIGenerationRequest {
     prompt: string;
-    config?: Partial<GenerationConfig>;
+    maxTokens?: number;
+    temperature?: number;
 }
 
-export class AIGenerationService {
-    private static ai: GoogleGenerativeAI;
-    private static model: GenerativeModel;
-    private static defaultConfig: Partial<GenerationConfig> = {
-        maxOutputTokens: 65535,
-        temperature: 1,
-        topP: 0.95,
-    };
+export interface AIGenerationResponse {
+    text: string;
+    success: boolean;
+    error?: string;
+}
 
-    /**
-     * Initialize the AI service with API key
-     */
-    static initialize(apiKey: string) {
-        this.ai = new GoogleGenerativeAI(apiKey);
-        this.model = this.ai.getGenerativeModel({
-            model: 'gemini-2.5-flash-lite',
-            generationConfig: this.defaultConfig
-        });
-    }
+export interface AIStreamChunk {
+    text: string;
+    done: boolean;
+}
 
-    /**
-     * Generate content using the Gemini model with streaming response
-     */
-    static async generateContentStream(request: GenerationRequest, onChunk: (text: string) => void) {
+export const aiGenerationService = {
+    async generateContent(request: AIGenerationRequest): Promise<AIGenerationResponse> {
         try {
-            if (!this.model) {
-                throw new Error('AIGenerationService not initialized. Call initialize() first.');
-            }
+            const generateAIContent = httpsCallable<AIGenerationRequest, AIGenerationResponse>(
+                functions,
+                'generateAIContent'
+            );
 
-            const result = await this.model.generateContentStream(request.prompt);
-
-            for await (const chunk of result.stream) {
-                if (chunk.text) {
-                    onChunk(chunk.text);
-                }
-            }
+            const result = await generateAIContent(request);
+            return result.data;
         } catch (error) {
-            console.error('Error generating content:', error);
-            throw error;
+            console.error('Error generating AI content:', error);
+            return {
+                text: '',
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to generate content',
+            };
         }
-    }
+    },
 
-    /**
-     * Generate content using the Gemini model with a single response
-     */
-    static async generateContent(request: GenerationRequest): Promise<string> {
+    async generateContentStream(request: AIGenerationRequest, onChunk: (text: string) => void): Promise<AIGenerationResponse> {
         try {
-            if (!this.model) {
-                throw new Error('AIGenerationService not initialized. Call initialize() first.');
-            }
+            const generateAIContentStream = httpsCallable<AIGenerationRequest, AIStreamChunk>(
+                functions,
+                'generateAIContentStream'
+            );
 
-            const result = await this.model.generateContent(request.prompt);
-            return result.response.text();
+            const result = await generateAIContentStream(request);
+            const chunk = result.data;
+            onChunk(chunk.text);
+
+            return {
+                text: chunk.text,
+                success: true,
+            };
         } catch (error) {
-            console.error('Error generating content:', error);
-            throw error;
+            console.error('Error generating AI content stream:', error);
+            return {
+                text: '',
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to generate content stream',
+            };
         }
-    }
-} 
+    },
+}; 

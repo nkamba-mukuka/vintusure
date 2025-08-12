@@ -1,106 +1,162 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
-import { userService } from '@/lib/services/userService';
-import { User } from '@/types/auth';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  User as FirebaseUser,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase/config';
+
+export type UserRole = 'admin' | 'agent' | 'customer';
+
+export interface UserPreferences {
+  language: string;
+  timezone: string;
+  dateFormat: string;
+  currency: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+  };
+}
+
+export interface User extends FirebaseUser {
+  role?: UserRole;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  department?: string;
+  employeeId?: string;
+  insuranceCompany?: string;
+  position?: string;
+  company?: string;
+  address?: {
+    street: string;
+    city: string;
+    province: string;
+    postalCode: string;
+  };
+  bio?: string;
+  preferences?: UserPreferences;
+  profileCompleted?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 interface AuthContextType {
   user: User | null;
-  firebaseUser: FirebaseUser | null;
+  error: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  updateUser: (userData: Partial<User>) => void;
+  updateUser: (data: Partial<User>) => void;
+  updateUserProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      setUser({ ...user, ...userData });
-    }
-  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setFirebaseUser(firebaseUser);
-      
       if (firebaseUser) {
-        try {
-          // Check if user document exists in Firestore
-          const userDoc = await userService.getUserById(firebaseUser.uid);
-          
-          if (userDoc) {
-            setUser(userDoc);
-          } else {
-            // Create default user document if it doesn't exist
-            const newUser = await userService.createDefaultUser(firebaseUser.uid, firebaseUser.email || '');
-            setUser(newUser);
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          // Create default user document if there's an error
-          try {
-            const newUser = await userService.createDefaultUser(firebaseUser.uid, firebaseUser.email || '');
-            setUser(newUser);
-          } catch (createError) {
-            console.error('Error creating default user:', createError);
-          }
-        }
+        // Get additional user data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        const userData = userDoc.data();
+
+        // Combine Firebase user with Firestore data
+        const enhancedUser: User = {
+          ...firebaseUser,
+          ...userData,
+        } as User;
+
+        setUser(enhancedUser);
       } else {
         setUser(null);
       }
-      
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      console.error('Sign in error:', error);
-      throw error;
+      setError(null);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      const userData = userDoc.data();
+      setUser({ ...result.user, ...userData } as User);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
+      throw err;
     }
   };
 
   const signUp = async (email: string, password: string) => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Create default user document after successful signup
-      await userService.createDefaultUser(userCredential.user.uid, email);
-    } catch (error) {
-      console.error('Sign up error:', error);
-      throw error;
+      setError(null);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', result.user.uid), {
+        email: result.user.email,
+        role: 'customer', // Default role
+        createdAt: new Date(),
+      });
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      const userData = userDoc.data();
+      setUser({ ...result.user, ...userData } as User);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign up');
+      throw err;
     }
   };
 
-  const signOutUser = async () => {
+  const signOut = async () => {
     try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Sign out error:', error);
-      throw error;
+      await firebaseSignOut(auth);
+      setUser(null);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign out');
+      throw err;
+    }
+  };
+
+  const updateUser = (data: Partial<User>) => {
+    if (user) {
+      setUser(prev => prev ? { ...prev, ...data } : null);
+    }
+  };
+
+  const updateUserProfile = async (data: Partial<User>) => {
+    if (!user) throw new Error('No user logged in');
+    try {
+      await updateDoc(doc(db, 'users', user.uid), data);
+      setUser(prev => prev ? { ...prev, ...data } : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile');
+      throw err;
     }
   };
 
   const value = {
     user,
-    firebaseUser,
+    error,
     loading,
     signIn,
     signUp,
-    signOut: signOutUser,
+    signOut,
     updateUser,
+    updateUserProfile,
   };
 
   return (

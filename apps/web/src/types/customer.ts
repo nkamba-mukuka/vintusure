@@ -14,16 +14,29 @@ export interface Customer {
     dateOfBirth: string;
     gender: 'male' | 'female' | 'other';
     occupation: string;
-    createdAt: Date;
-    updatedAt: Date;
-    createdBy: string; // Reference to user who created the customer
-    agent_id: string; // ID of the agent who created the customer
+    createdAt: string;
+    updatedAt: string;
+    createdBy: string;
+    agent_id: string;
     status: 'active' | 'inactive';
 }
 
-export interface CustomerFormData extends Omit<Customer, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'agent_id'> {
-    id?: string;
-    agent_id?: string; // Make agent_id optional for forms
+export interface CustomerFormData {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    nrcPassport: string;
+    address: {
+        street: string;
+        city: string;
+        province: string;
+        postalCode: string;
+    };
+    dateOfBirth: string;
+    gender: 'male' | 'female' | 'other';
+    occupation: string;
+    status: 'active' | 'inactive';
 }
 
 export interface CustomerFilters {
@@ -37,6 +50,5 @@ export interface CustomerFilters {
 export interface CustomerListResponse {
     customers: Customer[];
     total: number;
-    page: number;
-    limit: number;
+    lastDoc?: any;
 } 
