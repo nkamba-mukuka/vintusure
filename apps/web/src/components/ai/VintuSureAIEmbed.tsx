@@ -4,18 +4,18 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { RAGService, QueryResponse } from '../../lib/services/ragService';
+import { RAGService, QueryResponse, ExtendedQueryResponse, ClaimsQueryResponse, PoliciesQueryResponse, DocumentsQueryResponse } from '../../lib/services/ragService';
 import { useToast } from '../../hooks/use-toast';
-import { Brain, Car, Sparkles, Activity, MessageCircle, Send } from 'lucide-react';
+import { Brain, Car, ArrowUpToLine, Activity, MessageCircle, Send, Users, FileText, Shield, FolderOpen } from 'lucide-react';
 import AIContentGenerator from './AIContentGenerator';
 import CarPhotoAnalyzer from '../car/CarPhotoAnalyzer';
 
 const VintuSureAIEmbed: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [response, setResponse] = useState<QueryResponse | null>(null);
+  const [response, setResponse] = useState<QueryResponse | ExtendedQueryResponse | ClaimsQueryResponse | PoliciesQueryResponse | DocumentsQueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [healthStatus, setHealthStatus] = useState<string>('unknown');
-  const [activeView, setActiveView] = useState<'rag' | 'content-generator' | 'car-analyzer'>('rag');
+  const [activeView, setActiveView] = useState<'rag' | 'content-generator' | 'car-analyzer' | 'customers' | 'policies' | 'claims' | 'documents'>('rag');
   const { toast } = useToast();
 
   const handleAskQuestion = async () => {
@@ -30,7 +30,26 @@ const VintuSureAIEmbed: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const result = await RAGService.askQuestion(query);
+      let result;
+      
+      switch (activeView) {
+        case 'customers':
+          result = await RAGService.queryCustomerRAG(query);
+          break;
+        case 'policies':
+          result = await RAGService.queryPoliciesRAG(query);
+          break;
+        case 'claims':
+          result = await RAGService.queryClaimsRAG(query);
+          break;
+        case 'documents':
+          result = await RAGService.queryDocumentsRAG(query);
+          break;
+        default:
+          result = await RAGService.askQuestion(query);
+          break;
+      }
+      
       setResponse(result);
       
       if (result.success) {
@@ -111,6 +130,94 @@ const VintuSureAIEmbed: React.FC = () => {
     });
   };
 
+  const getViewTitle = () => {
+    switch (activeView) {
+      case 'customers':
+        return 'Customer Information';
+      case 'policies':
+        return 'Policy Information';
+      case 'claims':
+        return 'Claims Information';
+      case 'documents':
+        return 'Document Information';
+      case 'content-generator':
+        return 'Document Upload';
+      case 'car-analyzer':
+        return 'Car Analyzer';
+      default:
+        return 'RAG Assistant';
+    }
+  };
+
+  const getViewDescription = () => {
+    switch (activeView) {
+      case 'customers':
+        return 'Ask questions about customer data and information';
+      case 'policies':
+        return 'Query policy information and details';
+      case 'claims':
+        return 'Get information about insurance claims';
+      case 'documents':
+        return 'Search and query document information';
+      case 'content-generator':
+        return 'Upload documents for RAG system indexing';
+      case 'car-analyzer':
+        return 'Analyze car photos for insurance assessment';
+      default:
+        return 'Ask questions and get AI-powered answers';
+    }
+  };
+
+  const getExampleQueries = () => {
+    switch (activeView) {
+      case 'customers':
+        return [
+          "Find customers who work in technology",
+          "Show me customers from Lusaka",
+          "Who are our software developers?",
+          "Find customers with business insurance",
+          "Show me customers in professional services",
+          "Who might be interested in family insurance?"
+        ];
+      case 'policies':
+        return [
+          "Find comprehensive policies",
+          "Show me active policies",
+          "Policies for commercial vehicles",
+          "What are the premium rates?",
+          "Show me policies expiring soon",
+          "Find policies with high coverage"
+        ];
+      case 'claims':
+        return [
+          "Find vehicle damage claims",
+          "Show me approved claims",
+          "Claims with high amounts",
+          "Recent claims filed",
+          "Claims by status",
+          "Claims processing time"
+        ];
+      case 'documents':
+        return [
+          "Find insurance policy documents",
+          "Show me claim-related files",
+          "Documents about vehicle coverage",
+          "Find PDF files with contract information",
+          "Show me recent invoice documents",
+          "Documents uploaded this month"
+        ];
+      default:
+        return [
+          "What is the process for filing an insurance claim?",
+          "How do I calculate premium rates for auto insurance?",
+          "What documents are required for policy renewal?",
+          "What are the different types of insurance coverage?",
+          "How long does it take to process a claim?",
+          "What factors affect insurance premium calculations?"
+        ];
+    }
+  };
+
   const sidebarItems = [
     {
       id: 'rag',
@@ -119,9 +226,33 @@ const VintuSureAIEmbed: React.FC = () => {
       description: 'Ask questions and get AI-powered answers',
     },
     {
+      id: 'customers',
+      name: 'Customers',
+      icon: Users,
+      description: 'Query customer information and data',
+    },
+    {
+      id: 'policies',
+      name: 'Policies',
+      icon: Shield,
+      description: 'Search policy information and details',
+    },
+    {
+      id: 'claims',
+      name: 'Claims',
+      icon: FileText,
+      description: 'Get information about insurance claims',
+    },
+    {
+      id: 'documents',
+      name: 'Documents',
+      icon: FolderOpen,
+      description: 'Search and query document information',
+    },
+    {
       id: 'content-generator',
       name: 'Document Upload',
-      icon: Sparkles,
+      icon: ArrowUpToLine,
       description: 'Upload documents for RAG system indexing',
     },
     {
@@ -133,8 +264,8 @@ const VintuSureAIEmbed: React.FC = () => {
   ];
 
   return (
-    <div className="h-full bg-background rounded-lg relative">
-      <div className="h-full flex flex-col">
+    <div className={`${activeView === 'car-analyzer' ? 'min-h-full' : 'h-full'} bg-background rounded-lg relative`}>
+      <div className={`${activeView === 'car-analyzer' ? 'min-h-full' : 'h-full'} flex flex-col`}>
         {/* Icon Menu */}
         <div className="w-full flex justify-center p-4 pb-2">
           <div className="flex space-x-4">
@@ -167,7 +298,7 @@ const VintuSureAIEmbed: React.FC = () => {
             </TooltipProvider>
             
             {/* Health Status */}
-            <TooltipProvider>
+            {/* <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -189,20 +320,20 @@ const VintuSureAIEmbed: React.FC = () => {
                   </div>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
+            </TooltipProvider> */}
           </div>
         </div>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col rounded-lg">
           {/* RAG Assistant View */}
-          {activeView === 'rag' && (
+          {(activeView === 'rag' || activeView === 'customers' || activeView === 'policies' || activeView === 'claims' || activeView === 'documents') && (
             <div className="flex-1 flex flex-col px-6 pb-6">
               {/* Centered Prompt Input */}
               <div className="w-full flex justify-center mb-6">
                 <div className="w-[600px] flex items-center gap-4">
                   <Textarea
-                    placeholder="Ask about insurance policies, claims, or any related topic..."
+                    placeholder={`Ask about ${activeView === 'customers' ? 'customer' : activeView === 'policies' ? 'policy' : activeView === 'claims' ? 'claims' : activeView === 'documents' ? 'document' : 'insurance'} information...`}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     rows={3}
@@ -235,7 +366,7 @@ const VintuSureAIEmbed: React.FC = () => {
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg purple-header">
                       <MessageCircle className="h-5 w-5 text-primary" />
-                      AI Response
+                      {getViewTitle()}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="flex-1 min-h-0">
@@ -256,6 +387,26 @@ const VintuSureAIEmbed: React.FC = () => {
                             {response.success && (
                               <Badge variant="secondary">
                                 {response.answer?.length || 0} characters
+                              </Badge>
+                            )}
+                            {response.success && 'similarCustomersCount' in response && response.similarCustomersCount && (
+                              <Badge variant="outline">
+                                {response.similarCustomersCount} customers found
+                              </Badge>
+                            )}
+                            {response.success && 'similarClaimsCount' in response && response.similarClaimsCount && (
+                              <Badge variant="outline">
+                                {response.similarClaimsCount} claims found
+                              </Badge>
+                            )}
+                            {response.success && 'similarPoliciesCount' in response && response.similarPoliciesCount && (
+                              <Badge variant="outline">
+                                {response.similarPoliciesCount} policies found
+                              </Badge>
+                            )}
+                            {response.success && 'similarDocumentsCount' in response && response.similarDocumentsCount && (
+                              <Badge variant="outline">
+                                {response.similarDocumentsCount} documents found
                               </Badge>
                             )}
                           </div>
@@ -299,14 +450,7 @@ const VintuSureAIEmbed: React.FC = () => {
                     <p className="text-muted-foreground text-sm">Try these example questions to test the system</p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {[
-                      "What is the process for filing an insurance claim?",
-                      "How do I calculate premium rates for auto insurance?",
-                      "What documents are required for policy renewal?",
-                      "What are the different types of insurance coverage?",
-                      "How long does it take to process a claim?",
-                      "What factors affect insurance premium calculations?"
-                    ].map((example, index) => (
+                    {getExampleQueries().map((example, index) => (
                       <Button
                         key={index}
                         variant="outline"
@@ -335,7 +479,7 @@ const VintuSureAIEmbed: React.FC = () => {
           {/* Car Analyzer View */}
           {activeView === 'car-analyzer' && (
             <div className="flex-1 px-6 pb-6 overflow-auto">
-              <div className="max-w-5xl mx-auto">
+              <div className="max-w-7xl mx-auto min-h-full">
                 <CarPhotoAnalyzer
                   onAnalysisComplete={(result) => {
                     console.log('Analysis complete:', result);
