@@ -6,6 +6,8 @@ import { useDropzone } from 'react-dropzone';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { documentService } from '@/lib/services/documentService';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase/config';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -48,7 +50,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const fileUploadSchema = z.object({
-    fileName: z.string().min(1, 'File name is required'),
+    fileName: z.string().optional(),
     description: z.string().optional(),
     category: z.enum(['policy', 'claim', 'invoice', 'contract', 'certificate', 'other']),
     tags: z.string().optional(),
@@ -86,7 +88,8 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
         },
     });
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
+    const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+        // Handle accepted files
         const newFiles: UploadedFile[] = acceptedFiles.map(file => ({
             file,
             progress: 0,
@@ -95,6 +98,12 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
         }));
         
         setUploadedFiles(prev => [...prev, ...newFiles]);
+        
+        // Handle rejected files and show error messages
+        if (rejectedFiles.length > 0) {
+            console.warn('Rejected files:', rejectedFiles);
+            // You could add a toast notification here for rejected files
+        }
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -103,11 +112,21 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
             'application/pdf': ['.pdf'],
             'application/msword': ['.doc'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            'application/vnd.ms-excel': ['.xls'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+            'application/vnd.ms-powerpoint': ['.ppt'],
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
             'image/jpeg': ['.jpg', '.jpeg'],
             'image/png': ['.png'],
+            'image/gif': ['.gif'],
+            'image/webp': ['.webp'],
             'text/plain': ['.txt'],
+            'text/csv': ['.csv'],
+            'application/rtf': ['.rtf'],
+            'application/json': ['.json'],
+            'application/xml': ['.xml'],
         },
-        maxSize: 5 * 1024 * 1024, // 5MB
+        maxSize: 10 * 1024 * 1024, // 10MB
         multiple: true,
     });
 
@@ -131,10 +150,24 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
             case 'jpg':
             case 'jpeg':
             case 'png':
+            case 'gif':
+            case 'webp':
                 return <FileImage className="h-8 w-8 text-green-500" />;
             case 'doc':
             case 'docx':
+            case 'rtf':
                 return <FileText className="h-8 w-8 text-blue-500" />;
+            case 'xls':
+            case 'xlsx':
+                return <FileText className="h-8 w-8 text-green-600" />;
+            case 'ppt':
+            case 'pptx':
+                return <FileText className="h-8 w-8 text-orange-500" />;
+            case 'txt':
+            case 'csv':
+            case 'json':
+            case 'xml':
+                return <FileText className="h-8 w-8 text-gray-600" />;
             default:
                 return <File className="h-8 w-8 text-gray-500" />;
         }
@@ -207,12 +240,28 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
                 ));
 
                 try {
+                    // Upload file to Firebase Storage
+                    const fileRef = ref(storage, `documents/${user.uid}/${Date.now()}_${uploadedFile.file.name}`);
+                    
+                    // Update progress to show upload starting
+                    setUploadedFiles(prev => prev.map((file, index) => 
+                        index === i ? { ...file, progress: 10 } : file
+                    ));
+
+                    const uploadResult = await uploadBytes(fileRef, uploadedFile.file);
+                    const downloadURL = await getDownloadURL(uploadResult.ref);
+
+                    // Update progress to show upload complete
+                    setUploadedFiles(prev => prev.map((file, index) => 
+                        index === i ? { ...file, progress: 40 } : file
+                    ));
+
                     // Create document record
                     const documentData = {
                         fileName: data.fileName || uploadedFile.file.name,
                         fileType: uploadedFile.file.type,
                         fileSize: uploadedFile.file.size,
-                        fileUrl: '', // Will be set after upload
+                        fileUrl: downloadURL,
                         description: data.description,
                         category: data.category,
                         tags: tags,
@@ -223,7 +272,7 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
 
                     // Update status to indexing
                     setUploadedFiles(prev => prev.map((file, index) => 
-                        index === i ? { ...file, status: 'indexing' as const, progress: 50 } : file
+                        index === i ? { ...file, status: 'indexing' as const, progress: 70 } : file
                     ));
 
                     // Simulate indexing process (in real implementation, this would call your RAG indexing service)
@@ -233,6 +282,9 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
                     setUploadedFiles(prev => prev.map((file, index) => 
                         index === i ? { ...file, status: 'completed' as const, progress: 100 } : file
                     ));
+
+                    // Update the document with vector indexing status
+                    await documentService.updateVectorIndexStatus(document.id, true);
 
                 } catch (error) {
                     console.error('Error uploading file:', error);
@@ -284,10 +336,10 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Upload Files to VintuSure</DialogTitle>
-                    <DialogDescription>
-                        Upload your insurance documents to help VintuSure AI provide better answers. 
-                        Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT (max 5MB each).
-                    </DialogDescription>
+                                         <DialogDescription>
+                         Upload your insurance documents to help VintuSure AI provide better answers. 
+                         Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG, GIF, WEBP, TXT, CSV, RTF, JSON, XML (max 10MB each).
+                     </DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
@@ -312,9 +364,9 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
                                         <p className="text-gray-600 mb-2">
                                             Drag & drop files here, or click to select files
                                         </p>
-                                        <p className="text-sm text-gray-500">
-                                            PDF, DOC, DOCX, JPG, PNG, TXT (max 5MB each)
-                                        </p>
+                                                                                 <p className="text-sm text-gray-500">
+                                             PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG, GIF, WEBP, TXT, CSV, RTF, JSON, XML (max 10MB each)
+                                         </p>
                                     </div>
                                 )}
                             </div>
@@ -349,13 +401,9 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
                                                 
                                                 <div className="flex items-center gap-2">
                                                     {getStatusIcon(uploadedFile.status)}
-                                                                                        <span className="text-xs text-gray-500">
-                                        {uploadedFile.status === 'uploading' ? 'Uploading...' :
-                                         uploadedFile.status === 'processing' ? 'Processing...' :
-                                         uploadedFile.status === 'indexing' ? 'Making files searchable...' :
-                                         uploadedFile.status === 'completed' ? 'Completed' :
-                                         uploadedFile.status === 'error' ? 'Error' : ''}
-                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {getStatusText(uploadedFile.status)}
+                                                    </span>
                                                     {uploadedFile.error && (
                                                         <span className="text-xs text-red-500">
                                                             {uploadedFile.error}
@@ -390,10 +438,10 @@ export default function FileUploadModal({ isOpen, onClose, onSuccess }: FileUplo
                                 name="fileName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Document Name</FormLabel>
+                                        <FormLabel>Document Name (Optional)</FormLabel>
                                         <FormControl>
                                             <Input 
-                                                placeholder="Enter document name" 
+                                                placeholder="Enter document name or leave blank to use file name" 
                                                 {...field} 
                                             />
                                         </FormControl>
