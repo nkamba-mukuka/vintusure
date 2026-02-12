@@ -23,12 +23,12 @@ interface CustomerModalFormProps {
     onSuccess?: () => void;
 }
 
-export default function CustomerModalForm({ 
-    isOpen, 
-    onClose, 
-    customer, 
-    mode, 
-    onSuccess 
+export default function CustomerModalForm({
+    isOpen,
+    onClose,
+    customer,
+    mode,
+    onSuccess
 }: CustomerModalFormProps) {
     const { createCustomer, updateCustomer, isLoading, error } = useCustomerCRUD();
     const { toast } = useToast();
@@ -128,13 +128,15 @@ export default function CustomerModalForm({
     const handleInputChange = (field: string, value: string) => {
         if (field.includes('.')) {
             const [parent, child] = field.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: {
-                    ...prev[parent as keyof CustomerFormData],
-                    [child]: value,
-                },
-            }));
+            if (parent === 'address') {
+                setFormData(prev => ({
+                    ...prev,
+                    address: {
+                        ...prev.address,
+                        [child]: value,
+                    },
+                }));
+            }
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -185,8 +187,8 @@ export default function CustomerModalForm({
                         {mode === 'create' ? 'Create New Customer' : 'Edit Customer'}
                     </DialogTitle>
                     <DialogDescription>
-                        {mode === 'create' 
-                            ? 'Fill in the details below to create a new customer.' 
+                        {mode === 'create'
+                            ? 'Fill in the details below to create a new customer.'
                             : 'Update the customer information below.'
                         }
                     </DialogDescription>
@@ -196,7 +198,7 @@ export default function CustomerModalForm({
                     {/* Personal Information */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Personal Information</h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="firstName">First Name *</Label>
@@ -272,7 +274,7 @@ export default function CustomerModalForm({
                     {/* Contact Information */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Contact Information</h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="email">Email *</Label>
@@ -299,7 +301,7 @@ export default function CustomerModalForm({
                     {/* Address Information */}
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Address Information</h3>
-                        
+
                         <div>
                             <Label htmlFor="street">Street Address *</Label>
                             <Input
@@ -369,8 +371,8 @@ export default function CustomerModalForm({
                     <Button variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={handleSubmit} 
+                    <Button
+                        onClick={handleSubmit}
                         disabled={isLoading}
                         type="submit"
                     >

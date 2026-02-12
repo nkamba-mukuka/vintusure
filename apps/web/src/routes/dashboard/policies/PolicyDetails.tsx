@@ -57,12 +57,15 @@ export default function PolicyDetailsPage() {
         )
     }
 
-    const formatDate = (date: Date | Timestamp) => {
-        if (date instanceof Timestamp) {
-            return format(date.toDate(), 'PPP')
+    const formatDate = (date: string | Date | Timestamp) => {
+        if (typeof date === 'string') {
+            return format(new Date(date), 'PPP');
         }
-        return format(date, 'PPP')
-    }
+        if (date instanceof Timestamp) {
+            return format(date.toDate(), 'PPP');
+        }
+        return format(date, 'PPP');
+    };
 
     return (
         <div className="py-10">
@@ -76,8 +79,8 @@ export default function PolicyDetailsPage() {
                         <Button asChild>
                             <Link to={`/policies/${id}/edit`}>Edit Policy</Link>
                         </Button>
-                        <Button 
-                            variant="destructive" 
+                        <Button
+                            variant="destructive"
                             onClick={handleDelete}
                             className="flex items-center gap-2"
                         >

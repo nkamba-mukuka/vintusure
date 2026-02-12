@@ -57,13 +57,15 @@ export default function CustomerForm({ customer, mode }: CustomerFormProps) {
     const handleInputChange = (field: string, value: string) => {
         if (field.includes('.')) {
             const [parent, child] = field.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: {
-                    ...prev[parent as keyof CustomerFormData],
-                    [child]: value,
-                },
-            }));
+            if (parent === 'address') {
+                setFormData(prev => ({
+                    ...prev,
+                    address: {
+                        ...prev.address,
+                        [child]: value,
+                    },
+                }));
+            }
         } else {
             setFormData(prev => ({
                 ...prev,

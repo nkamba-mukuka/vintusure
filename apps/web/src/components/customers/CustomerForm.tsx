@@ -1,288 +1,323 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCustomerCRUD } from './customer';
+import React from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Customer, CustomerFormData } from '@/types/customer';
+import { customerService } from '@/lib/services/customerService';
+import { useAuthContext } from '@/contexts/AuthContext';
+
+const customerFormSchema = z.object({
+    firstName: z.string().min(2, 'First name must be at least 2 characters'),
+    lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+    phone: z.string().min(10, 'Phone number must be at least 10 characters'),
+    nrcPassport: z.string().min(6, 'NRC/Passport number must be at least 6 characters'),
+    address: z.object({
+        street: z.string().min(1, 'Street address is required'),
+        city: z.string().min(1, 'City is required'),
+        province: z.string().min(1, 'Province is required'),
+        postalCode: z.string().min(1, 'Postal code is required'),
+    }),
+    dateOfBirth: z.string().min(1, 'Date of birth is required'),
+    gender: z.enum(['male', 'female', 'other']),
+    occupation: z.string().min(1, 'Occupation is required'),
+    status: z.enum(['active', 'inactive']).default('active'),
+});
+
+type CustomerFormData = z.infer<typeof customerFormSchema>;
 
 interface CustomerFormProps {
-    customer?: Customer;
-    mode: 'create' | 'edit';
+    initialData?: Partial<CustomerFormData> & { id?: string };
+    onSuccess?: () => void;
 }
 
-export default function CustomerForm({ customer, mode }: CustomerFormProps) {
-    const navigate = useNavigate();
-    const { createCustomer, updateCustomer, isLoading, error } = useCustomerCRUD();
+export default function CustomerForm({ initialData, onSuccess }: CustomerFormProps) {
+    const { user } = useAuthContext();
     const { toast } = useToast();
 
-    const [formData, setFormData] = useState<CustomerFormData>({
-        nrcPassport: '',
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        address: {
-            street: '',
-            city: '',
-            province: '',
-            postalCode: '',
+    const form = useForm<CustomerFormData>({
+        resolver: zodResolver(customerFormSchema),
+        defaultValues: {
+            firstName: initialData?.firstName || '',
+            lastName: initialData?.lastName || '',
+            email: initialData?.email || '',
+            phone: initialData?.phone || '',
+            nrcPassport: initialData?.nrcPassport || '',
+            address: {
+                street: initialData?.address?.street || '',
+                city: initialData?.address?.city || '',
+                province: initialData?.address?.province || '',
+                postalCode: initialData?.address?.postalCode || '',
+            },
+            dateOfBirth: initialData?.dateOfBirth || '',
+            gender: initialData?.gender || 'other',
+            occupation: initialData?.occupation || '',
+            status: initialData?.status || 'active',
         },
-        dateOfBirth: '',
-        gender: 'male',
-        occupation: '',
-        status: 'active',
     });
 
-    useEffect(() => {
-        if (customer && mode === 'edit') {
-            setFormData({
-                nrcPassport: customer.nrcPassport,
-                firstName: customer.firstName,
-                lastName: customer.lastName,
-                email: customer.email,
-                phone: customer.phone,
-                address: customer.address,
-                dateOfBirth: customer.dateOfBirth,
-                gender: customer.gender,
-                occupation: customer.occupation,
-                status: customer.status,
-            });
-        }
-    }, [customer, mode]);
-
-    const handleInputChange = (field: string, value: string) => {
-        if (field.includes('.')) {
-            const [parent, child] = field.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: {
-                    ...prev[parent as keyof CustomerFormData],
-                    [child]: value,
-                },
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [field]: value,
-            }));
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const onSubmit = async (data: CustomerFormData) => {
         try {
-            if (mode === 'create') {
-                const newCustomer = await createCustomer(formData);
-                if (newCustomer) {
-                    toast({
-                        title: "Customer created",
-                        description: "Customer has been created successfully.",
-                    });
-                    navigate('/customers');
-                }
-            } else if (mode === 'edit' && customer) {
-                const success = await updateCustomer(customer.id, formData);
-                if (success) {
-                    toast({
-                        title: "Customer updated",
-                        description: "Customer has been updated successfully.",
-                    });
-                    navigate('/customers');
-                }
+            if (!user) {
+                throw new Error('User not authenticated');
             }
+
+            if (initialData?.id) {
+                await customerService.update(initialData.id, data);
+                toast({
+                    title: 'Success',
+                    description: 'Customer updated successfully',
+                });
+            } else {
+                await customerService.create(data, user.uid);
+                toast({
+                    title: 'Success',
+                    description: 'Customer created successfully',
+                });
+            }
+
+            onSuccess?.();
+            form.reset();
         } catch (error) {
+            console.error('Error saving customer:', error);
             toast({
-                title: "Error",
-                description: "An error occurred while saving the customer.",
-                variant: "destructive",
+                title: 'Error',
+                description: 'Failed to save customer. Please try again.',
+                variant: 'destructive',
             });
         }
     };
 
     return (
-        <div className="max-w-2xl mx-auto p-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>
-                        {mode === 'create' ? 'Create New Customer' : 'Edit Customer'}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Personal Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="firstName">First Name *</Label>
-                                <Input
-                                    id="firstName"
-                                    value={formData.firstName}
-                                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                                    required
-                                />
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+                <div>
+                    <Controller
+                        name="firstName"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="firstName" className="block text-sm font-medium">
+                                    First Name
+                                </label>
+                                <Input {...field} />
                             </div>
-                            <div>
-                                <Label htmlFor="lastName">Last Name *</Label>
-                                <Input
-                                    id="lastName"
-                                    value={formData.lastName}
-                                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
+                        )}
+                    />
+                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="nrcPassport">NRC/Passport *</Label>
-                                <Input
-                                    id="nrcPassport"
-                                    value={formData.nrcPassport}
-                                    onChange={(e) => handleInputChange('nrcPassport', e.target.value)}
-                                    required
-                                />
+                <div>
+                    <Controller
+                        name="lastName"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="lastName" className="block text-sm font-medium">
+                                    Last Name
+                                </label>
+                                <Input {...field} />
                             </div>
-                            <div>
-                                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                                <Input
-                                    id="dateOfBirth"
-                                    type="date"
-                                    value={formData.dateOfBirth}
-                                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
+                        )}
+                    />
+                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="email">Email *</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                    required
-                                />
+                <div>
+                    <Controller
+                        name="email"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="email" className="block text-sm font-medium">
+                                    Email
+                                </label>
+                                <Input {...field} type="email" />
                             </div>
-                            <div>
-                                <Label htmlFor="phone">Phone *</Label>
-                                <Input
-                                    id="phone"
-                                    value={formData.phone}
-                                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
+                        )}
+                    />
+                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="gender">Gender *</Label>
+                <div>
+                    <Controller
+                        name="phone"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="phone" className="block text-sm font-medium">
+                                    Phone
+                                </label>
+                                <Input {...field} type="tel" />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="nrcPassport"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="nrcPassport" className="block text-sm font-medium">
+                                    NRC/Passport Number
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="address.street"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="street" className="block text-sm font-medium">
+                                    Street Address
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="address.city"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="city" className="block text-sm font-medium">
+                                    City
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="address.province"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="province" className="block text-sm font-medium">
+                                    Province
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="address.postalCode"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="postalCode" className="block text-sm font-medium">
+                                    Postal Code
+                                </label>
+                                <Input {...field} />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="dateOfBirth"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="dateOfBirth" className="block text-sm font-medium">
+                                    Date of Birth
+                                </label>
+                                <Input {...field} type="date" />
+                            </div>
+                        )}
+                    />
+                </div>
+
+                <div>
+                    <Controller
+                        name="gender"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="gender" className="block text-sm font-medium">
+                                    Gender
+                                </label>
                                 <Select
-                                    value={formData.gender}
-                                    onValueChange={(value) => handleInputChange('gender', value)}
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
                                 >
-                                    <SelectTrigger className="bg-background border-border focus:border-primary focus:ring-primary">
-                                        <SelectValue />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select gender" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-background border-border">
+                                    <SelectContent>
                                         <SelectItem value="male">Male</SelectItem>
                                         <SelectItem value="female">Female</SelectItem>
                                         <SelectItem value="other">Other</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div>
-                                <Label htmlFor="occupation">Occupation</Label>
-                                <Input
-                                    id="occupation"
-                                    value={formData.occupation}
-                                    onChange={(e) => handleInputChange('occupation', e.target.value)}
-                                />
-                            </div>
-                        </div>
+                        )}
+                    />
+                </div>
 
-                        {/* Address Information */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold">Address Information</h3>
-                            <div>
-                                <Label htmlFor="street">Street Address</Label>
-                                <Input
-                                    id="street"
-                                    value={formData.address.street}
-                                    onChange={(e) => handleInputChange('address.street', e.target.value)}
-                                />
+                <div>
+                    <Controller
+                        name="occupation"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="occupation" className="block text-sm font-medium">
+                                    Occupation
+                                </label>
+                                <Input {...field} />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <Label htmlFor="city">City</Label>
-                                    <Input
-                                        id="city"
-                                        value={formData.address.city}
-                                        onChange={(e) => handleInputChange('address.city', e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="province">Province</Label>
-                                    <Input
-                                        id="province"
-                                        value={formData.address.province}
-                                        onChange={(e) => handleInputChange('address.province', e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="postalCode">Postal Code</Label>
-                                    <Input
-                                        id="postalCode"
-                                        value={formData.address.postalCode}
-                                        onChange={(e) => handleInputChange('address.postalCode', e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        )}
+                    />
+                </div>
 
-                        {mode === 'edit' && (
-                            <div>
-                                <Label htmlFor="status">Status</Label>
+                <div>
+                    <Controller
+                        name="status"
+                        control={form.control}
+                        render={({ field }) => (
+                            <div className="space-y-2">
+                                <label htmlFor="status" className="block text-sm font-medium">
+                                    Status
+                                </label>
                                 <Select
-                                    value={formData.status}
-                                    onValueChange={(value) => handleInputChange('status', value)}
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
                                 >
-                                    <SelectTrigger className="bg-background border-border focus:border-primary focus:ring-primary">
-                                        <SelectValue />
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-background border-border">
+                                    <SelectContent>
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="inactive">Inactive</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         )}
+                    />
+                </div>
+            </div>
 
-                        {error && (
-                            <div className="text-red-600 text-sm">{error}</div>
-                        )}
-
-                        <div className="flex justify-end space-x-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => navigate('/customers')}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? 'Saving...' : mode === 'create' ? 'Create Customer' : 'Update Customer'}
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-        </div>
+            <div className="flex justify-end space-x-2">
+                <Button type="submit">
+                    {initialData?.id ? 'Update Customer' : 'Create Customer'}
+                </Button>
+            </div>
+        </form>
     );
 } 

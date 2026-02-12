@@ -10,15 +10,116 @@ import { Brain, Car, ArrowUpToLine, Activity, MessageCircle, Send, Users, FileTe
 import AIContentGenerator from './AIContentGenerator';
 import CarPhotoAnalyzer from '../car/CarPhotoAnalyzer';
 
+type ViewType = 'rag' | 'content-generator' | 'car-analyzer';
+
+interface ViewOption {
+  id: ViewType;
+  name: string;
+  icon: React.ElementType;
+  description: string;
+}
+
+const viewOptions: ViewOption[] = [
+  {
+    id: 'rag',
+    name: 'AI Assistant',
+    icon: Brain,
+    description: 'Ask questions and get AI-powered answers',
+  },
+  {
+    id: 'content-generator',
+    name: 'Document Upload',
+    icon: Sparkles,
+    description: 'Upload documents for RAG system indexing',
+  },
+  {
+    id: 'car-analyzer',
+    name: 'Car Analyzer',
+    icon: Car,
+    description: 'Analyze car photos for insurance assessment',
+  },
+];
+
 const VintuSureAIEmbed: React.FC = () => {
+  const [activeView, setActiveView] = useState<ViewType>('rag');
+  const { toast } = useToast();
+  const { user } = useAuthContext();
+
+  const renderView = () => {
+    switch (activeView) {
+      case 'content-generator':
+        return <AIContentGenerator />;
+      case 'car-analyzer':
+        return (
+          <CarPhotoAnalyzer
+            onAnalysisComplete={(result) => {
+              console.log('Analysis complete:', result);
+              toast({
+                title: 'Success',
+                description: 'Car photo analyzed successfully',
+              });
+            }}
+            onAnalysisError={(error) => {
+              console.error('Analysis error:', error);
+              toast({
+                title: 'Error',
+                description: 'Failed to analyze car photo',
+                variant: 'destructive',
+              });
+            }}
+          />
+        );
+      default:
+        return <RAGQueryView />;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* View Selection */}
+      <div className="flex justify-center gap-4 p-4">
+        {viewOptions.map((option) => {
+          const Icon = option.icon;
+          return (
+            <TooltipProvider key={option.id}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={activeView === option.id ? 'default' : 'outline'}
+                    className={`flex items-center gap-2 ${activeView === option.id ? 'bg-primary text-primary-foreground' : ''
+                      }`}
+                    onClick={() => setActiveView(option.id)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {option.name}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{option.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        })}
+      </div>
+
+      {/* Active View Content */}
+      <div className="p-4">
+        {renderView()}
+      </div>
+    </div>
+  );
+};
+
+// Separate RAG Query component for better organization
+const RAGQueryView = () => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<QueryResponse | ExtendedQueryResponse | ClaimsQueryResponse | PoliciesQueryResponse | DocumentsQueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [healthStatus, setHealthStatus] = useState<string>('unknown');
-  const [activeView, setActiveView] = useState<'rag' | 'content-generator' | 'car-analyzer' | 'customers' | 'policies' | 'claims' | 'documents'>('rag');
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
-  const handleAskQuestion = async () => {
+  const handleQuery = async () => {
     if (!query.trim()) {
       toast({
         title: 'Error',
@@ -30,28 +131,9 @@ const VintuSureAIEmbed: React.FC = () => {
 
     setIsLoading(true);
     try {
-      let result;
-      
-      switch (activeView) {
-        case 'customers':
-          result = await RAGService.queryCustomerRAG(query);
-          break;
-        case 'policies':
-          result = await RAGService.queryPoliciesRAG(query);
-          break;
-        case 'claims':
-          result = await RAGService.queryClaimsRAG(query);
-          break;
-        case 'documents':
-          result = await RAGService.queryDocumentsRAG(query);
-          break;
-        default:
-          result = await RAGService.askQuestion(query);
-          break;
-      }
-      
+      const result = await RAGService.askQuestion(query, user?.uid);
       setResponse(result);
-      
+
       if (result.success) {
         toast({
           title: 'Success',
@@ -65,10 +147,10 @@ const VintuSureAIEmbed: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error asking question:', error);
+      console.error('Error processing query:', error);
       toast({
         title: 'Error',
-        description: 'Failed to communicate with RAG service',
+        description: 'Failed to communicate with AI service',
         variant: 'destructive',
       });
     } finally {
@@ -322,7 +404,8 @@ const VintuSureAIEmbed: React.FC = () => {
               </Tooltip>
             </TooltipProvider> */}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col rounded-lg">

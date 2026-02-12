@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils';
 const claimFormSchema = z.object({
     customerId: z.string().min(1, 'Customer is required'),
     policyId: z.string().min(1, 'Policy is required'),
-    incidentDate: z.date(),
+    incidentDate: z.string().min(1, 'Incident date is required'),
     description: z.string().min(10, 'Description must be at least 10 characters'),
     location: z.object({
         address: z.string().min(1, 'Address is required'),
@@ -70,13 +70,13 @@ interface ClaimModalFormProps {
     onSuccess?: () => void;
 }
 
-export default function ClaimModalForm({ 
-    isOpen, 
-    onClose, 
-    initialData, 
-    customerId, 
-    policyId, 
-    onSuccess 
+export default function ClaimModalForm({
+    isOpen,
+    onClose,
+    initialData,
+    customerId,
+    policyId,
+    onSuccess
 }: ClaimModalFormProps) {
     const { toast } = useToast();
     const { user } = useAuthContext();
@@ -100,7 +100,7 @@ export default function ClaimModalForm({
         defaultValues: {
             customerId: customerId || initialData?.customerId || '',
             policyId: policyId || initialData?.policyId || '',
-            incidentDate: initialData?.incidentDate || new Date(),
+            incidentDate: initialData?.incidentDate || format(new Date(), 'yyyy-MM-dd'),
             description: initialData?.description || '',
             location: initialData?.location || {
                 address: '',
@@ -119,7 +119,7 @@ export default function ClaimModalForm({
             form.reset({
                 customerId: customerId || initialData?.customerId || '',
                 policyId: policyId || initialData?.policyId || '',
-                incidentDate: initialData?.incidentDate || new Date(),
+                incidentDate: initialData?.incidentDate || format(new Date(), 'yyyy-MM-dd'),
                 description: initialData?.description || '',
                 location: initialData?.location || {
                     address: '',
@@ -135,7 +135,7 @@ export default function ClaimModalForm({
             form.reset({
                 customerId: customerId || '',
                 policyId: policyId || '',
-                incidentDate: new Date(),
+                incidentDate: format(new Date(), 'yyyy-MM-dd'),
                 description: '',
                 location: {
                     address: '',
@@ -152,7 +152,7 @@ export default function ClaimModalForm({
     const onSubmit = async (data: ClaimFormData) => {
         try {
             setIsSubmitting(true);
-            
+
             // Check if user is authenticated
             if (!user?.uid) {
                 toast({
@@ -204,8 +204,8 @@ export default function ClaimModalForm({
                         {initialData?.id ? 'Edit Claim' : 'Create New Claim'}
                     </DialogTitle>
                     <DialogDescription>
-                        {initialData?.id 
-                            ? 'Update the claim information below.' 
+                        {initialData?.id
+                            ? 'Update the claim information below.'
                             : 'Fill in the details below to create a new insurance claim.'
                         }
                     </DialogDescription>
@@ -216,7 +216,7 @@ export default function ClaimModalForm({
                         {/* Basic Information */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold">Basic Information</h3>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
@@ -276,37 +276,14 @@ export default function ClaimModalForm({
                                     render={({ field }) => (
                                         <FormItem className="flex flex-col">
                                             <FormLabel>Incident Date *</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            date > new Date()
-                                                        }
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
+                                            <FormControl>
+                                                <Input
+                                                    type="date"
+                                                    {...field}
+                                                    value={field.value}
+                                                    onChange={(e) => field.onChange(e.target.value)}
+                                                />
+                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -340,7 +317,7 @@ export default function ClaimModalForm({
                         {/* Incident Details */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold">Incident Details</h3>
-                            
+
                             <FormField
                                 control={form.control}
                                 name="description"
@@ -380,7 +357,7 @@ export default function ClaimModalForm({
                         {/* Financial Information */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold">Financial Information</h3>
-                            
+
                             <FormField
                                 control={form.control}
                                 name="amount"
@@ -407,8 +384,8 @@ export default function ClaimModalForm({
                     <Button variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={form.handleSubmit(onSubmit)} 
+                    <Button
+                        onClick={form.handleSubmit(onSubmit)}
                         disabled={isSubmitting}
                         type="submit"
                     >

@@ -17,23 +17,21 @@ export const policyFormSchema = z.object({
         value: z.number(),
         usage: z.enum(['private', 'commercial']),
     }),
-    startDate: z.date(),
-    endDate: z.date(),
+    startDate: z.string(),
+    endDate: z.string(),
     premium: z.object({
         amount: z.number(),
         currency: z.string(),
         paymentStatus: z.enum(['pending', 'paid', 'partial']),
-        paymentMethod: z.string(),
+        nextPaymentDate: z.string().optional(),
     }),
 })
 
 export type PolicyFormData = z.infer<typeof policyFormSchema>
 
-export type PolicyData = Omit<PolicyFormData, 'startDate' | 'endDate'> & {
-    startDate: Timestamp
-    endDate: Timestamp
-    createdAt: Timestamp
-    updatedAt: Timestamp
+export type PolicyData = PolicyFormData & {
+    createdAt: string
+    updatedAt: string
     createdBy: string
 }
 

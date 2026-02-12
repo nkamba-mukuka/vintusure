@@ -6,20 +6,105 @@ import { Badge } from '../../components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 import { RAGService, QueryResponse, ExtendedQueryResponse, ClaimsQueryResponse, PoliciesQueryResponse, DocumentsQueryResponse } from '../../lib/services/ragService';
 import { useToast } from '../../hooks/use-toast';
+import { Brain, Car, Sparkles, MessageCircle, Send, Users, FileText, ClipboardList } from 'lucide-react';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Brain, Car, ArrowUpToLine, /* Activity, */ MessageCircle, Send, Users, FileText, Shield, FolderOpen } from 'lucide-react';
 
 import AIContentGenerator from '../../components/ai/AIContentGenerator';
 import CarPhotoAnalyzer from '../../components/car/CarPhotoAnalyzer';
 
+type QueryType = 'general' | 'customers' | 'policies' | 'claims' | 'documents';
+
+interface QueryPattern {
+  type: QueryType;
+  patterns: RegExp[];
+  examples: string[];
+}
+
+const queryPatterns: QueryPattern[] = [
+  {
+    type: 'policies',
+    patterns: [
+      /policy.*(?:active|status|expired)/i,
+      /(?:active|expired).*policy/i,
+      /policy.*number/i,
+      /coverage.*(?:details|information)/i,
+      /(?:renew|cancel).*policy/i
+    ],
+    examples: [
+      "Is John Doe's policy active?",
+      "What's the status of policy POL-123?",
+      "Show coverage details for vehicle ABC123"
+    ]
+  },
+  {
+    type: 'customers',
+    patterns: [
+      /customer.*(?:details|information|profile)/i,
+      /(?:find|show|get).*customer/i,
+      /customer.*history/i,
+      /contact.*(?:details|information)/i
+    ],
+    examples: [
+      "Show customer details for John Doe",
+      "Find customers in Lusaka",
+      "Get customer contact information"
+    ]
+  },
+  {
+    type: 'claims',
+    patterns: [
+      /claim.*(?:status|progress|update)/i,
+      /(?:file|submit|process).*claim/i,
+      /claim.*number/i,
+      /accident.*(?:report|details)/i
+    ],
+    examples: [
+      "What's the status of claim CLM-123?",
+      "Show recent claims for John Doe",
+      "Find claims filed last month"
+    ]
+  },
+  {
+    type: 'documents',
+    patterns: [
+      /document.*(?:upload|status|type)/i,
+      /(?:find|show|get).*document/i,
+      /(?:policy|claim).*document/i,
+      /(?:upload|download).*(?:file|document)/i
+    ],
+    examples: [
+      "Show policy documents for POL-123",
+      "Find documents uploaded last week",
+      "Get claim supporting documents"
+    ]
+  }
+];
+
 const VintuSureAI: React.FC = () => {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<QueryResponse | ExtendedQueryResponse | ClaimsQueryResponse | PoliciesQueryResponse | DocumentsQueryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [queryType, setQueryType] = useState<'general' | 'customers' | 'policies' | 'claims' | 'documents'>('general');
   const [activeView, setActiveView] = useState<'rag' | 'content-generator' | 'car-analyzer' | 'customers' | 'policies' | 'claims' | 'documents'>('rag');
   // const [healthStatus, setHealthStatus] = useState<string>('unknown'); // Dev only
   const { toast } = useToast();
+  const { user } = useAuthContext();
 
-  const handleAskQuestion = async () => {
+  // Function to determine query type based on content
+  const detectQueryType = (query: string): 'general' | 'customers' | 'policies' | 'claims' | 'documents' => {
+    const lowerQuery = query.toLowerCase();
+
+    for (const pattern of queryPatterns) {
+      if (pattern.patterns.some(p => p.test(lowerQuery))) {
+        return pattern.type;
+      }
+    }
+
+    return 'general';
+  };
+
+  const handleQuery = async () => {
     if (!query.trim()) {
       toast({
         title: 'Error',
@@ -52,11 +137,11 @@ const VintuSureAI: React.FC = () => {
       }
       
       setResponse(result);
-      
+
       if (result.success) {
         toast({
           title: 'Success',
-          description: 'Response generated successfully',
+          description: `Found ${result.similarItemsCount || 0} relevant ${effectiveQueryType} matches`,
         });
       } else {
         toast({
@@ -66,10 +151,10 @@ const VintuSureAI: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error asking question:', error);
+      console.error('Error processing query:', error);
       toast({
         title: 'Error',
-        description: 'Failed to communicate with RAG service',
+        description: 'Failed to communicate with AI service',
         variant: 'destructive',
       });
     } finally {
@@ -77,60 +162,56 @@ const VintuSureAI: React.FC = () => {
     }
   };
 
-  // const handleHealthCheck = async () => { // Dev only
-  //   try {
-  //     const health = await RAGService.healthCheck();
-  //     setHealthStatus(health.status);
-  //     toast({
-  //       title: 'Health Check',
-  //       description: `Service is ${health.status}`,
-  //     });
-  //   } catch (error) {
-  //     setHealthStatus('unhealthy');
-  //     toast({
-  //       title: 'Health Check Failed',
-  //       description: 'Service is not responding',
-  //       variant: 'destructive',
-  //     });
-  //   }
-  // };
-
-  const formatResponse = (text: string) => {
-    // Split by common title patterns and format them
-    const lines = text.split('\n');
-    return lines.map((line, index) => {
-      // Check if line looks like a title (starts with capital letters, ends with colon, or is all caps)
-      const isTitlePattern = /^[A-Z][^.!?]*:$|^[A-Z\s]+$|^\d+\.\s*[A-Z]/.test(line.trim());
-      const isSubheading = /^##?\s/.test(line.trim()) || /^\*\*.*\*\*$/.test(line.trim());
-      
-      if (isTitlePattern || isSubheading) {
-        return (
-          <h3 key={index} className="text-lg font-semibold text-primary mt-4 mb-2 first:mt-0">
-            {line.replace(/^##?\s|\*\*/g, '').trim()}
-          </h3>
-        );
-      }
-      
-      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
-        return (
-          <li key={index} className="ml-4 mb-1 text-foreground">
-            {line.replace(/^[•\-*]\s*/, '')}
-          </li>
-        );
-      }
-      
-      if (line.trim()) {
-        return (
-          <p key={index} className="mb-3 text-foreground leading-relaxed">
-            {line}
-          </p>
-        );
-      }
-      
-      return <br key={index} />;
-    });
+  // Render example queries based on current type
+  const renderExamples = () => {
+    const currentPattern = queryPatterns.find(p => p.type === queryType) || queryPatterns[0];
+    return (
+      <div className="mt-4">
+        <p className="text-sm text-muted-foreground mb-2">Example queries:</p>
+        <div className="flex flex-wrap gap-2">
+          {currentPattern.examples.map((example, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              size="sm"
+              onClick={() => setQuery(example)}
+              className="text-xs"
+            >
+              {example}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
+  const queryTypeButtons = [
+    { type: 'general', icon: Brain, label: 'General' },
+    { type: 'customers', icon: Users, label: 'Customers' },
+    { type: 'claims', icon: ClipboardList, label: 'Claims' },
+    { type: 'policies', icon: FileText, label: 'Policies' },
+    { type: 'documents', icon: FileText, label: 'Documents' },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-6 w-6 text-primary" />
+            VintuSure AI Assistant
+          </CardTitle>
+          <CardDescription>
+            Ask questions about insurance, policies, claims, or get help with specific tasks
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Query Type Selection */}
+            <div className="flex flex-wrap gap-2">
+              {queryTypeButtons.map(({ type, icon: Icon, label }) => (
+                <TooltipProvider key={type}>
+                  <Tooltip>
   const getViewTitle = () => {
     switch (activeView) {
       case 'customers':
@@ -277,22 +358,18 @@ const VintuSureAI: React.FC = () => {
                 return (
                   <Tooltip key={item.id}>
                     <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setActiveView(item.id as any)}
-                        className={`p-3 rounded-xl transition-all duration-200 hover:bg-primary/10 hover:text-primary ${
-                          activeView === item.id
-                            ? 'bg-primary/20 text-primary shadow-md'
-                            : 'text-muted-foreground hover:text-primary'
-                        }`}
+                      <Button
+                        variant={queryType === type ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setQueryType(type as QueryType)}
+                        className="flex items-center gap-2"
                       >
-                        <Icon className="h-6 w-6" />
-                      </button>
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="mt-2">
-                      <div className="text-sm">
-                        <div className="font-medium text-foreground">{item.name}</div>
-                        <div className="text-muted-foreground">{item.description}</div>
-                      </div>
+                    <TooltipContent>
+                      <p>Switch to {label.toLowerCase()} queries</p>
                     </TooltipContent>
                   </Tooltip>
                 );
@@ -470,17 +547,55 @@ const VintuSureAI: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Content Generator View */}
-          {activeView === 'content-generator' && (
-            <div className="flex-1 px-6 pb-6">
-              <div className="max-w-4xl mx-auto">
-                <AIContentGenerator />
+            {/* Query Input */}
+            <div className="space-y-2">
+              <Textarea
+                placeholder={`Ask a ${queryType} question...`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleQuery}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    'Processing...'
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Send Query
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-          )}
 
+            {/* Response Display */}
+            {response && (
+              <div className="mt-4 space-y-2">
+                <div className="rounded-lg border p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageCircle className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Response:</span>
+                  </div>
+                  <p className="whitespace-pre-wrap">{response.answer}</p>
+                  {response.sources && response.sources.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-semibold mb-2">Sources:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {response.sources.map((source, index) => (
+                          <Badge key={index} variant="secondary">
+                            {source}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
           {/* Car Analyzer View */}
           {activeView === 'car-analyzer' && (
             <div className="flex-1 px-6 pb-6 overflow-auto">
@@ -494,10 +609,10 @@ const VintuSureAI: React.FC = () => {
                   }}
                 />
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
